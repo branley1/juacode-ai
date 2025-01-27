@@ -1,0 +1,67 @@
+/* frontend/src/components/Sidebar.css */
+.sidebar {
+  width: 250px; 
+  background-color: lightblue;/*#f0f0f0; */
+  height: 100%; 
+  border-right: 1px solid #ddd;
+  padding: 20px;
+  box-sizing: border-box;
+  position: relative;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  overflow-x: hidden;
+  flex-shrink: 0;
+  transition: transform 0.3s ease-in-out;
+  transform: translateX(-250px);
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+
+.sidebar-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+.sidebar-logo {
+  width: 30px; 
+  height: 30px;
+  margin-bottom: 0px;
+  margin-top: 0;
+  margin-right: 10px;
+}
+
+.sidebar-title {
+  font-size: 1.2em; 
+  font-weight: bold;
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.sidebar-content {
+  padding-top: 0px;
+}
+
+.sidebar-toggle-button {
+  background-color: transparent;
+  border: none; 
+  color: var(--color-text-secondary); 
+  cursor: pointer;
+  padding: 10px; 
+  font-size: 1.2em; 
+  opacity: 0.7;
+  margin-bottom: 15px;
+  align-self: flex-start;
+}
+
+.sidebar-toggle-button:hover {
+  opacity: 1.0;  
+  background-color: rgba(0, 0, 0, 0.05);
+}

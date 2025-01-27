@@ -1,0 +1,59 @@
+/* frontend/src/components/ChatMessages.css */
+.chat-message {
+  padding: 10px;
+  border-radius: 8px;
+  max-width: 80%;
+  display: flex;
+  align-items: flex-start;
+}
+
+.chat-message.user {
+  align-self: flex-end;
+  background-color: var(--color-background-message-user);
+  flex-direction: row-reverse;
+  color: var(--color-text-message-user);
+  border-radius: 20px 20px 20px 20px;
+}
+
+.chat-message.user .profile-icon {
+  margin-left: 10px;
+  margin-right: 0;
+}
+
+.chat-message.assistant {
+  align-self: flex-start;
+  background-color: var(--color-background-message-assistant);
+  flex-direction: row;
+  color: var(--color-text-message-assistant);
+  padding: 0;
+  border-radius: 0;
+}
+.profile-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin-right: 10px;
+  margin-top: 5px;
+  border: 1px solid var(--color-profile-icon-border);
+  align-self: flex-start;
+}
+
+.message-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.message-content {
+  word-wrap: break-word;
+  margin-top: 0;
+  padding: 10px 10px;
+}
+
+.landing-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; 
+  height: calc(100vh - 100px);
+  text-align: center;
+}

@@ -1,0 +1,74 @@
+/* frontend/src/components/ChatInterface/ChatInterface.css */
+.chat-container {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0;
+  border: 1px solid var(--color-border-chat-container);
+  border-radius: 8px;
+  background-color: var(--color-background-chat-container);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+}
+
+.chat-content-wrapper {
+  flex-grow: 1; 
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: var(--color-background-chat-container);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: margin-left 0.3s ease-in-out;
+  margin-left: 0;
+}
+
+.chat-content-wrapper.sidebar-open {
+  margin-left: 250px;
+}
+
+.chat-title {
+  font-family: 'IBM Plex Mono', monospace;
+  margin-bottom: 20px;
+}
+
+.chat-messages {
+  flex-grow: 1; 
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.welcome-message {
+  font-size: 2.0em;
+  color: var(--color-text-secondary); 
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.landing-title-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  justify-content: center;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.landing-logo {
+  width: 70px; 
+  height: 70px;
+  margin-right: 0px;
+  margin-bottom: 20px;
+  margin-top: -10px;
+}
+
+.landing-chat-title {
+  font-size: 3.0em; 
+  font-weight: bold;
+}

@@ -1,0 +1,139 @@
+/* frontend/src/App.css */
+:root {
+  /* Light Theme Variables */
+  --color-background-body: #f9f9f9; 
+  --color-background-chat-container: #f9f9f9; 
+  --color-border-chat-container: #ddd;
+  --color-background-message-user: #e2e2e2;
+  --color-text-message-user: #212121;  
+  --color-background-message-assistant: transparent; 
+  --color-text-message-assistant: #212121;
+  --color-profile-icon-border: #dddcdc; 
+  --color-input-container-background: white;
+  --color-input-container-border: #ccc;
+  --color-text-input: #212121;
+  --color-button-send-background: #4CAF50;
+  --color-button-send-hover-background: #45a049;
+  --color-text-primary: #212121;
+  --color-text-secondary: #555;
+
+  /* Code Block Variables (Placeholders for later) */
+  --color-background-code-block: #f0f0f0;
+  --color-text-code-block: #333; 
+  --font-family-code: monospace; 
+}
+
+body.dark-theme {
+  /* Dark Theme Variables */
+  --color-background-body: #121212; 
+  --color-background-chat-container: #121212;
+  --color-border-chat-container: #333;
+  --color-background-message-user: #354a29;
+  --color-text-message-user: #f0f0f0;
+  --color-background-message-assistant: transparent; 
+  --color-text-message-assistant: #f0f0f0;
+  --color-profile-icon-border: #555; 
+  --color-input-container-background: #212121;
+  --color-input-container-border: #555;
+  --color-text-input: #f0f0f0; 
+  --color-button-send-background: #64b5f6;
+  --color-button-send-hover-background: #42a5f5;
+  --color-text-primary: #f0f0f0; 
+  --color-text-secondary: #aaa; 
+  --color-background-code-block: #2a2a2a; 
+  --color-text-code-block: #f8f8f2;
+}
+
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  background-color: var(--color-background-body);
+  color: var(--color-text-primary);
+  height: 100vh;
+  overflow: hidden;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-title {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Fonts */
+.chat-container, .chat-message, .input-area, textarea, button { /* Apply to chat container and relevant elements */
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Monospace Font for Code Blocks (Markdown) */
+.code-block, code {
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 0.9em;
+  background-color: var(--color-background-code-block);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.chat-header {
+  display: flex;  
+  justify-content: flex-start;
+  align-items: center; 
+  margin-bottom: 15px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.chat-title-display {
+  display: flex;
+  align-items: center;
+}
+
+.chat-title {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-right: 10px;
+  margin-bottom: 0;
+  text-align: left;
+}
+
+.edit-title-button {
+  background-color: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 5px;
+  font-size: 1.3em;
+  opacity: 0.7;
+  margin-top: 15px;
+}
+
+.edit-title-button:hover {
+  opacity: 1.0;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.chat-title-input {
+  font-size: 1.8em; 
+  font-weight: bold;
+  border: none; 
+  border-bottom: 2px solid var(--color-input-container-border);
+  background-color: transparent;
+  color: var(--color-text-primary); 
+  padding: 5px; 
+  margin-right: 10px; 
+  outline: none; 
+  width: auto; 
+  min-width: 150px; 
+  max-width: 400px;
+}
+
+.chat-title-input:focus {
+  border-bottom-color: var(--color-button-send-background);
+}

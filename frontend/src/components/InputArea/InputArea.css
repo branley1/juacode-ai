@@ -1,0 +1,129 @@
+/* frontend/src/components/InputArea.css */
+.input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  align-items: center;
+  width: 90%; 
+  max-width: 700px; 
+  margin-left: auto;
+  margin-right: auto;
+  position: sticky;
+  bottom: 0;
+}
+  
+.input-container {
+  align-items: center;
+  display: flex;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--color-input-container-border);
+  position: relative;
+  padding-right: 50px;
+  background-color: var(--color-input-container-background);
+  width: 100%;
+}
+
+.textarea {
+  flex-grow: 1;
+  padding: 12px 20px;
+  font-size: 16px;
+  border-radius: 20px;
+  resize: none;
+  border: none;
+  height: auto;
+  min-height: 40px;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: transparent;
+  overflow-y: scroll;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #aaa #eee; /* Firefox */
+  margin-right: -10px;
+  padding-right: 20px;
+}
+
+textarea::-webkit-scrollbar {
+  width: 8px; /* For Chrome, Safari, Edge - thin scrollbar */
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background-color: #aaa;
+  border-radius: 4px;
+}
+
+textarea::-webkit-scrollbar-track {
+  background-color: #eee;
+  border-radius: 4px;
+}
+
+textarea:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.send-button {
+  position: absolute;
+  bottom: 5px;
+  right: 5px; 
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none; 
+  outline: none; 
+}
+
+.send-button:hover {
+  transform: translateY(-1px);
+  background-color: var(--color-background-message-user);
+}
+
+.send-icon-img {
+  width: 60%; 
+  height: 60%;
+  vertical-align: middle;
+}
+
+.landing-input-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px; 
+  margin-bottom: 40px;
+  width: 100%;
+  max-width: 600px;
+}
+
+.landing-input-container {
+  display: flex;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid var(--color-input-container-border);
+  position: relative;
+  padding-right: 60px; 
+  background-color: white;
+  width: 100%;
+}
+
+.landing-textarea {
+  flex-grow: 1;
+  padding: 15px 20px; 
+  font-size: 18px; 
+  border: none;
+  border-radius: 0;
+  resize: none;
+  min-height: 60px; 
+  max-height: 300px;
+  overflow-y: scroll;
+  background-color: transparent;
+  scrollbar-width: thin;
+  scrollbar-color: #aaa #eee;
+  margin-right: -10px;
+  padding-right: 20px;
+}
