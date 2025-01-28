@@ -5,7 +5,7 @@
   gap: 10px;
   margin-bottom: 20px;
   align-items: center;
-  width: 90%; 
+  width: 95%; 
   max-width: 700px; 
   margin-left: auto;
   margin-right: auto;
@@ -33,8 +33,10 @@
   resize: none;
   border: none;
   height: auto;
-  min-height: 40px;
-  max-height: 200px;
+  width: 100%;
+  min-height: 20px;
+  max-height: 50px;
+  line-height: 1.5;
   overflow-y: auto;
   background-color: transparent;
   overflow-y: scroll;
@@ -42,6 +44,7 @@
   scrollbar-color: #aaa #eee; /* Firefox */
   margin-right: -10px;
   padding-right: 20px;
+  padding: 16px 24px;
 }
 
 textarea::-webkit-scrollbar {

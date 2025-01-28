@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import React from 'react';
+import { render, act } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('App component renders without crashing', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  // You can add more specific assertions here later, e.g., check for specific text or elements if needed.
+  // For now, just ensure it renders without errors.
 });

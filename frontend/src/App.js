@@ -1,3 +1,4 @@
+// frontend App.js file where we render the ChatInterface component
 import React from 'react';
 import './App.css';
 import ChatInterface from './components/ChatInterface/ChatInterface';

@@ -1,10 +1,11 @@
 /* frontend/src/components/ChatMessages.css */
 .chat-message {
-  padding: 10px;
+  padding: 10px 18px;
   border-radius: 8px;
-  max-width: 80%;
+  max-width: 85%;
   display: flex;
   align-items: flex-start;
+  margin: 15px 0;
 }
 
 .chat-message.user {
@@ -12,22 +13,23 @@
   background-color: var(--color-background-message-user);
   flex-direction: row-reverse;
   color: var(--color-text-message-user);
-  border-radius: 20px 20px 20px 20px;
-}
-
-.chat-message.user .profile-icon {
-  margin-left: 10px;
-  margin-right: 0;
+  border-radius: 18px !important;
+  margin-left: auto;
+  max-width: 85%;
 }
 
 .chat-message.assistant {
   align-self: flex-start;
-  background-color: var(--color-background-message-assistant);
   flex-direction: row;
+  box-shadow: none;
   color: var(--color-text-message-assistant);
   padding: 0;
+  position: relative;
   border-radius: 0;
+  background-color: transparent;
+  max-width: 85%;
 }
+
 .profile-icon {
   width: 30px;
   height: 30px;
@@ -56,4 +58,8 @@
   justify-content: center; 
   height: calc(100vh - 100px);
   text-align: center;
+}
+
+.hide-scrollbar {
+  overflow: hidden;
 }

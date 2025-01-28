@@ -12,7 +12,7 @@
   --color-input-container-background: white;
   --color-input-container-border: #ccc;
   --color-text-input: #212121;
-  --color-button-send-background: #4CAF50;
+  --color-button-send-background: #555;
   --color-button-send-hover-background: #45a049;
   --color-text-primary: #212121;
   --color-text-secondary: #555;
@@ -66,7 +66,8 @@ html {
 
 /* Fonts */
 .chat-container, .chat-message, .input-area, textarea, button { /* Apply to chat container and relevant elements */
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  /*font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;*/
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,Oxygen,Open Sans,sans-serif;
 }
 
 /* Monospace Font for Code Blocks (Markdown) */
@@ -80,25 +81,57 @@ html {
   white-space: pre-wrap;
 }
 
+.chat-messages-area {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
 .chat-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-border-chat-container);
+  position: sticky;
+  top: 0;
+  background-color: var(--color-background-chat-container);
+  z-index: 100;
   display: flex;  
-  justify-content: flex-start;
-  align-items: center; 
-  margin-bottom: 15px;
-  padding-left: 20px;
-  padding-right: 20px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 30px;
+  padding: 0 20px;
+}
+
+.sidebar-toggle-button {
+  position: static;
+  left: 20px;
+  top: 20px;
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  z-index: 1001;
+  padding: 8px;
+  border-radius: 20%;
+  transition: all 0.2s ease;
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.sidebar-toggle-button:hover {
+  background-color: var(--color-background-message-user);
 }
 
 .chat-title-display {
   display: flex;
   align-items: center;
+  gap: 5px;
 }
 
 .chat-title {
-  font-size: 1.5em;
+  font-size: 1.2em;
   font-weight: bold;
   margin-right: 10px;
-  margin-bottom: 0;
   text-align: left;
 }
 
@@ -111,7 +144,7 @@ html {
   border-radius: 5px;
   font-size: 1.3em;
   opacity: 0.7;
-  margin-top: 15px;
+  margin-bottom: 5px;
 }
 
 .edit-title-button:hover {
@@ -120,8 +153,9 @@ html {
 }
 
 .chat-title-input {
-  font-size: 1.8em; 
+  font-size: 1.2em; 
   font-weight: bold;
+  font-family: 'IBM Plex Mono', monospace;
   border: none; 
   border-bottom: 2px solid var(--color-input-container-border);
   background-color: transparent;
@@ -136,4 +170,28 @@ html {
 
 .chat-title-input:focus {
   border-bottom-color: var(--color-button-send-background);
+}
+
+.header-left-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-right: auto;
+}
+
+.header-right-group {
+  margin-left: 0;
+}
+
+.new-chat-button {
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.new-chat-button:hover {
+  background-color: var(--color-background-message-user);
 }
