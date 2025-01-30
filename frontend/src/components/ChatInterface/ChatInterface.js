@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ChatMessage from '../ChatMessage/ChatMessage';
 import InputArea from '../InputArea/InputArea';
 import Sidebar from '../Sidebar/Sidebar';
-import './ChatInterface.css'; 
+import './ChatInterface.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -29,38 +29,39 @@ function ChatInterface() {
     setIsEditingTitle(true);
   };
 
-  useEffect(() => {
+  useEffect(() => { // Autoscroll to bottom on new message
     if (chatMessagesRef.current) {
-      const { scrollHeight, clientHeight } = chatMessagesRef.current;
-      const shouldScroll = scrollHeight - clientHeight - chatMessagesRef.current.scrollTop < 100;
-      if (shouldScroll) {
-        chatMessagesRef.current.scrollTop = scrollHeight;
-      }
+      requestAnimationFrame(() => {
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      });
     }
-  }, [messages, isTyping]);
+  }, [messages]);
+
+  useEffect(() => {
+    const handleKeyNavigation = (e) => {
+      if (e.key === 'ArrowUp' && messages.length > 0) {
+        // Implement message history navigation
+        e.preventDefault();
+      }
+      
+      if (e.ctrlKey && e.key === '/') {
+        document.querySelector('.textarea')?.focus();
+      }
+    };
+  
+    window.addEventListener('keydown', handleKeyNavigation);
+    return () => window.removeEventListener('keydown', handleKeyNavigation);
+  }, [messages]);
 
   // Simulate typing effect properly
   const simulateResponse = (input) => {
-    setIsTyping(true);
+    setIsTyping(true); // Set isTyping to true before response simulation starts.
     const response = `You said: ${input}`;
-    let i = 0;
-    
-    const typingInterval = setInterval(() => {
-      if (i < response.length) {
-        setMessages(prev => {
-          const newMessages = [...prev];
-          if (!newMessages[newMessages.length - 1]?.content) {
-            newMessages.push({ role: 'assistant', content: '' });
-          }
-          newMessages[newMessages.length - 1].content += response.charAt(i);
-          return newMessages;
-        });
-        i++;
-      } else {
-        clearInterval(typingInterval);
-        setIsTyping(false);
-      }
-    }, 20); // ms per character, smaller is better
+
+    setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setIsTyping(false); // Set isTyping to false after response simulation is complete.
+    }, 20); // change to 20ms
   };
 
   const handleTitleSave = () => {
@@ -100,69 +101,80 @@ function ChatInterface() {
                 <h2 className="chat-title landing-chat-title">JuaCode</h2>
               </div>
               <div className="welcome-message">
-                What can I help with? 
+                What can I help with?
               </div>
-              <InputArea 
-                setMessages={setMessages} 
-                messages={messages} 
+              <InputArea
+                setMessages={setMessages}
+                messages={messages}
                 onFirstMessageSent={handleFirstMessageSent}
                 isLandingPage={true}
                 chatMessagesRef={chatMessagesRef}
-              /> 
+                simulateResponse={simulateResponse}
+              />
             </div>
           ) : ( // Chat Messages View
             <div className="chat-messages-area">
-              <button className="sidebar-toggle-button" onClick={toggleSidebar}>
-                <FontAwesomeIcon icon={faBars} />
-              </button>
-              <div className="chat-header">
-                 <div className="header-right-group">
-                    <button className="new-chat-button" onClick={() => console.log('New chat')}>
-                      <FontAwesomeIcon icon={faPlus} />
-                    </button>
-                  </div>
-                  <div className="header-left-group">
-                    {isEditingTitle? ( // Conditional rendering for edit mode title input
-                    <input
-                    type="text"
-                    className="chat-title-input"
-                    value={chatTitle}
-                    onChange={handleTitleChange}
-                    onBlur={handleTitleSave}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                            handleTitleSave();
-                          }
+              <div className="chat-header" style={{ paddingLeft: '50px' }}>
+              <div className="header-left-group">
+                <button className="sidebar-toggle-button" onClick={toggleSidebar}>
+                  <FontAwesomeIcon icon={faBars} />
+                </button>
+                </div>
+                  {isEditingTitle? ( 
+                  <input
+                  type="text"
+                  className="chat-title-input"
+                  value={chatTitle}
+                  onChange={handleTitleChange}
+                  onBlur={handleTitleSave}
+                  onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                          handleTitleSave();
                         }
                       }
-                    />
-                  ) : (
-                      <div className="chat-title-display">
-                          <h2 className="chat-title">{chatTitle}</h2>
-                          <button className="edit-title-button" onClick={handleTitleEditClick}>
-                            <FontAwesomeIcon icon={faPen} />
-                          </button>
-                        </div>
-                      )
                     }
-                  </div>
-                </div>
-              <div className="chat-messages" ref={chatMessagesRef}>
-                {messages.map((message, index) => (
-                  <ChatMessage
-                    key={index}
-                    role={message.role}
-                    content={message.content} 
-                    isLatestMessage={index === messages.length - 1}
-                    chatMessagesRef={chatMessagesRef}
                   />
-                ))}
+                ) : (
+                    <div className="chat-title-display">
+                      <h2 className="chat-title">{chatTitle}</h2>
+                      <button className="edit-title-button" onClick={handleTitleEditClick}>
+                        <FontAwesomeIcon icon={faPen} />
+                      </button>
+                    </div>
+                    )
+                  }
+                </div>
+                <button className="new-chat-button" onClick={() => console.log('New chat')}>
+                  <FontAwesomeIcon icon={faPlus} />
+                </button>
+              <div className="chat-messages" ref={chatMessagesRef}>
+                  {messages.map((message, index) => (
+                    <ChatMessage
+                      key={index}
+                      index={index}
+                      role={message.role}
+                      content={message.content}
+                      isLatestMessage={index === messages.length - 1}
+                      chatMessagesRef={chatMessagesRef}
+                    />
+                  ))}
+                {/* Typing indicator */}
+                {isTyping && (
+                     <div className="chat-message assistant-typing">
+                        <div className="message-content">
+                           <span className="typing-dot"></span>
+                            <span className="typing-dot"></span>
+                            <span className="typing-dot"></span>
+                         </div>
+                     </div>
+                    )}
               </div>
-              <InputArea 
-                setMessages={setMessages} 
-                messages={messages} 
+              <InputArea
+                setMessages={setMessages}
+                messages={messages}
                 isLandingPage={false}
                 chatMessagesRef={chatMessagesRef}
+                simulateResponse={simulateResponse}
               />
             </div>
           )}

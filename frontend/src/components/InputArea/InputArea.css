@@ -1,16 +1,13 @@
 /* frontend/src/components/InputArea.css */
 .input-area {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-  align-items: center;
-  width: 95%; 
-  max-width: 700px; 
-  margin-left: auto;
-  margin-right: auto;
-  position: sticky;
-  bottom: 0;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 800px;
+  background: var(--color-background-chat-container);
+  z-index: 1000;
+  width: 80%;
 }
   
 .input-container {
@@ -39,12 +36,8 @@
   line-height: 1.5;
   overflow-y: auto;
   background-color: transparent;
-  overflow-y: scroll;
   scrollbar-width: thin; /* Firefox */
   scrollbar-color: #aaa #eee; /* Firefox */
-  margin-right: -10px;
-  padding-right: 20px;
-  padding: 16px 24px;
 }
 
 textarea::-webkit-scrollbar {
@@ -91,42 +84,4 @@ textarea:focus {
   width: 60%; 
   height: 60%;
   vertical-align: middle;
-}
-
-.landing-input-area {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 10px; 
-  margin-bottom: 40px;
-  width: 100%;
-  max-width: 600px;
-}
-
-.landing-input-container {
-  display: flex;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 2px solid var(--color-input-container-border);
-  position: relative;
-  padding-right: 60px; 
-  background-color: white;
-  width: 100%;
-}
-
-.landing-textarea {
-  flex-grow: 1;
-  padding: 15px 20px; 
-  font-size: 18px; 
-  border: none;
-  border-radius: 0;
-  resize: none;
-  min-height: 60px; 
-  max-height: 300px;
-  overflow-y: scroll;
-  background-color: transparent;
-  scrollbar-width: thin;
-  scrollbar-color: #aaa #eee;
-  margin-right: -10px;
-  padding-right: 20px;
 }

@@ -1,13 +1,17 @@
-// frontend App.js file where we render the ChatInterface component
+// frontend/src/App.js
 import React from 'react';
 import './App.css';
 import ChatInterface from './components/ChatInterface/ChatInterface';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+import MobileDetector from './components/MobileDetector';
 
 function App() {
   return (
-    <div className="App">
-      <ChatInterface /> {/* Render the ChatInterface component */}
-    </div>
+    <ErrorBoundary>
+      <MobileDetector>
+        <ChatInterface />
+      </MobileDetector>
+    </ErrorBoundary>
   );
 }
 

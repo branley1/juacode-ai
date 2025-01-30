@@ -1,0 +1,54 @@
+.error-fallback {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+height: 100vh;
+padding: 2rem;
+text-align: center;
+max-width: 600px;
+margin: 0 auto;
+}
+
+.error-fallback h3 {
+font-size: 1.8rem;
+margin-bottom: 1rem;
+color: var(--color-text-primary);
+}
+
+.error-fallback p {
+color: var(--color-text-secondary);
+line-height: 1.6;
+margin-bottom: 2rem;
+}
+
+.error-fallback button {
+background-color: var(--color-button-send-background);
+color: white;
+border: none;
+padding: 12px 24px;
+border-radius: 8px;
+cursor: pointer;
+font-size: 1rem;
+transition: transform 0.2s ease, background-color 0.2s ease;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+
+.error-fallback button:hover {
+background-color: var(--color-button-send-hover-background);
+transform: translateY(-1px);
+}
+
+.error-details {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 12px;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    margin: 1rem 0;
+    max-width: 100%;
+    overflow-x: auto;
+}
