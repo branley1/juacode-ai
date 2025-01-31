@@ -14,10 +14,14 @@ function ChatInterface() {
   const [chatTitle, setChatTitle] = useState('Test chat');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [chatHistory, setChatHistory] = useState([]);
   const [currentChatId, setCurrentChatId] = useState(Date.now());
   const chatMessagesRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
+
+  const [chatHistory, setChatHistory] = useState(() => { // Initialize chatHistory from localStorage
+    const storedHistory = localStorage.getItem('juaCodeChatHistory');
+    return storedHistory ? JSON.parse(storedHistory) : [];
+  });
 
   const handleFirstMessageSent = () => {
     console.log("ChatInterface.js: handleFirstMessageSent - Function called!");
@@ -38,11 +42,14 @@ function ChatInterface() {
     console.log('Current chatTitle:', chatTitle); 
     console.log('Current messages:', messages);
 
-    // Save the current chat to history
-    setChatHistory(prevHistory => [
+    // Save the current chat to history BEFORE starting a new one
+    setChatHistory(prevHistory => {
+      const updatedHistory = [
       ...prevHistory,
       { id: currentChatId, title: chatTitle, messages }
-    ]);
+    ];
+    return updatedHistory;
+    });
 
     // Start a new chat
     setMessages([]);
@@ -55,9 +62,23 @@ function ChatInterface() {
     console.log('New chat started - messages:', messages);
   };
 
+  useEffect(() => {
+    console.log("ChatInterface.js: useEffect - Saving chatHistory to localStorage:", chatHistory);
+    localStorage.setItem('juaCodeChatHistory', JSON.stringify(chatHistory));
+  }, [chatHistory]);
+
+  const handleChatSelect = (selectedChat) => {
+    console.log('handleChatSelect called with chat:', selectedChat);
+    setChatTitle(selectedChat.title);
+    setMessages(selectedChat.messages);
+    setCurrentChatId(selectedChat.id);
+    setChatStarted(true);
+    setIsSidebarOpen(false);
+  };
+
   useEffect(() => { // Autoscroll to bottom on new message
     if (!chatMessagesRef.current) {
-      console.warn('Chat messages container not found! Warning - This is normal when chat interface is not active.');
+      console.log('Chat messages container not found! Warning - This is normal when chat interface is not active.');
       return;
     } else {
       console.log('Scrolling to bottom of chat messages container');
@@ -121,14 +142,24 @@ function ChatInterface() {
 
   return (
     <div className="chat-container">
-      <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} chatHistory={chatHistory} />
+      <Sidebar
+      isSidebarOpen={isSidebarOpen}
+      toggleSidebar={toggleSidebar}
+      chatHistory={chatHistory}
+      onChatSelect={handleChatSelect}
+      />
       <div className="parent-container">
         <div className={`chat-content-wrapper ${isSidebarOpen ? 'sidebar-open' : ''}`}>
           {!chatStarted ? ( // Conditional rendering for landing page
             <div className="landing-page">
+              <div className="landing-header">
+                <button className="sidebar-toggle-button stb-lp" onClick={toggleSidebar}>
+                  <FontAwesomeIcon icon={faBars} />
+                </button>
               <div className="landing-title-container">
                 <img src={JuaCodeLogo} alt="JuaCode Logo" className="landing-logo" />
                 <h2 className="chat-title landing-chat-title">JuaCode</h2>
+              </div>
               </div>
               <div className="welcome-message">
                 What can I help with?

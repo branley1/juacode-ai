@@ -17,6 +17,10 @@
 .parent-container {
   max-width: 100%;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  position: relative;
 }
 
 .chat-content-wrapper {
@@ -25,10 +29,31 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  flex-grow: 1;
+  transition: margin-right 0.3s ease;
+  margin-right: 0;
 }
 
 .chat-content-wrapper.sidebar-open {
-  transform: translateX(250px);
+  margin-right: 300px; 
+}
+
+.chat-content-wrapper::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0);
+  z-index: 1001;
+  transition: background-color 0.3s ease;
+  pointer-events: none;
+}
+
+.chat-content-wrapper.sidebar-open::before {
+  background-color: rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
 }
 
 .chat-messages {
@@ -256,17 +281,10 @@
 
 /* Mobile screens */
 @media (max-width: 768px) {
-  .chat-content-wrapper {
-    flex-direction: column;
-  }
-
-  .chat-content-wrapper.sidebar-open {
-    transform: translateX(0);
-  }
 
   .sidebar {
     width: 100%; 
-    position: absolute;
+    position: fixed;
     left: 0;
     top: 0;
     transform: translateX(-100%);
@@ -283,18 +301,22 @@
     overflow-y: auto;
   }
 
-  .sidebar-toggle-button {
+  .chat-content-wrapper::before {
+    content: "";
     position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 1001;
-    background-color: var(--color-background-chat-container);
-    border: none;
-    color: var(--color-text-primary);
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 20%;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0); 
+    z-index: 1001; 
+    transition: background-color 0.3s ease;
+    pointer-events: none; 
+  }
+
+  .chat-content-wrapper.sidebar-open::before {
+     background-color: rgba(0, 0, 0, 0.4);
+    pointer-events: auto;
   }
   
   .profile-icon {
@@ -348,4 +370,27 @@
   40% {
     transform: translateY(-10px);
   }
+}
+
+.sidebar-toggle-button {
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  z-index: 1001;
+  padding: 8px;
+  border-radius: 20%;
+  transition: all 0.2s ease;
+  font-size: 1.1em;
+  position: relative;
+  left: 0;
+  transition: left 0.3s ease;
+}
+
+.chat-content-wrapper.sidebar-open .sidebar-toggle-button {
+  left: 300px;
+}
+
+.stb-lp {
+  margin-left: -90vw;
 }
