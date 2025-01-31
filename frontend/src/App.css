@@ -62,7 +62,7 @@ html {
 }
 
 /* Fonts */
-.chat-container, .chat-message, .input-area, textarea, button { /* Apply to chat container and relevant elements */
+.chat-container, .chat-message, .input-area, textarea { /* Apply to chat container and relevant elements */
   /*font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;*/
   font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,Oxygen,Open Sans,sans-serif;
 }

@@ -4,36 +4,44 @@ import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserCircle } from '@fortawesome/free-solid-svg-icons';
 
-function Sidebar({ isSidebarOpen, toggleSidebar }) {
+function Sidebar({ isSidebarOpen, toggleSidebar, chatHistory }) {
   return (
-    <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-      <div className="sidebar-header">
-        <img src={JuaCodeLogo} alt="JuaCode Logo" className="sidebar-logo" /> 
-        <h3 className="sidebar-title">JuaCode</h3>
-      </div>
-      <div className="sidebar-content">
-        <div className="sidebar-section">
-          <h4>Chat History</h4>
-          {/* Add dynamic chat history later */}
-          <div className="chat-history-item">Previous Chat 1</div>
-          <div className="chat-history-item">Previous Chat 2</div>
-          {/* {chatHistory.map(chat => (  // Map dynamic data
-          //   <div key={chat.id} className="chat-history-item">{chat.title}</div>
-          // ))} */}
+    <React.Fragment>
+      {/* Sidebar */}
+      <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        {/* Sidebar Header */}
+        <div className="sidebar-header">
+          <img src={JuaCodeLogo} alt="JuaCode Logo" className="sidebar-logo" />
+          <h3 className="sidebar-title">JuaCode</h3>
+          <h4 className="sidebar-subtitle">Your Go-To AI Assistant</h4>
         </div>
-      </div>
-      <div className="sidebar-account">
-        <div className="account-preview">
-          <div className="account-icon">
+
+        {/* Sidebar Content */}
+        <div className="sidebar-content">
+          <h4 className="chat-history-title">Chat History</h4>
+          {chatHistory.map(chat => (  // Map dynamic data
+            <div key={chat.id} className="chat-history-item">{chat.title}</div>
+          ))}
+        </div>
+
+        {/* Sidebar Account */}
+        <div className="sidebar-account">
+          <div className="account-preview">
             <FontAwesomeIcon icon={faUserCircle} />
-          </div>
-          <div className="account-info">
-            <span className="account-name">Guest User</span>
-            <small className="account-email">guest@example.com</small>
+            <div className="account-details">
+              <span className="account-name">Guest User</span>
+              <small className="account-email">guest@example.com</small>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Sidebar Overlay */}
+      <div
+        className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`}
+        onClick={toggleSidebar}
+      ></div>
+    </React.Fragment>
   );
 }
 

@@ -13,11 +13,15 @@ function ChatInterface() {
   const [chatStarted, setChatStarted] = useState(false);
   const [chatTitle, setChatTitle] = useState('Test chat');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [currentChatId, setCurrentChatId] = useState(Date.now());
   const chatMessagesRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
 
   const handleFirstMessageSent = () => {
+    console.log("ChatInterface.js: handleFirstMessageSent - Function called!");
+    console.log('Chat started!');
     setChatStarted(true);
   };
 
@@ -29,8 +33,34 @@ function ChatInterface() {
     setIsEditingTitle(true);
   };
 
+  const handleNewChat = () => {
+    console.log('handleNewChat called'); 
+    console.log('Current chatTitle:', chatTitle); 
+    console.log('Current messages:', messages);
+
+    // Save the current chat to history
+    setChatHistory(prevHistory => [
+      ...prevHistory,
+      { id: currentChatId, title: chatTitle, messages }
+    ]);
+
+    // Start a new chat
+    setMessages([]);
+    setChatTitle('New Chat');
+    setCurrentChatId(Date.now());
+    setChatStarted(false);
+
+    console.log('Intended new chat started - chatStarted: false (set in handleNewChat)');
+    console.log('New chat started - chatTitle:', chatTitle);
+    console.log('New chat started - messages:', messages);
+  };
+
   useEffect(() => { // Autoscroll to bottom on new message
-    if (chatMessagesRef.current) {
+    if (!chatMessagesRef.current) {
+      console.warn('Chat messages container not found! Warning - This is normal when chat interface is not active.');
+      return;
+    } else {
+      console.log('Scrolling to bottom of chat messages container');
       requestAnimationFrame(() => {
         chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
       });
@@ -91,7 +121,7 @@ function ChatInterface() {
 
   return (
     <div className="chat-container">
-      <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+      <Sidebar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} chatHistory={chatHistory} />
       <div className="parent-container">
         <div className={`chat-content-wrapper ${isSidebarOpen ? 'sidebar-open' : ''}`}>
           {!chatStarted ? ( // Conditional rendering for landing page
@@ -114,7 +144,7 @@ function ChatInterface() {
             </div>
           ) : ( // Chat Messages View
             <div className="chat-messages-area">
-              <div className="chat-header" style={{ paddingLeft: '50px' }}>
+              <div className="chat-header" style={{ paddingLeft: '20px' }}>
               <div className="header-left-group">
                 <button className="sidebar-toggle-button" onClick={toggleSidebar}>
                   <FontAwesomeIcon icon={faBars} />
@@ -140,13 +170,13 @@ function ChatInterface() {
                       <button className="edit-title-button" onClick={handleTitleEditClick}>
                         <FontAwesomeIcon icon={faPen} />
                       </button>
+                      <button className="new-chat-button" onClick={handleNewChat}>
+                        <FontAwesomeIcon icon={faPlus} />
+                      </button>
                     </div>
                     )
                   }
                 </div>
-                <button className="new-chat-button" onClick={() => console.log('New chat')}>
-                  <FontAwesomeIcon icon={faPlus} />
-                </button>
               <div className="chat-messages" ref={chatMessagesRef}>
                   {messages.map((message, index) => (
                     <ChatMessage

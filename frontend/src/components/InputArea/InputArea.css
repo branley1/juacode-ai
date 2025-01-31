@@ -8,6 +8,7 @@
   background: var(--color-background-chat-container);
   z-index: 1000;
   width: 80%;
+  border-radius: 20px;
 }
   
 .input-container {

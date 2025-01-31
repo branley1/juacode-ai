@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import JuaCodeIcon from '../../assets/jua-code-logo.png';
 import './ChatMessage.css';
 
-function ChatMessage({ role, content, isLatestMessage, chatMessagesRef, index}) {
+function ChatMessage({ role, content, isLatestMessage, chatMessagesRef, index }) {
   const [displayText, setDisplayText] = useState('');
   const [charIndex, setCharIndex] = useState(0);
 
@@ -18,23 +18,27 @@ function ChatMessage({ role, content, isLatestMessage, chatMessagesRef, index}) 
         setCharIndex(charIndex + 1);
       }, 2.5);
       return () => clearTimeout(typingTimer);
+    } else {
+      // Scroll to the bottom once typing is complete
+      if (chatMessagesRef.current) {
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      }
     }
-  }, [role, content, charIndex, isLatestMessage]);
-  
+  }, [role, content, charIndex, isLatestMessage, chatMessagesRef]);
 
   useEffect(() => {
     if (isLatestMessage) {
       const messageElement = document.getElementById(`message-${index}`);
       messageElement?.focus();
     }
-  }, [isLatestMessage], {index});
+  }, [isLatestMessage, index]);
 
   return (
     <div
-    className={`chat-message ${role}`}
-    tabIndex={0}
-    role="article"
-    aria-labelledby={`message-${index}`}
+      className={`chat-message ${role}`}
+      tabIndex={0}
+      role="article"
+      aria-labelledby={`message-${index}`}
     >
       {role === 'assistant' && (
         <img src={JuaCodeIcon} alt="JuaCode Icon" className="profile-icon" />

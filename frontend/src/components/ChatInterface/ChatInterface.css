@@ -32,14 +32,14 @@
 }
 
 .chat-messages {
-  max-width: none;
+  flex-grow: 1;
   padding: 20px;
-  padding-bottom: 100px !important;
+  padding-bottom: 100px;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  height: 100%;
+  overflow-y: auto;
 }
 
 .chat-title-display {
@@ -157,8 +157,7 @@
   border-bottom: 2px solid var(--color-input-container-border);
   background-color: transparent;
   color: var(--color-text-primary); 
-  padding: 5px; 
-  margin-right: 10px; 
+  padding: 5px;
   outline: none; 
   width: auto; 
   min-width: 150px; 
@@ -180,6 +179,14 @@
   margin-left: 0;
 }
 
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 20px;
+  justify-content: space-between;
+}
+
 
 .new-chat-button {
   background: none;
@@ -189,8 +196,9 @@
   padding: 8px;
   border-radius: 4px;
   margin-left: auto;
-  margin-right: 40px;
-  vertical-align: middle;
+  align-self: flex-end;
+  font-size: 1.2em;
+  opacity: 0.8;
 }
 
 .new-chat-button:hover {
@@ -201,15 +209,9 @@
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100vh - 100px);
   align-items: flex-start;
-}
-
-.chat-header {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 12px 20px;
+  overflow: hidden;
 }
 
 .chat-messages-area .assistant-typing{
@@ -254,20 +256,45 @@
 
 /* Mobile screens */
 @media (max-width: 768px) {
+  .chat-content-wrapper {
+    flex-direction: column;
+  }
+
   .chat-content-wrapper.sidebar-open {
-    transform: translateX(100%);
+    transform: translateX(0);
   }
-  
+
   .sidebar {
-    width: 100%;
-    left: -100%;
+    width: 100%; 
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
   }
-  
-  .chat-message.user,
-  .chat-message.assistant {
-    max-width: 90%;
-    margin-left: 10px;
-    margin-right: 10px;
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .chat-messages-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sidebar-toggle-button {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1001;
+    background-color: var(--color-background-chat-container);
+    border: none;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 20%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
   
   .profile-icon {
