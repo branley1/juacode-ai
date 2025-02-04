@@ -57,7 +57,7 @@
 }
 
 .chat-messages {
-  flex-grow: 1;
+  max-width: 800px;
   padding: 20px;
   padding-bottom: 100px;
   width: 100%;
@@ -92,13 +92,15 @@
 .landing-page { 
   display: flex;
   flex-direction: column;
-  align-self: center;
-  justify-self: center;
+  align-items: center;
+  justify-content: center;
   min-height: 100vh;
   text-align: center;
   padding: 5vh 20px; 
   height: calc(100vh - 100px);
   width: 100%;
+  max-width: 600px;
+  margin: auto;
   gap: 2rem;
   box-sizing: border-box;
 }
@@ -106,7 +108,7 @@
 .landing-title-container {
   display: flex;
   flex-direction: column;
-  margin-bottom: 0;
+  margin: auto;
   align-items: center;
   gap: 1rem;
 }
@@ -118,8 +120,7 @@
   display: block;
   max-width: 100px;
   margin-top: 3rem;
-  margin-bottom: 3rem; 
-  align-self: center;
+  margin-bottom: 3rem;
 }
 
 .landing-chat-title {
@@ -197,35 +198,37 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-right: auto;
 }
 
 .header-right-group {
-  margin-left: 0;
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .chat-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 20px;
   padding: 12px 20px;
-  justify-content: space-between;
+  margin-right: auto;
 }
 
-
+.share-chat-button,
 .new-chat-button {
   background: none;
   border: none;
   color: var(--color-text-primary);
   cursor: pointer;
-  padding: 8px;
+  font-size: 1em;
+  padding: 5px 10px;
   border-radius: 4px;
-  margin-left: auto;
-  align-self: flex-end;
-  font-size: 1.2em;
-  opacity: 0.8;
+  transition: background-color 0.2s ease;
 }
 
+.share-chat-button:hover,
 .new-chat-button:hover {
   background-color: var(--color-background-message-user);
 }
@@ -235,8 +238,9 @@
   display: flex;
   flex-direction: column;
   height: calc(100vh - 100px);
-  align-items: flex-start;
+  align-items: center;
   overflow: hidden;
+  padding: 0 20px;
 }
 
 .chat-messages-area .assistant-typing{
@@ -392,5 +396,18 @@
 }
 
 .stb-lp {
-  margin-left: -90vw;
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  z-index: 1001;
+  padding: 8px;
+  border-radius: 20%;
+  transition: all 0.2s ease;
+  font-size: 1.1em;
+  position: inherit;
+  left: 0;
+  transition: left 0.3s ease;
+  margin-top: -70vh;
+  margin-right: -90vw;
 }

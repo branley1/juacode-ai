@@ -6,6 +6,12 @@ function ChatMessage({ role, content, isLatestMessage, chatMessagesRef, index })
   const [displayText, setDisplayText] = useState('');
   const [charIndex, setCharIndex] = useState(0);
 
+  // Reset the typing animation whenever a new message content arrives
+  useEffect(() => {
+    setDisplayText('');
+    setCharIndex(0);
+  }, [content]);
+
   useEffect(() => {
     if (role !== 'assistant' || !isLatestMessage) {
       setDisplayText(content);
@@ -16,7 +22,7 @@ function ChatMessage({ role, content, isLatestMessage, chatMessagesRef, index })
       const typingTimer = setTimeout(() => {
         setDisplayText(content.slice(0, charIndex + 1));
         setCharIndex(charIndex + 1);
-      }, 2.5);
+      }, 5);
       return () => clearTimeout(typingTimer);
     } else {
       // Scroll to the bottom once typing is complete

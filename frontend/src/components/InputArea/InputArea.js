@@ -1,17 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import SendIcon from '../../assets/send-black.svg';
 import './InputArea.css';
 
 function InputArea({ setMessages, messages, onFirstMessageSent, isLandingPage, chatMessagesRef, simulateResponse }) {
   const [input, setInput] = useState('');
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
-
-  useEffect(() => {
-    if (isLandingPage) {
-      setHasSentFirstMessage(false); // Reset hasSentFirstMessage when isLandingPage is true
-      console.log("InputArea.js: useEffect - isLandingPage changed to true, resetting hasSentFirstMessage to false"); // Optional log for clarity
-    }
-  }, [isLandingPage]);
 
   const handleSend = () => {
     if (input.trim()) {
