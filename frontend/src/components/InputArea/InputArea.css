@@ -86,3 +86,20 @@ textarea:focus {
   height: 60%;
   vertical-align: middle;
 }
+
+.model-toggle-button {
+  position: absolute;
+  bottom: 5px;
+  left: 10px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #555);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.model-toggle-button:hover {
+  color: var(--color-text-primary, #333);
+}

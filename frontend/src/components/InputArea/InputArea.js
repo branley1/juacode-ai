@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faToggleOn, faToggleOff } from '@fortawesome/free-solid-svg-icons';
 import SendIcon from '../../assets/send-black.svg';
 import './InputArea.css';
 
-function InputArea({ setMessages, messages, onFirstMessageSent, isLandingPage, chatMessagesRef, simulateResponse }) {
+function InputArea({ setMessages, messages, onFirstMessageSent, isLandingPage, chatMessagesRef, simulateResponse, modelVariant, setModelVariant }) {
   const [input, setInput] = useState('');
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
 
@@ -46,6 +48,14 @@ function InputArea({ setMessages, messages, onFirstMessageSent, isLandingPage, c
           aria-label="Chat input"
           aria-multiline="true"
         />
+        <button
+          type="button"
+          className="model-toggle-button"
+          onClick={() => setModelVariant(prev => prev === "normal" ? "reasoner" : "normal")}
+        >
+          <FontAwesomeIcon icon={modelVariant === "normal" ? faToggleOff : faToggleOn} style={{ marginRight: '0.5rem' }} />
+          <span>{ modelVariant === "normal" ? "Regular" : "Reasoning" }</span>
+        </button>
         <button
           onClick={handleSend}
           className="send-button"

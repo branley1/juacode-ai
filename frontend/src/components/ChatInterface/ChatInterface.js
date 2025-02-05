@@ -7,19 +7,70 @@ import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPen, faBars, faPlus, faShare } from '@fortawesome/free-solid-svg-icons';
 
+// Generate a unique string for the chat id.
+const generateUniqueChatId = () => {
+  return `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+};
+
+// Safely retrieve the unique id from a chat object.
+const getChatId = (chat) => chat.chat_id || chat.id;
+
+// Extract the creation timestamp from the id (assumes the id is in the "timestamp-random" format).
+const extractTimestamp = (chat) => {
+  const id = getChatId(chat);
+  
+  if (typeof id === 'number') {
+    return id;
+  } else if (typeof id === 'string') {
+    // If the id follows the "timestamp-random" format, extract the timestamp.
+    if (id.includes('-')) {
+      const parts = id.split('-');
+      const timestamp = parseInt(parts[0], 10);
+      if (!isNaN(timestamp)) {
+        return timestamp;
+      }
+    }
+    // Fallback for legacy IDs: try to parse the entire id as a number.
+    const fallbackTimestamp = parseInt(id, 10);
+    if (!isNaN(fallbackTimestamp)) {
+      return fallbackTimestamp;
+    }
+  }
+  
+  return 0;
+};
 function ChatInterface() {
   const [messages, setMessages] = useState([]);
   const [chatStarted, setChatStarted] = useState(false);
   const [chatTitle, setChatTitle] = useState('Test chat');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentChatId, setCurrentChatId] = useState(Date.now());
+  const [currentChatId, setCurrentChatId] = useState(generateUniqueChatId());
   const chatMessagesRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [modelVariant, setModelVariant] = useState("normal");
 
   const [chatHistory, setChatHistory] = useState(() => { // Initialize chatHistory from localStorage
     const storedHistory = localStorage.getItem('juaCodeChatHistory');
-    return storedHistory ? JSON.parse(storedHistory) : [];
+    if (storedHistory) {
+      try {
+        let parsedHistory = JSON.parse(storedHistory);
+        // Ensure every chat object has a chat_id property.
+        parsedHistory = parsedHistory.map(chat => {
+          if (!chat.chat_id && chat.id) {
+            return { ...chat, chat_id: chat.id }; // convert previous id property
+          } else if (!chat.chat_id) {
+            return { ...chat, chat_id: generateUniqueChatId() }; // generate a new id if missing
+          }
+          return chat;
+        });
+        return parsedHistory;
+      } catch (err) {
+        console.error("Error parsing chat history from localStorage:", err);
+        return [];
+      }
+    }
+    return [];
   });
 
   const toggleSidebar = () => {
@@ -47,12 +98,6 @@ function ChatInterface() {
       .catch(err => console.error('Error copying link:', err));
   };
 
-  /*const handleFirstMessageSent = () => {
-    console.log("ChatInterface.js: handleFirstMessageSent - Function called!");
-    setChatStarted(true);
-    // setMessages(prev => [...prev]);
-  };*/
-
   const handleTitleChange = (event) => {
     setChatTitle(event.target.value);
   };
@@ -75,19 +120,23 @@ function ChatInterface() {
   const handleNewChat = () => {
     console.log('\n------handleNewChat called -------');
 
-    if (messages.length > 0) { // Save current chat if there are messages
-      const newChatRecord = { id: currentChatId, title: chatTitle, messages };
-      setChatHistory(prevHistory => [...prevHistory, newChatRecord]);
+    if (messages.length > 0) {
+      const newChatRecord = { chat_id: currentChatId, title: chatTitle, messages };
+      setChatHistory(prevHistory => {
+        // Remove any existing entry with the same chat id (using safe accessor)
+        const filtered = prevHistory.filter(chat => getChatId(chat) !== currentChatId);
+        return [...filtered, newChatRecord];
+      });
       saveChatHistoryToBackend(newChatRecord);
     }
-  
-    // Determine a fresh title, 'New Chat' as base and add count if name already exists
+
+    // Determine a fresh title, using "New Chat" as the base; add a count if one already exists.
     let baseTitle = 'New Chat';
     const count = chatHistory.filter(chat => chat.title.startsWith(baseTitle)).length;
     const newTitle = count > 0 ? `${baseTitle} ${count + 1}` : baseTitle;
 
-    // Start a new chat
-    const newChatId = Date.now();
+    // Generate a new unique chat id
+    const newChatId = generateUniqueChatId();
     setCurrentChatId(newChatId);
     setMessages([]);
     setChatTitle(newTitle);
@@ -96,13 +145,6 @@ function ChatInterface() {
     console.log('New chat started with ID:', newChatId, 'and title:', newTitle);
     console.log('------handleNewChat finished -------\n');
   };
-
-  /*/ Update a chat’s title in sidebar
-  const handleRenameChat = (chatId, newTitle) => {
-    setChatHistory(prevHistory =>
-      prevHistory.map(chat => (chat.id === chatId ? { ...chat, title: newTitle } : chat))
-    );
-  };*/
 
   useEffect(() => {
     console.log("ChatInterface.js: useEffect - Saving chatHistory to localStorage:", chatHistory);
@@ -113,9 +155,10 @@ function ChatInterface() {
     console.log('handleChatSelect called with chat:', selectedChat);
     setChatTitle(selectedChat.title);
     setMessages(selectedChat.messages);
-    setCurrentChatId(selectedChat.id);
+    setCurrentChatId(getChatId(selectedChat));
     setChatStarted(true);
     setIsSidebarOpen(false);
+    setIsTyping(false);
   };
 
   useEffect(() => {
@@ -144,95 +187,76 @@ function ChatInterface() {
     return () => window.removeEventListener('keydown', handleKeyNavigation);
   }, [messages]);
 
-  // Simulate typing effect properly
-  const simulateResponse = (input) => {
-      setIsTyping(true);
-      const response = `You said: ${input}`;
-      setTimeout(() => {
-          setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-          setIsTyping(false);
-      }, 100);
-    };
-   /* 
+  // Simulate typing effect with proper backend integration
   const simulateResponse = async (input) => {
     setIsTyping(true);
     try {
-      // Example API call: adjust the URL and payload for deepseek-r1 or OpenAI API as needed
+      const conversationHistory = [...messages, { role: 'user', content: input }];
+
+      let requestBody = {
+        prompt: input,
+        messages: conversationHistory,
+        model_variant: modelVariant
+      };
+
+      console.log('Sending request to:', '/api/generate');
+      console.log('Request body:', requestBody);
+
+      // Explicitly set the Content-Type header
       const res = await fetch('/api/generate', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ prompt: input })
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
       });
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      
+      if (!res.ok) {
+        console.error('Response status:', res.status);
+        console.error('Response status text:', res.statusText);
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
       const data = await res.json();
-      // Assume the API returns { response: "..." }
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+
+      if (modelVariant === "reasoner") {
+        // When using the reasoning model, show both the chain-of-thought and the final answer.
+        setMessages(prev => [
+          ...prev,
+          { role: 'assistant', content: `Reasoning: ${data.reasoning}\n\nAnswer: ${data.content}` }
+        ]);
+      } else if (modelVariant === "json") {
+        // For JSON output mode: format the JSON output for readability.
+        const formattedJson = JSON.stringify(data, null, 2);
+        setMessages(prev => [
+          ...prev,
+          { role: 'assistant', content: formattedJson }
+        ]);
+      } else {
+        // Normal mode.
+        setMessages(prev => [
+          ...prev,
+          { role: 'assistant', content: data.response }
+        ]);
+      }
     } catch (error) {
       console.error('Error fetching response:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, an error occurred.' }]);
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: 'Sorry, an error occurred.' }
+      ]);
     } finally {
       setIsTyping(false);
     }
-  };*/
-
-  /*const handleTitleSave = () => {
-    setIsEditingTitle(false);
-    localStorage.setItem('juaCodeChatTitle', chatTitle);
-    
-    fetch('/api/chats/' + currentChatId, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: chatTitle })
-    })
-    .then(response => {
-      if (!response.ok) {
-        console.error('Error saving chat title to backend:', response.statusText);
-      }
-    })
-    .catch(error => console.error('Error saving chat title to backend:', error));*/
-
-    // ----- Placeholder for Backend Saving -----
-    // if (chatId) { // Assuming you have a chatId if it's an existing chat
-    //   // Send a request to your backend to update chat title for chatId
-    //   fetch('/api/chats/' + chatId, {
-    //     method: 'PUT', // or 'PATCH'
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ title: chatTitle })
-    //   })
-    //   .then(response => {
-    //     if (!response.ok) {
-    //       console.error('Error saving chat title to backend:', response.statusText);
-    //     }
-    //   })
-    //   .catch(error => console.error('Error saving chat title to backend:', error));
-    // }
-
-  /* Delete all chats
-  const handleDeleteAllChats = () => {
-    console.log("handleDeleteAllChats called");
-    setChatHistory([]);
-    localStorage.removeItem('juaCodeChatHistory');
-    setMessages([]);
-    setChatTitle('New Chat');
-    setChatStarted(false);
-    setCurrentChatId(Date.now());
   };
-
-  // Delete a single chat
-  const handleDeleteChat = (chatIdToDelete) => {
-    console.log("handleDeleteChat called for chatId:", chatIdToDelete);
-    setChatHistory(prevHistory => {
-      const updatedHistory = prevHistory.filter(chat => chat.id !== chatIdToDelete);
-      return updatedHistory;
-    });
-  };*/
 
   return (
     <div className="chat-container">
       <Sidebar
       isSidebarOpen={isSidebarOpen}
       toggleSidebar={toggleSidebar}
-      chatHistory={[...chatHistory].sort((a, b) => b.id - a.id)} // sort descending
+      chatHistory={[...chatHistory].sort((a, b) => extractTimestamp(b) - extractTimestamp(a))} // sort descending
       onChatSelect={handleChatSelect}
       onDeleteAllChats={() => {
         setChatHistory([]);
@@ -240,15 +264,26 @@ function ChatInterface() {
         setMessages([]);
         setChatTitle('New Chat');
         setChatStarted(false);
-        setCurrentChatId(Date.now());
+        setCurrentChatId(null);
       }}
       onDeleteChat={(chatId) => {
-        setChatHistory(prevHistory => prevHistory.filter(chat => chat.id !== chatId));
+        setChatHistory(prevHistory => prevHistory.filter(chat => getChatId(chat) !== chatId));
+        if (currentChatId === chatId) {
+          setChatStarted(false);
+          setMessages([]);
+          setChatTitle('');
+        }
       }}
       onRenameChat={(chatId, newTitle) => {
         setChatHistory(prevHistory =>
-          prevHistory.map(chat => (chat.id === chatId ? { ...chat, title: newTitle } : chat))
+          prevHistory.map(chat => (getChatId(chat) === chatId ? { ...chat, title: newTitle } : chat))
         );
+        // Also update the backend with the new title
+        fetch(`/api/chats/${chatId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: newTitle })
+        }).catch(error => console.error('Error updating chat title in backend:', error));
       }}
       />
       {isSidebarOpen && (
@@ -277,6 +312,8 @@ function ChatInterface() {
                 isLandingPage={true}
                 chatMessagesRef={chatMessagesRef}
                 simulateResponse={simulateResponse}
+                modelVariant={modelVariant}
+                setModelVariant={setModelVariant}
               />
             </div>
           ) : ( // Chat Messages View
@@ -343,6 +380,8 @@ function ChatInterface() {
                 isLandingPage={false}
                 chatMessagesRef={chatMessagesRef}
                 simulateResponse={simulateResponse}
+                modelVariant={modelVariant}
+                setModelVariant={setModelVariant}
               />
             </div>
           )}

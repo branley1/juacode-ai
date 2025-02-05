@@ -16,7 +16,6 @@
   line-height: 1.2;
   box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
-
 .chat-message.assistant {
   background-color: var(--color-background-message-assistant);
   color: var(--color-text-message-assistant);

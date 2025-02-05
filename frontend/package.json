@@ -46,5 +46,9 @@
   },
   "resolutions": {
     "styled-components": "^5"
-  }
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "proxy": "http://localhost:8000"
 }

@@ -1,0 +1,61 @@
+/* frontend/src/components/Login/Login.css */
+.login {
+  max-width: 400px;
+  margin: 2rem auto;
+  padding: 2rem;
+  border: 1px solid var(--color-border-chat-container, #ddd);
+  border-radius: 8px;
+  background-color: var(--color-background-chat-container, #fff);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.login h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: var(--color-text-primary, #333);
+}
+
+.login form {
+  display: flex;
+  flex-direction: column;
+}
+
+.login form div {
+  margin-bottom: 1rem;
+}
+
+.login form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: var(--color-text-secondary, #555);
+}
+
+.login form input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.login form button {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--color-button-send-background, #007bff);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.login form button:hover {
+  background-color: var(--color-button-send-hover, #0056b3);
+}
+
+.login p {
+  text-align: center;
+  margin-top: 1rem;
+  color: var(--color-text-secondary, #555);
+} 

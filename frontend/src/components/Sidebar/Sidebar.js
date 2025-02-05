@@ -4,8 +4,27 @@ import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserCircle, faTrash, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 
+// Safely retrieve the chat id from the chat object.
+const getChatId = (chat) => chat.chat_id || chat.id || "";
+
+
 function Sidebar({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDeleteAllChats, onDeleteChat, onRenameChat }) {
   const [showAccountDetails, setShowAccountDetails] = useState(false);
+  const [editingChatId, setEditingChatId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [openMenuChatId, setOpenMenuChatId] = useState(null);
+
+  const handleRenameInitiate = (chat, e) => {
+    e.stopPropagation();
+    setEditingChatId(getChatId(chat));
+    setEditingTitle(chat.title);
+  };
+
+  const handleRenameSave = (chatId) => {
+    onRenameChat(chatId, editingTitle);
+    setEditingChatId(null);
+    setEditingTitle("");
+  };
 
   return (
     <React.Fragment>
@@ -26,49 +45,84 @@ function Sidebar({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDe
               <FontAwesomeIcon icon={faTrash} />
             </button>
           </div>
-            <ul className='chat-history-list'>
+          <ul className='chat-history-list'>
             {chatHistory.map(chat => (
-              <li key={chat.id} className="chat-history-item">
-                <div className="chat-history-item-content" onClick={() => onChatSelect(chat)}>
-                  {chat.title}
-                </div>
-                <div className="chat-item-options">
-                  <FontAwesomeIcon
-                    icon={faEllipsisV}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Simple prompt-based options (replace with a proper dropdown in production)
-                      const action = window.prompt('Enter "r" to rename or "d" to delete this chat:');
-                      if (action === 'r') {
-                        const newTitle = window.prompt('Enter new chat title:', chat.title);
-                        if (newTitle) onRenameChat(chat.id, newTitle);
-                      } else if (action === 'd') {
-                        if (window.confirm('Are you sure you want to delete this chat?')) onDeleteChat(chat.id);
-                      }
-                    }}
+              <li key={getChatId(chat)}
+                className="chat-history-item"
+                onClick={() => { onChatSelect(chat); setOpenMenuChatId(null); }}
+                onContextMenu={(e) => { e.preventDefault(); setOpenMenuChatId(getChatId(chat)); }}
+              >
+                {editingChatId === getChatId(chat) ? (
+                  <input
+                    type="text"
+                    value={editingTitle}
+                    onChange={(e) => setEditingTitle(e.target.value)}
+                    onBlur={() => handleRenameSave(getChatId(chat))}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleRenameSave(getChatId(chat)); }}
+                    autoFocus
+                    className="chat-rename-input"
                   />
-                </div>
+                ) : (
+                  <div className="chat-item-content">
+                    {chat.title}
+                  </div>
+                )}
+                <span className="menu-container">
+                  <button 
+                    className="menu-button"
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      setOpenMenuChatId(prev => prev === getChatId(chat) ? null : getChatId(chat)); 
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faEllipsisV} />
+                  </button>
+                  {openMenuChatId === getChatId(chat) && (
+                    <div className="chat-item-menu">
+                      <button 
+                        className="menu-item"
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          handleRenameInitiate(chat, e); 
+                          setOpenMenuChatId(null); 
+                        }}
+                      >
+                        Rename
+                      </button>
+                      <button 
+                        className="menu-item"
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          onDeleteChat(getChatId(chat)); 
+                          setOpenMenuChatId(null); 
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </span>
               </li>
             ))}
-        </ul>
-      </div>
-      <div className="sidebar-account">
-        <div
-          className="account-preview"
-          onClick={() => setShowAccountDetails(prev => !prev)}
-          style={{ cursor: 'pointer' }}
-        >
-          <FontAwesomeIcon icon={faUserCircle} />
-          <div className="account-summary">
-            <span className="account-name">Guest User</span>
-          </div>
+          </ul>
         </div>
-        {showAccountDetails && (
-          <div className="account-full-details">
-            <p>Email: guest@example.com</p>
+        <div className="sidebar-account">
+          <div
+            className="account-preview"
+            onClick={() => setShowAccountDetails(prev => !prev)}
+            style={{ cursor: 'pointer' }}
+          >
+            <FontAwesomeIcon icon={faUserCircle} />
+            <div className="account-summary">
+              <span className="account-name">Guest User</span>
+            </div>
           </div>
-        )}
-      </div>
+          {showAccountDetails && (
+            <div className="account-full-details">
+              <p>Email: guest@example.com</p>
+            </div>
+          )}
+        </div>
       </div>
     </React.Fragment>
   );
