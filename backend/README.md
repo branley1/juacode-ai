@@ -37,8 +37,8 @@ The application uses:
 1. **Clone the Repository:**
 
    ```bash
-   git clone <repository_url>
-   cd <repository_directory>/backend
+   git clone https://github.com/branley1/juacode-ai.git
+   cd juacode-ai/backend
    ```
 
 2. **Create and Activate a Virtual Environment:**
