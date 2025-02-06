@@ -39,6 +39,7 @@ const extractTimestamp = (chat) => {
   
   return 0;
 };
+
 function ChatInterface() {
   const [messages, setMessages] = useState([]);
   const [chatStarted, setChatStarted] = useState(false);
@@ -117,6 +118,19 @@ function ChatInterface() {
     }).catch(error => console.error('Error saving chat title to backend:', error));
   };
 
+  useEffect(() => {
+    if (!isEditingTitle && chatTitle && currentChatId) {
+      const timeoutId = setTimeout(() => {
+        fetch('/api/chats/' + currentChatId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: chatTitle })
+        }).catch(error => console.error('Error auto-saving chat title to backend:', error));
+      }, 500); // 500ms debounce delay
+      return () => clearTimeout(timeoutId);
+    }
+  }, [chatTitle, isEditingTitle, currentChatId]);
+
   const handleNewChat = () => {
     console.log('\n------handleNewChat called -------');
 
@@ -190,61 +204,81 @@ function ChatInterface() {
   // Simulate typing effect with proper backend integration
   const simulateResponse = async (input) => {
     setIsTyping(true);
-    try {
-      const conversationHistory = [...messages, { role: 'user', content: input }];
 
-      let requestBody = {
+    try {
+      // Create conversation history – supports multi-turn conversation
+      const conversationHistory = [...messages, { role: 'user', content: input }];
+      const requestBody = {
         prompt: input,
         messages: conversationHistory,
-        model_variant: modelVariant
+        model_variant: modelVariant,
       };
 
       console.log('Sending request to:', '/api/generate');
       console.log('Request body:', requestBody);
 
-      // Explicitly set the Content-Type header
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       });
-      
+
       if (!res.ok) {
         console.error('Response status:', res.status);
         console.error('Response status text:', res.statusText);
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
-      const data = await res.json();
 
-      if (modelVariant === "reasoner") {
-        // When using the reasoning model, show both the chain-of-thought and the final answer.
-        setMessages(prev => [
-          ...prev,
-          { role: 'assistant', content: `Reasoning: ${data.reasoning}\n\nAnswer: ${data.content}` }
-        ]);
-      } else if (modelVariant === "json") {
-        // For JSON output mode: format the JSON output for readability.
-        const formattedJson = JSON.stringify(data, null, 2);
-        setMessages(prev => [
-          ...prev,
-          { role: 'assistant', content: formattedJson }
-        ]);
-      } else {
-        // Normal mode.
-        setMessages(prev => [
-          ...prev,
-          { role: 'assistant', content: data.response }
-        ]);
+      // Prepare an assistant message in state that will be updated as chunks stream in.
+      let assistantMessage = { role: 'assistant', content: '' };
+      setMessages(prev => [...prev, assistantMessage]);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let done = false;
+      let finalContent = '';
+
+      while (!done) {
+        const { value, done: doneReading } = await reader.read();
+        done = doneReading;
+        const chunk = decoder.decode(value);
+        finalContent += chunk;
+        // Capture the current content to avoid unsafe closure issues.
+        const contentSoFar = finalContent;
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1] = { ...assistantMessage, content: contentSoFar };
+          return newMessages;
+        });
       }
+
+      // After streaming is done, try to parse JSON so we extract the "response" field.
+      try {
+        const parsedData = JSON.parse(finalContent);
+        finalContent = parsedData.response || finalContent;
+        if (parsedData.usage) {
+          console.log("Cache hit tokens:", parsedData.usage.prompt_cache_hit_tokens);
+          console.log("Cache miss tokens:", parsedData.usage.prompt_cache_miss_tokens);
+        }
+      } catch (err) {
+        console.error("Could not parse JSON:", err);
+      }
+
+      // Final update with the parsed & formatted content.
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages[newMessages.length - 1] = { ...assistantMessage, content: finalContent };
+        return newMessages;
+      });
+
     } catch (error) {
-      console.error('Error fetching response:', error);
+      console.error("Error fetching response:", error);
       setMessages(prev => [
         ...prev,
-        { role: 'assistant', content: 'Sorry, an error occurred.' }
+        { role: 'assistant', content: "Sorry, I couldn't generate a response." }
       ]);
     } finally {
       setIsTyping(false);
@@ -314,6 +348,7 @@ function ChatInterface() {
                 simulateResponse={simulateResponse}
                 modelVariant={modelVariant}
                 setModelVariant={setModelVariant}
+                isTyping={isTyping}
               />
             </div>
           ) : ( // Chat Messages View
@@ -382,6 +417,7 @@ function ChatInterface() {
                 simulateResponse={simulateResponse}
                 modelVariant={modelVariant}
                 setModelVariant={setModelVariant}
+                isTyping={isTyping}
               />
             </div>
           )}

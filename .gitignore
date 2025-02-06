@@ -14,3 +14,5 @@ __pycache__/
 run.sh
 test.db
 .praison/
+node_modules
+yarn.lock

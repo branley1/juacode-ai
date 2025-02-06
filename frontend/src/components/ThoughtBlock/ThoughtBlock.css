@@ -1,0 +1,31 @@
+.thought-block {
+  margin-bottom: 10px;
+  border-left: 4px solid #ccc;
+  padding-left: 10px;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+}
+
+.thought-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9em;
+  color: var(--color-text-secondary, #555);
+  margin-bottom: 5px;
+}
+
+.thought-toggle {
+  transition: transform 0.3s ease;
+}
+
+.thought-toggle.open {
+  transform: rotate(180deg);
+}
+
+.thought-content {
+  font-size: 0.85em;
+  color: var(--color-text-secondary, #555);
+  padding: 5px 0;
+}

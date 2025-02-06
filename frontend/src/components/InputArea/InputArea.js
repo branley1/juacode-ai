@@ -4,29 +4,29 @@ import { faToggleOn, faToggleOff } from '@fortawesome/free-solid-svg-icons';
 import SendIcon from '../../assets/send-black.svg';
 import './InputArea.css';
 
-function InputArea({ setMessages, messages, onFirstMessageSent, isLandingPage, chatMessagesRef, simulateResponse, modelVariant, setModelVariant }) {
+function InputArea({ setMessages, messages, onFirstMessageSent, isLandingPage, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping }) {
   const [input, setInput] = useState('');
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
 
   const handleSend = () => {
-    if (input.trim()) {
-      setMessages([...messages, { role: 'user', content: input }]);
-      if (!hasSentFirstMessage && onFirstMessageSent) {
-        console.log("InputArea.js: handleSend - Calling onFirstMessageSent()");
-        onFirstMessageSent();
-        setHasSentFirstMessage(true);
-      }
-      // Simulate assistant's response
-      simulateResponse(input);
-      setInput('');
+    if (!input.trim() || isTyping) return;
 
-      // Scroll to the bottom after sending the message
-      setTimeout(() => {
-        if (chatMessagesRef.current) {
-          chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
-        }
-      }, 0);
+    setMessages([...messages, { role: 'user', content: input }]);
+    if (!hasSentFirstMessage && onFirstMessageSent) {
+      console.log("InputArea.js: handleSend - Calling onFirstMessageSent()");
+      onFirstMessageSent();
+      setHasSentFirstMessage(true);
     }
+    // Simulate assistant's response
+    simulateResponse(input);
+    setInput('');
+
+    // Scroll to the bottom after sending the message
+    setTimeout(() => {
+      if (chatMessagesRef.current) {
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      }
+    }, 0);
   };
 
   return (
@@ -58,6 +58,7 @@ function InputArea({ setMessages, messages, onFirstMessageSent, isLandingPage, c
         </button>
         <button
           onClick={handleSend}
+          disabled={isTyping}
           className="send-button"
         >
           <img src={SendIcon} alt="Send" className="send-icon-img" />

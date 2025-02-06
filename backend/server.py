@@ -10,7 +10,7 @@ Endpoints:
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables from the .env file
 load_dotenv()
 
 import traceback
@@ -44,7 +44,7 @@ Base = declarative_base()
 class Chat(Base):
     __tablename__ = "chats"
     # We use the client's chat_id (generated from Date.now()) as primary key
-    chat_id = Column(BigInteger, primary_key=True, index=True)
+    chat_id = Column(String, primary_key=True, index=True)
     title = Column(String, nullable=False)
     messages = Column(JSON, nullable=False)  # Stores messages as a JSON object (PostgreSQL JSON/JSONB)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -62,7 +62,7 @@ class User(Base):
 
 # Pydantic Schemas 
 class ChatCreate(BaseModel):
-    chat_id: int
+    chat_id: str
     title: str
     messages: List[Dict[str, Any]]
 
@@ -111,7 +111,10 @@ def generate_chat_response(prompt: str, model: str = "deepseek-chat") -> Dict[st
     """
     Uses the DeepSeek Chat API to generate a response.
     """
+    import os
     import openai
+    from fastapi import HTTPException  
+    
     # Set API key and base URL from environment variables
     openai.api_key = os.getenv("DEEPSEEK_API_KEY")
     openai.api_base = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
@@ -121,18 +124,39 @@ def generate_chat_response(prompt: str, model: str = "deepseek-chat") -> Dict[st
         {"role": "user", "content": prompt}
     ]
     
-    response = openai.ChatCompletion.create(
-        model=model,
-        messages=messages,
-        max_tokens=4096,
-        temperature=0.7,
-        stream=False,
-        frequency_penalty=0,
-        presence_penalty=0,
-        top_p=1
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=messages,
+            max_tokens=4096,
+            temperature=0.7,
+            stream=False,
+            frequency_penalty=0,
+            presence_penalty=0,
+            top_p=1
+        )
+    except Exception as e:
+        # Log error details then raise an HTTPException so the error can be gracefully handled
+        print("Error calling OpenAI API:", str(e))
+        raise HTTPException(status_code=500, detail="Failed to call OpenAI API")
     
-    return {"response": response.choices[0].message.content}
+    # Validate the response structure before accessing message content
+    if not response or "choices" not in response or not response.choices:
+        print("Invalid response structure from OpenAI API:", response)
+        raise HTTPException(status_code=500, detail="OpenAI API returned an invalid response")
+    
+    # Access the response content safely
+    try:
+        message_content = response.choices[0].message.content
+    except Exception as e:
+        print("Error accessing message content:", str(e))
+        raise HTTPException(status_code=500, detail="Failed to parse OpenAI API response")
+    
+    if not message_content:
+        print("Empty message content received from OpenAI API")
+        raise HTTPException(status_code=500, detail="OpenAI API returned an empty response")
+    
+    return {"response": message_content}
 
 def generate_reasoning_response(prompt: str) -> Dict[str, str]:
     """
@@ -211,7 +235,7 @@ async def create_chat(chat: ChatCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error saving chat.")
 
 @app.put("/api/chats/{chat_id}")
-async def update_chat_title(chat_id: int, chat_update: ChatUpdate, db: Session = Depends(get_db)):
+async def update_chat_title(chat_id: str, chat_update: ChatUpdate, db: Session = Depends(get_db)):
     """
     Endpoint to update a chat title.
     Looks up the chat by chat_id and updates the title.
