@@ -26,7 +26,7 @@ This is the frontend for JuaCode AI Coding Assitant. The app is built with React
 1. **Clone the Repository**
 
    ```bash
-   git clone <repository_url>
+   git clone https://github.com/branley1/juacode-ai.git
    cd frontend
    ```
 
