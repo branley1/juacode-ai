@@ -1,6 +1,7 @@
 // app/api/chats/[chatId]/route.ts
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
+import type { Chat } from '@/lib/types'
 
 export async function PUT(request: Request, { params }: { params: { chatId: string } }) {
   try {
@@ -9,7 +10,7 @@ export async function PUT(request: Request, { params }: { params: { chatId: stri
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
     const { data, error } = await supabase
-      .from('chats')
+      .from<Chat>('chats')
       .update({ title })
       .eq('chat_id', params.chatId);
     if (error) throw error;

@@ -2,6 +2,7 @@
 // app/api/generate/route.ts
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { ChatCompletionMessageParam } from "openai/resources/chat";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -12,7 +13,7 @@ async function generateChatResponse(prompt: string, model: string = 'deepseek-ch
   const messages = [
     { role: 'system', content: 'You are a helpful assistant' },
     { role: 'user', content: prompt },
-  ];
+  ] as ChatCompletionMessageParam[];
 
   try {
     const response = await openai.chat.completions.create({
