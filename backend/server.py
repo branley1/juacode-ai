@@ -319,6 +319,9 @@ class Settings(BaseSettings):
     
     # LLM Provider
     LLM_PROVIDER: str = Field("deepseek-chat", description="LLM provider selection")
+
+    # Gemini
+    GEMINI_API_KEY: str = Field(..., description="Gemini API key")
     
     # JWT
     JWT_SECRET_KEY: str = Field(..., description="JWT secret key")
