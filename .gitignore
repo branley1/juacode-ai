@@ -16,3 +16,8 @@ test.db
 .praison/
 node_modules
 yarn.lock
+*.idx
+*.vscode
+jua/
+venv/
+package-lock.json
