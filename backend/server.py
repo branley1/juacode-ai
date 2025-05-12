@@ -34,6 +34,10 @@ from sqlalchemy.types import JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
+# Model SDK imports
+from openai import OpenAI
+import google.generativeai
+
 # PostgresSQL Setup 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
 engine = create_engine(DATABASE_URL)
@@ -43,14 +47,12 @@ Base = declarative_base()
 # Models
 class Chat(Base):
     __tablename__ = "chats"
-    # We use the client's chat_id (generated from Date.now()) as primary key
     chat_id = Column(String, primary_key=True, index=True)
     title = Column(String, nullable=False)
-    messages = Column(JSON, nullable=False)  # Stores messages as a JSON object (PostgreSQL JSON/JSONB)
+    messages = Column(JSON, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
-# New: User Model 
 class User(Base):
     __tablename__ = "users"
     id = Column(BigInteger, primary_key=True, index=True)
@@ -69,10 +71,9 @@ class ChatCreate(BaseModel):
 class ChatUpdate(BaseModel):
     title: str
 
-# New: Pydantic Schemas for Users 
 class UserCreate(BaseModel):
     username: str
-    email: EmailStr    # Validates email format automatically
+    email: EmailStr
     password: str
 
     @field_validator("password")
@@ -87,14 +88,12 @@ class UserCreate(BaseModel):
             raise ValueError("Password must include at least one special character")
         return value
 
-# New: Schema for user login
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
 # Dependency
 def get_db():
-    """Provides a database session to endpoints."""
     db = SessionLocal()
     try:
         yield db
@@ -109,54 +108,138 @@ def get_db():
 
 def generate_chat_response(prompt: str, model: str = "deepseek-chat") -> Dict[str, str]:
     """
-    Uses the DeepSeek Chat API to generate a response.
+    Uses the configured LLM API (DeepSeek, OpenAI, Gemini) to generate a response.
+    The 'model' parameter determines which model/API configuration to use.
     """
-    import os
-    import openai
-    from fastapi import HTTPException  
+    api_key = None
+    base_url = None
+    effective_model = model # Default to deepseek-chat
     
-    # Set API key and base URL from environment variables
-    openai.api_key = os.getenv("DEEPSEEK_API_KEY")
-    openai.api_base = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    model_variant = model.lower()
+
+    print(f"Generating response using model variant: {model_variant}")
+
+    # 1. Determine provider and settings based on model_variant
+    if model_variant.startswith("deepseek"):
+        api_key = settings.DEEPSEEK_API_KEY
+        base_url = settings.DEEPSEEK_BASE_URL.rstrip('/') + "/v1" # Ensure it ends with /v1 for some APIs
+        effective_model = model_variant # e.g., "deepseek-chat", "deepseek-coder"
+        print(f"Using DeepSeek: model={effective_model}, base_url={base_url}")
     
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant"},
-        {"role": "user", "content": prompt}
-    ]
+    elif model_variant.startswith("openai-") or model_variant.startswith("gpt-") or model_variant.startswith("o3-") or model_variant.startswith("o1-") or model_variant.startswith("o4-"):
+        api_key = settings.OPENAI_API_KEY
+        base_url = None # Use OpenAI's default client
+        if model_variant == "openai-chat":
+            effective_model = settings.OPENAI_MODEL
+        else:
+            effective_model = model_variant # e.g., "gpt-3.5-turbo", "o3-mini-2025-01-31"
+        print(f"Using OpenAI: model={effective_model}")
+
+    elif model_variant.startswith("gemini"):
+        print(f"Using Gemini: model={model_variant}")
+        try:
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            gemini_model_instance = genai.GenerativeModel(model_variant)
+            gemini_response = gemini_model_instance.generate_content(prompt)
+
+            if not gemini_response.candidates:
+                try: # Check if it was blocked for safety or other reasons
+                    block_reason = gemini_response.prompt_feedback.block_reason
+                    block_message = f"Content blocked by Gemini due to: {block_reason}."
+                    if gemini_response.prompt_feedback.safety_ratings:
+                         block_message += f" Safety ratings: {gemini_response.prompt_feedback.safety_ratings}"
+                    print(block_message)
+                    raise HTTPException(status_code=400, detail=block_message)
+                except (AttributeError, IndexError): # If no clear block reason/candidates
+                    print(f"Gemini API returned no candidates for model {model_variant}. Response: {gemini_response}")
+                    raise HTTPException(status_code=500, detail="Gemini API returned no response or content.")
+                
+            # Assuming there's at least one candidate and it has content parts
+            if not gemini_response.candidates[0].content.parts:
+                print(f"Gemini API returned no content parts for model {model_variant}. Candidate: {gemini_response.candidates[0]}")
+                raise HTTPException(status_code=500, detail="Gemini API returned no content parts.")
+
+            message_content = "".join(part.text for part in gemini_response.candidates[0].content.parts if hasattr(part, 'text'))
+            
+            if not message_content.strip():
+                print(f"Empty message content received from Gemini API for model {model_variant}")
+                # Handle cases where parts exist but are empty or not text.
+                raise HTTPException(status_code=500, detail="Gemini API returned an empty response.")
+
+            return {"response": message_content}
+
+        except ImportError:
+            print("FATAL: google-generativeai library not installed for Gemini.")
+            raise HTTPException(status_code=501, detail="Gemini API library not installed on server.")
+        except Exception as e:
+            print(f"Error with Gemini API for model {model_variant}: {str(e)}")
+            print(traceback.format_exc())
+            raise HTTPException(status_code=500, detail=f"Failed to call Gemini API: {str(e)}")
+
+    elif model_variant.startswith("ollama-"):
+        api_key = "ollama"
+        base_url = settings.OLLAMA_BASE_URL.rstrip('/') + "/v1"
+        effective_model = model_variant.split("ollama-", 1)[1]
+        print(f"Using Ollama: model={effective_model}, base_url={base_url}")
     
-    try:
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=messages,
-            max_tokens=4096,
-            temperature=0.7,
-            stream=False,
-            frequency_penalty=0,
-            presence_penalty=0,
-            top_p=1
-        )
-    except Exception as e:
-        # Log error details then raise an HTTPException so the error can be gracefully handled
-        print("Error calling OpenAI API:", str(e))
-        raise HTTPException(status_code=500, detail="Failed to call OpenAI API")
+    else:
+        # Fallback if model_variant doesn't match known prefixes
+        print(f"Warning: Unrecognized model_variant '{model_variant}'. Check configuration or frontend request.")
+        raise HTTPException(status_code=400, detail=f"Unsupported or unrecognized model_variant: {model_variant}")
+
+    if not api_key and not model_variant.startswith("ollama-"):
+        print(f"API key not configured for model variant {model_variant}")
+        raise HTTPException(status_code=500, detail=f"API key configuration error for model variant {model_variant}.")
+
+    if not model_variant.startswith("gemini"): # Skip if Gemini handled it
+        if not api_key and not model_variant.startswith("ollama-"):
+            print(f"API key not configured for model variant {model_variant}")
+            raise HTTPException(status_code=500, detail=f"API key configuration error for {model_variant}.")
+
+        try:
+            if base_url:
+                client = OpenAI(api_key=api_key, base_url=base_url)
+            else:
+                client = OpenAI(api_key=api_key)
+
+            messages = [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
+            
+            print(f"Attempting API call to OpenAI-compatible model: '{effective_model}'")
+            completion = client.chat.completions.create(
+                model=effective_model,
+                messages=messages,
+                max_tokens=settings.OPENAI_MAX_TOKENS,
+                temperature=settings.OPENAI_TEMPERATURE,
+                stream=False
+            )
+        except Exception as e:
+            print(f"Error calling LLM API for {model_variant} (model: {effective_model}): {str(e)}")
+            print(traceback.format_exc())
+            raise HTTPException(status_code=500, detail=f"Failed to call LLM API for {model_variant}: {str(e)}")
+
+        if not completion or not completion.choices:
+            print(f"Invalid response from {model_variant} API: {completion}")
+            raise HTTPException(status_code=500, detail="LLM API returned invalid response structure.")
+        try:
+            message_content = completion.choices[0].message.content
+        except AttributeError:
+             print(f"Error accessing message content. Response: {completion.choices[0]}")
+             raise HTTPException(status_code=500, detail="Failed to parse LLM API response content structure.")
+        except Exception as e:
+            print(f"Error parsing content from {model_variant}: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to parse LLM API response content.")
+
+        if message_content is None:
+            print(f"Empty (None) content from {model_variant} API.")
+            raise HTTPException(status_code=500, detail="LLM API returned no message content.")
+        
+        return {"response": message_content}
     
-    # Validate the response structure before accessing message content
-    if not response or "choices" not in response or not response.choices:
-        print("Invalid response structure from OpenAI API:", response)
-        raise HTTPException(status_code=500, detail="OpenAI API returned an invalid response")
-    
-    # Access the response content safely
-    try:
-        message_content = response.choices[0].message.content
-    except Exception as e:
-        print("Error accessing message content:", str(e))
-        raise HTTPException(status_code=500, detail="Failed to parse OpenAI API response")
-    
-    if not message_content:
-        print("Empty message content received from OpenAI API")
-        raise HTTPException(status_code=500, detail="OpenAI API returned an empty response")
-    
-    return {"response": message_content}
+    raise HTTPException(status_code=500, detail="Internal server error in chat generation logic.")
+
 
 def generate_reasoning_response(prompt: str) -> Dict[str, str]:
     """
@@ -176,7 +259,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or specify your frontend origin(s)
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -193,26 +276,35 @@ async def generate_response(payload: Dict[str, Any]):
     if not prompt:
         raise HTTPException(status_code=400, detail="Prompt is required.")
     
+    model_variant_from_payload = payload.get("model_variant", settings.LLM_PROVIDER)
+
+    actual_model_to_use = model_variant_from_payload
+    if model_variant_from_payload == "reasoner":
+        # Map "reasoner" to "deepseek-reasoner" for now
+        actual_model_to_use = "deepseek-reasoner"
+        print(f"Info: Frontend requested 'reasoner', mapping to '{actual_model_to_use}'.")
+    elif model_variant_from_payload == "normal":
+        # Map "normal" to your default LLM provider or a specific model
+        actual_model_to_use = settings.LLM_PROVIDER
+        print(f"Info: Frontend requested 'normal', mapping to '{actual_model_to_use}'.")
+
     try:
-        print("Debug - Received prompt:", prompt)
-        model_variant = payload.get("model_variant", "normal")
-        
-        if model_variant == "reasoner":
-            result = await run_in_threadpool(generate_reasoning_response, prompt)
-        else:
-            result = await run_in_threadpool(generate_chat_response, prompt)
+        print(f"Debug - Received prompt: '{prompt}', using actual model: '{actual_model_to_use}' for API call.")
+
+        result = await run_in_threadpool(generate_chat_response, prompt, actual_model_to_use)
             
         if not result:
-            raise HTTPException(status_code=500, detail="Failed to generate response")
-            
+            raise HTTPException(status_code=500, detail="Failed to generate response (empty result).")
         return result
             
-    except Exception as e:
-        print("Error generating response:", e)
+    except Exception as httpe:
+        raise httpe
+    except Exception as e: # Catch any other unexpected errors
+        print(f"Unexpected error in /api/generate endpoint: {e}")
         print(traceback.format_exc())
         raise HTTPException(
             status_code=500, 
-            detail=f"Error generating response: {str(e)}"
+            detail=f"Unexpected error in processing your request: {str(e)}"
         )
 
 @app.post("/api/chats")
@@ -298,7 +390,10 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000) 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file='.env')
+    model_config = SettingsConfigDict(
+        env_file='.env',
+        extra='ignore'
+        )
     
     # Database
     DATABASE_URL: str = Field(..., description="Database connection URL")
@@ -340,7 +435,12 @@ class Settings(BaseSettings):
         return validation_results
 
 # Initialize settings
-settings = Settings()
+try:
+    settings = Settings()
+except Exception as e:
+    print(f"FATAL: Error initializing settings. Check .env file and Settings model: {e}")
+    print(traceback.format_exc())
+    raise RuntimeError(f"Failed to initialize application settings: {e}")
 
 # Validate environment on startup
 def validate_environment():
