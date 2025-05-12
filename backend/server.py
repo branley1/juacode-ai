@@ -15,7 +15,7 @@ load_dotenv()
 
 import traceback
 import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
@@ -69,7 +69,8 @@ class ChatCreate(BaseModel):
     messages: List[Dict[str, Any]]
 
 class ChatUpdate(BaseModel):
-    title: str
+    title: Optional[str] = Field(None)
+    messages: Optional[List[Dict[str, Any]]] = Field(None)
 
 class UserCreate(BaseModel):
     username: str
@@ -106,92 +107,51 @@ def get_db():
 # except ImportError:
 #     raise ImportError("Please install praisonaiagents to use the agent functionality.")
 
-def generate_chat_response(prompt: str, model: str = "deepseek-chat") -> Dict[str, str]:
+def generate_chat_response(chat_history: str, model: str = "gemini-2.5-pro-preview-05-06") -> Dict[str, str]:
     """
     Uses the configured LLM API (DeepSeek, OpenAI, Gemini) to generate a response.
     The 'model' parameter determines which model/API configuration to use.
     """
     api_key = None
     base_url = None
-    effective_model = model # Default to deepseek-chat
-    
+    effective_model = model # Default to gemini-2.5-pro-preview-05-06
     model_variant = model.lower()
+    print(f"Generating response using model: {model} (variant for logic: {model_variant}) with {len(chat_history)} history messages.")
 
-    print(f"Generating response using model variant: {model_variant}")
+    # Prepare messages for API call, ensuring system prompt if necessary
+    api_messages = []
+    if not chat_history or chat_history[0].get("role") != "system":
+        api_messages.append({"role": "system", "content": "You are a helpful assistant."})
+    api_messages.extend(chat_history)
 
-    # 1. Determine provider and settings based on model_variant
-    if model_variant.startswith("deepseek"):
-        api_key = settings.DEEPSEEK_API_KEY
-        base_url = settings.DEEPSEEK_BASE_URL.rstrip('/') + "/v1" # Ensure it ends with /v1 for some APIs
-        effective_model = model_variant # e.g., "deepseek-chat", "deepseek-coder"
-        print(f"Using DeepSeek: model={effective_model}, base_url={base_url}")
-    
-    elif model_variant.startswith("openai-") or model_variant.startswith("gpt-") or model_variant.startswith("o3-") or model_variant.startswith("o1-") or model_variant.startswith("o4-"):
-        api_key = settings.OPENAI_API_KEY
-        base_url = None # Use OpenAI's default client
-        if model_variant == "openai-chat":
-            effective_model = settings.OPENAI_MODEL
-        else:
-            effective_model = model_variant # e.g., "gpt-3.5-turbo", "o3-mini-2025-01-31"
-        print(f"Using OpenAI: model={effective_model}")
+    # Determine provider and settings based on model_variant
+    if model_variant.startswith("deepseek") or \
+       model_variant.startswith("openai-") or \
+       model_variant.startswith("gpt-") or \
+       model_variant.startswith("o3-") or \
+       model_variant.startswith("o1-") or \
+       model_variant.startswith("o4-") or \
+       model_variant.startswith("ollama-"):
 
-    elif model_variant.startswith("gemini"):
-        print(f"Using Gemini: model={model_variant}")
-        try:
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            gemini_model_instance = genai.GenerativeModel(model_variant)
-            gemini_response = gemini_model_instance.generate_content(prompt)
+        if model_variant.startswith("deepseek"):
+            api_key = settings.DEEPSEEK_API_KEY
+            base_url = settings.DEEPSEEK_BASE_URL.rstrip('/') + "/v1"
+            effective_model = model_variant 
+            print(f"Using DeepSeek: model={effective_model}, base_url={base_url}")
+        elif model_variant.startswith("openai-") or model_variant.startswith("gpt-") or model_variant.startswith("o3-") or model_variant.startswith("o1-") or model_variant.startswith("o4-"):
+            api_key = settings.OPENAI_API_KEY
+            base_url = None 
+            if model_variant == "openai-chat": # Specific alias
+                effective_model = settings.OPENAI_MODEL
+            else:
+                effective_model = model_variant
+            print(f"Using OpenAI: model={effective_model}")
+        elif model_variant.startswith("ollama-"):
+            api_key = "ollama"
+            base_url = settings.OLLAMA_BASE_URL.rstrip('/') + "/v1"
+            effective_model = model_variant.split("ollama-", 1)[1]
+            print(f"Using Ollama: model={effective_model}, base_url={base_url}")
 
-            if not gemini_response.candidates:
-                try: # Check if it was blocked for safety or other reasons
-                    block_reason = gemini_response.prompt_feedback.block_reason
-                    block_message = f"Content blocked by Gemini due to: {block_reason}."
-                    if gemini_response.prompt_feedback.safety_ratings:
-                         block_message += f" Safety ratings: {gemini_response.prompt_feedback.safety_ratings}"
-                    print(block_message)
-                    raise HTTPException(status_code=400, detail=block_message)
-                except (AttributeError, IndexError): # If no clear block reason/candidates
-                    print(f"Gemini API returned no candidates for model {model_variant}. Response: {gemini_response}")
-                    raise HTTPException(status_code=500, detail="Gemini API returned no response or content.")
-                
-            # Assuming there's at least one candidate and it has content parts
-            if not gemini_response.candidates[0].content.parts:
-                print(f"Gemini API returned no content parts for model {model_variant}. Candidate: {gemini_response.candidates[0]}")
-                raise HTTPException(status_code=500, detail="Gemini API returned no content parts.")
-
-            message_content = "".join(part.text for part in gemini_response.candidates[0].content.parts if hasattr(part, 'text'))
-            
-            if not message_content.strip():
-                print(f"Empty message content received from Gemini API for model {model_variant}")
-                # Handle cases where parts exist but are empty or not text.
-                raise HTTPException(status_code=500, detail="Gemini API returned an empty response.")
-
-            return {"response": message_content}
-
-        except ImportError:
-            print("FATAL: google-generativeai library not installed for Gemini.")
-            raise HTTPException(status_code=501, detail="Gemini API library not installed on server.")
-        except Exception as e:
-            print(f"Error with Gemini API for model {model_variant}: {str(e)}")
-            print(traceback.format_exc())
-            raise HTTPException(status_code=500, detail=f"Failed to call Gemini API: {str(e)}")
-
-    elif model_variant.startswith("ollama-"):
-        api_key = "ollama"
-        base_url = settings.OLLAMA_BASE_URL.rstrip('/') + "/v1"
-        effective_model = model_variant.split("ollama-", 1)[1]
-        print(f"Using Ollama: model={effective_model}, base_url={base_url}")
-    
-    else:
-        # Fallback if model_variant doesn't match known prefixes
-        print(f"Warning: Unrecognized model_variant '{model_variant}'. Check configuration or frontend request.")
-        raise HTTPException(status_code=400, detail=f"Unsupported or unrecognized model_variant: {model_variant}")
-
-    if not api_key and not model_variant.startswith("ollama-"):
-        print(f"API key not configured for model variant {model_variant}")
-        raise HTTPException(status_code=500, detail=f"API key configuration error for model variant {model_variant}.")
-
-    if not model_variant.startswith("gemini"): # Skip if Gemini handled it
         if not api_key and not model_variant.startswith("ollama-"):
             print(f"API key not configured for model variant {model_variant}")
             raise HTTPException(status_code=500, detail=f"API key configuration error for {model_variant}.")
@@ -199,45 +159,113 @@ def generate_chat_response(prompt: str, model: str = "deepseek-chat") -> Dict[st
         try:
             if base_url:
                 client = OpenAI(api_key=api_key, base_url=base_url)
-            else:
+            else: # OpenAI default
                 client = OpenAI(api_key=api_key)
-
-            messages = [
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt}
-            ]
             
-            print(f"Attempting API call to OpenAI-compatible model: '{effective_model}'")
+            print(f"Attempting API call to model: '{effective_model}' with history.")
             completion = client.chat.completions.create(
                 model=effective_model,
-                messages=messages,
+                messages=api_messages, # Using full history
                 max_tokens=settings.OPENAI_MAX_TOKENS,
                 temperature=settings.OPENAI_TEMPERATURE,
-                stream=False
+                stream=False # Assuming False for now, frontend handles streaming from a non-streaming response
             )
-        except Exception as e:
-            print(f"Error calling LLM API for {model_variant} (model: {effective_model}): {str(e)}")
+            
+            if not completion or not completion.choices:
+                print(f"Invalid response from {model_variant} API (model: {effective_model}): {completion}")
+                raise HTTPException(status_code=500, detail=f"LLM API ({model_variant}) returned invalid response structure.")
+            try:
+                message_content = completion.choices[0].message.content
+            except AttributeError:
+                print(f"Error accessing message content from {model_variant} (model: {effective_model}). Response choice: {completion.choices[0]}")
+                raise HTTPException(status_code=500, detail=f"Failed to parse LLM API response content structure from {model_variant}.")
+            except Exception as e_parse:
+                print(f"Error parsing content from {model_variant} (model: {effective_model}): {str(e_parse)}")
+                print(traceback.format_exc())
+                raise HTTPException(status_code=500, detail=f"Failed to parse LLM API response content from {model_variant}.")
+            
+            if message_content is None:
+                print(f"Empty (None) content from {model_variant} API (model: {effective_model}).")
+                raise HTTPException(status_code=500, detail=f"LLM API ({model_variant}) returned no message content.")
+            
+            return {"response": message_content.strip()}
+
+        except Exception as e_api_call:
+            print(f"Error calling LLM API for {model_variant} (model: {effective_model}): {str(e_api_call)}")
             print(traceback.format_exc())
-            raise HTTPException(status_code=500, detail=f"Failed to call LLM API for {model_variant}: {str(e)}")
+            if isinstance(e_api_call, HTTPException):
+                 raise
+            raise HTTPException(status_code=500, detail=f"Failed to call LLM API for {model_variant}: {str(e_api_call)}")
 
-        if not completion or not completion.choices:
-            print(f"Invalid response from {model_variant} API: {completion}")
-            raise HTTPException(status_code=500, detail="LLM API returned invalid response structure.")
+    elif model_variant.startswith("gemini"):
+        print(f"Using Gemini: model={model} with {len(chat_history)} history messages.")
         try:
-            message_content = completion.choices[0].message.content
-        except AttributeError:
-             print(f"Error accessing message content. Response: {completion.choices[0]}")
-             raise HTTPException(status_code=500, detail="Failed to parse LLM API response content structure.")
-        except Exception as e:
-            print(f"Error parsing content from {model_variant}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to parse LLM API response content.")
+            google.generativeai.configure(api_key=settings.GEMINI_API_KEY)
+            system_instruction = None
+            processed_chat_history = []
+            if chat_history and chat_history[0].get("role") == "system":
+                system_instruction = chat_history[0].get("content")
+                processed_chat_history = chat_history[1:] # Remove system prompt from history
+            else:
+                processed_chat_history = chat_history
 
-        if message_content is None:
-            print(f"Empty (None) content from {model_variant} API.")
-            raise HTTPException(status_code=500, detail="LLM API returned no message content.")
-        
-        return {"response": message_content}
+            # Transform roles for Gemini: 'assistant' -> 'model'
+            gemini_history_for_api = []
+            for msg in processed_chat_history:
+                role = msg.get("role")
+                content = msg.get("content")
+                if role == "assistant":
+                    gemini_history_for_api.append({'role': 'model', 'parts': [{'text': content}]})
+                elif role == "user":
+                    gemini_history_for_api.append({'role': 'user', 'parts': [{'text': content}]})
+                # Other roles (like system if not handled by system_instruction) are ignored for now
+            
+            gemini_model_instance = google.generativeai.GenerativeModel(
+                model_name=model,
+                system_instruction=system_instruction
+            )
+            
+            gemini_response = gemini_model_instance.generate_content(gemini_history_for_api)
+
+            if not gemini_response.candidates:
+                try: 
+                    block_reason = gemini_response.prompt_feedback.block_reason
+                    block_message = f"Content blocked by Gemini ({model}) due to: {block_reason}."
+                    if gemini_response.prompt_feedback.safety_ratings:
+                         block_message += f" Safety ratings: {gemini_response.prompt_feedback.safety_ratings}"
+                    print(block_message)
+                    raise HTTPException(status_code=400, detail=block_message)
+                except (AttributeError, IndexError): 
+                    print(f"Gemini API ({model}) returned no candidates. Response: {gemini_response}")
+                    raise HTTPException(status_code=500, detail=f"Gemini API ({model}) returned no response or content.")
+            
+            # Assuming there's at least one candidate and it has content parts
+            if not gemini_response.candidates[0].content.parts:
+                print(f"Gemini API ({model}) returned no content parts. Candidate: {gemini_response.candidates[0]}")
+                raise HTTPException(status_code=500, detail=f"Gemini API ({model}) returned no content parts.")
+
+            message_content = "".join(part.text for part in gemini_response.candidates[0].content.parts if hasattr(part, 'text'))
+            
+            if not message_content.strip(): # Check if content is empty after stripping whitespace
+                print(f"Empty message content received from Gemini API ({model})")
+                raise HTTPException(status_code=500, detail=f"Gemini API ({model}) returned an empty response.")
+
+            return {"response": message_content.strip()}
+
+        except ImportError:
+            print(f"FATAL: google-generativeai library not installed. Needed for Gemini model: {model}.")
+            raise HTTPException(status_code=501, detail=f"Gemini API library not installed on server (model: {model}).")
+        except Exception as e_gemini:
+            print(f"Error with Gemini API for model {model}: {str(e_gemini)}")
+            print(traceback.format_exc())
+            if isinstance(e_gemini, HTTPException):
+                raise
+            raise HTTPException(status_code=500, detail=f"Failed to call Gemini API for model {model}: {str(e_gemini)}")
+    else:
+        print(f"Warning: Unrecognized model_variant '{model_variant}'. Check configuration or frontend request that led to this model name.")
+        raise HTTPException(status_code=400, detail=f"Unsupported or unrecognized model_variant: {model}")
     
+    # This line should ideally not be reached if all paths return or raise.
     raise HTTPException(status_code=500, detail="Internal server error in chat generation logic.")
 
 
@@ -272,9 +300,9 @@ async def generate_response(payload: Dict[str, Any]):
     Endpoint to generate a response.
     Expects JSON of form: {"prompt": "your question", "model_variant": "normal" or "reasoner"}
     """
-    prompt = payload.get("prompt")
-    if not prompt:
-        raise HTTPException(status_code=400, detail="Prompt is required.")
+    conversation_history = payload.get("messages") # Get full history for model context
+    if not conversation_history:
+        raise HTTPException(status_code=400, detail="Messages (conversation history) are required.")
     
     model_variant_from_payload = payload.get("model_variant", settings.LLM_PROVIDER)
 
@@ -284,14 +312,12 @@ async def generate_response(payload: Dict[str, Any]):
         actual_model_to_use = "deepseek-reasoner"
         print(f"Info: Frontend requested 'reasoner', mapping to '{actual_model_to_use}'.")
     elif model_variant_from_payload == "normal":
-        # Map "normal" to your default LLM provider or a specific model
         actual_model_to_use = settings.LLM_PROVIDER
         print(f"Info: Frontend requested 'normal', mapping to '{actual_model_to_use}'.")
 
     try:
-        print(f"Debug - Received prompt: '{prompt}', using actual model: '{actual_model_to_use}' for API call.")
-
-        result = await run_in_threadpool(generate_chat_response, prompt, actual_model_to_use)
+        print(f"Debug - Received conversation history with {len(conversation_history)} messages, using actual model: '{actual_model_to_use}' for API call.")
+        result = await run_in_threadpool(generate_chat_response, conversation_history, actual_model_to_use)
             
         if not result:
             raise HTTPException(status_code=500, detail="Failed to generate response (empty result).")
@@ -327,23 +353,40 @@ async def create_chat(chat: ChatCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error saving chat.")
 
 @app.put("/api/chats/{chat_id}")
-async def update_chat_title(chat_id: str, chat_update: ChatUpdate, db: Session = Depends(get_db)):
+async def update_chat(chat_id: str, chat_update: ChatUpdate, db: Session = Depends(get_db)):
     """
-    Endpoint to update a chat title.
-    Looks up the chat by chat_id and updates the title.
+    Endpoint to update a chat's title and/or messages.
+    If the chat doesn't exist, it returns 404.
     """
     try:
         db_chat = db.query(Chat).filter(Chat.chat_id == chat_id).first()
         if not db_chat:
             raise HTTPException(status_code=404, detail="Chat not found")
-        db_chat.title = chat_update.title
-        db.commit()
-        db.refresh(db_chat)
-        return {"message": "Chat title updated successfully", "chat": jsonable_encoder(db_chat)}
+
+        updated = False
+        if chat_update.title is not None: # Check if title is provided
+            db_chat.title = chat_update.title
+            updated = True
+        
+        if chat_update.messages is not None: # Check if messages are provided
+            db_chat.messages = jsonable_encoder(chat_update.messages) # Ensure messages are properly encoded if they are complex
+            updated = True
+
+        if updated:
+            db_chat.updated_at = datetime.datetime.utcnow() # Explicitly update timestamp
+            db.commit()
+            db.refresh(db_chat)
+            return {"message": "Chat updated successfully", "chat": jsonable_encoder(db_chat)}
+        else:
+            return {"message": "No changes provided to update", "chat": jsonable_encoder(db_chat)}
+
+    except HTTPException: # Re-raise HTTPExceptions
+        raise
     except Exception as e:
-        print("Error updating chat title:", e)
+        print(f"Error updating chat {chat_id}:", e)
         print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail="Error updating chat title.")
+        db.rollback() # Rollback in case of other errors during DB operations
+        raise HTTPException(status_code=500, detail=f"Error updating chat {chat_id}.")
 
 @app.post("/api/users/register")
 async def register_user(user: UserCreate, db: Session = Depends(get_db)):

@@ -18,11 +18,9 @@ const getChatId = (chat) => chat.chat_id || chat.id;
 // Extract the creation timestamp from the id (assumes the id is in the "timestamp-random" format).
 const extractTimestamp = (chat) => {
   const id = getChatId(chat);
-  
   if (typeof id === 'number') {
     return id;
   } else if (typeof id === 'string') {
-    // If the id follows the "timestamp-random" format, extract the timestamp.
     if (id.includes('-')) {
       const parts = id.split('-');
       const timestamp = parseInt(parts[0], 10);
@@ -30,38 +28,36 @@ const extractTimestamp = (chat) => {
         return timestamp;
       }
     }
-    // Fallback for legacy IDs: try to parse the entire id as a number.
     const fallbackTimestamp = parseInt(id, 10);
     if (!isNaN(fallbackTimestamp)) {
       return fallbackTimestamp;
     }
   }
-  
   return 0;
 };
 
 function ChatInterface() {
   const [messages, setMessages] = useState([]);
   const [chatStarted, setChatStarted] = useState(false);
-  const [chatTitle, setChatTitle] = useState('Test chat');
+  const [chatTitle, setChatTitle] = useState('New Chat');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentChatId, setCurrentChatId] = useState(generateUniqueChatId());
+  const [currentChatId, setCurrentChatId] = useState(() => generateUniqueChatId()); // Initialize with a new ID
   const chatMessagesRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
   const [modelVariant, setModelVariant] = useState("normal");
+  const [isChatPersisted, setIsChatPersisted] = useState(false);
 
-  const [chatHistory, setChatHistory] = useState(() => { // Initialize chatHistory from localStorage
+  const [chatHistory, setChatHistory] = useState(() => {
     const storedHistory = localStorage.getItem('juaCodeChatHistory');
     if (storedHistory) {
       try {
         let parsedHistory = JSON.parse(storedHistory);
-        // Ensure every chat object has a chat_id property.
         parsedHistory = parsedHistory.map(chat => {
           if (!chat.chat_id && chat.id) {
-            return { ...chat, chat_id: chat.id }; // convert previous id property
+            return { ...chat, chat_id: chat.id };
           } else if (!chat.chat_id) {
-            return { ...chat, chat_id: generateUniqueChatId() }; // generate a new id if missing
+            return { ...chat, chat_id: generateUniqueChatId() };
           }
           return chat;
         });
@@ -78,20 +74,6 @@ function ChatInterface() {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // Helper function to save chat history to the backend
-  const saveChatHistoryToBackend = async (chat) => {
-    try {
-      await fetch('/api/chats', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify(chat)
-      });
-    } catch (error) {
-      console.error('Error saving chat history to backend:', error);
-    }
-  };
-
-  // Share chat handler copies a link based on current chat id.
   const handleShareChat = () => {
     const shareLink = `${window.location.origin}/chat/${currentChatId}`;
     navigator.clipboard.writeText(shareLink)
@@ -107,76 +89,140 @@ function ChatInterface() {
     setIsEditingTitle(true);
   };
 
-  const handleTitleSave = () => {
+  const handleTitleSave = async () => {
     setIsEditingTitle(false);
-    localStorage.setItem('juaCodeChatTitle', chatTitle);
-    // Optionally, update the title on the backend:
-    fetch('/api/chats/' + currentChatId, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: chatTitle })
-    }).catch(error => console.error('Error saving chat title to backend:', error));
-  };
 
-  useEffect(() => {
-    if (!isEditingTitle && chatTitle && currentChatId) {
-      const timeoutId = setTimeout(() => {
-        fetch('/api/chats/' + currentChatId, {
+    // Only save to backend if the chat is persisted
+    if (isChatPersisted && currentChatId) {
+      try {
+        await fetch(`/api/chats/${currentChatId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: chatTitle })
-        }).catch(error => console.error('Error auto-saving chat title to backend:', error));
-      }, 500); // 500ms debounce delay
+        });
+        // Update chatHistory with the new title
+        setChatHistory(prevHistory =>
+          prevHistory.map(chat =>
+            getChatId(chat) === currentChatId ? { ...chat, title: chatTitle } : chat
+          )
+        );
+      } catch (error) {
+        console.error('Error saving chat title to backend:', error);
+      }
+    } else {
+      console.log("Title changed for a new (non-persisted) chat. Will be saved with first message.");
+    }
+  };
+  
+  useEffect(() => {
+    // Only auto-save if the chat is persisted, not editing, and has a title/ID
+    if (isChatPersisted && !isEditingTitle && chatTitle && currentChatId) {
+      const timeoutId = setTimeout(async () => {
+        try {
+          await fetch(`/api/chats/${currentChatId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: chatTitle })
+          });
+          // Update chatHistory with the new title
+           setChatHistory(prevHistory =>
+            prevHistory.map(chat =>
+              getChatId(chat) === currentChatId ? { ...chat, title: chatTitle } : chat
+            )
+          );
+        } catch (error) {
+          console.error('Error auto-saving chat title to backend:', error);
+        }
+      }, 1000); // 1-second debounce delay for auto-save
       return () => clearTimeout(timeoutId);
     }
-  }, [chatTitle, isEditingTitle, currentChatId]);
+  }, [chatTitle, isEditingTitle, currentChatId, isChatPersisted]);
 
-  const handleNewChat = () => {
-    console.log('\n------handleNewChat called -------');
+  const handleNewChat = async () => {
+    console.log('\n------handleNewChat called ------');
 
-    if (messages.length > 0) {
-      const newChatRecord = { chat_id: currentChatId, title: chatTitle, messages };
-      setChatHistory(prevHistory => {
-        // Remove any existing entry with the same chat id (using safe accessor)
-        const filtered = prevHistory.filter(chat => getChatId(chat) !== currentChatId);
-        return [...filtered, newChatRecord];
-      });
-      saveChatHistoryToBackend(newChatRecord);
+    // If there are messages in the current chat and it's persisted, save its final state (title and messages)
+    if (messages.length > 0 && currentChatId && isChatPersisted) {
+      const existingChatRecord = { chat_id: currentChatId, title: chatTitle, messages };
+      try {
+        await fetch(`/api/chats/${currentChatId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: chatTitle, messages: messages }), // Send title and messages
+        });
+        setChatHistory(prevHistory => {
+          const filtered = prevHistory.filter(chat => getChatId(chat) !== currentChatId);
+          return [...filtered, existingChatRecord];
+        });
+        console.log(`Updated existing chat ${currentChatId} on backend.`);
+      } catch (error) {
+        console.error(`Error updating existing chat ${currentChatId} on backend:`, error);
+      }
+    } else if (messages.length > 0 && currentChatId && !isChatPersisted) {
+        // This is a new chat that had some interaction but wasn't persisted via simulateResponse yet.
+        // Persist it now as the user is navigating away by creating a new chat.
+        const newChatToPersist = { chat_id: currentChatId, title: chatTitle, messages };
+        try {
+            await fetch('/api/chats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newChatToPersist),
+            });
+            setChatHistory(prevHistory => [...prevHistory, newChatToPersist]);
+            setIsChatPersisted(true); // Mark it as persisted
+            console.log(`Persisted new chat ${currentChatId} on backend before creating another new chat.`);
+        } catch (error) {
+            console.error(`Error persisting new chat ${currentChatId} before creating another new chat:`, error);
+        }
     }
 
-    // Determine a fresh title, using "New Chat" as the base; add a count if one already exists.
+
+    // Determine a fresh title for the truly new chat
     let baseTitle = 'New Chat';
-    const count = chatHistory.filter(chat => chat.title.startsWith(baseTitle)).length;
+    const count = chatHistory.filter(chat => chat.title && chat.title.startsWith(baseTitle)).length;
     const newTitle = count > 0 ? `${baseTitle} ${count + 1}` : baseTitle;
 
-    // Generate a new unique chat id
     const newChatId = generateUniqueChatId();
     setCurrentChatId(newChatId);
     setMessages([]);
     setChatTitle(newTitle);
-    setChatStarted(true);
+    setChatStarted(true); // Keep chat started for the new empty interface
+    setIsChatPersisted(false); // The new chat is not yet persisted
 
-    console.log('New chat started with ID:', newChatId, 'and title:', newTitle);
+    console.log('New empty chat initialized with ID:', newChatId, 'and title:', newTitle);
     console.log('------handleNewChat finished -------\n');
   };
 
   useEffect(() => {
-    console.log("ChatInterface.js: useEffect - Saving chatHistory to localStorage:", chatHistory);
-    localStorage.setItem('juaCodeChatHistory', JSON.stringify(chatHistory));
+    // This effect syncs chatHistory (local representation) to localStorage.
+    // Backend persistence is handled by specific actions like simulateResponse and handleNewChat.
+    if (chatHistory.length > 0 || localStorage.getItem('juaCodeChatHistory')) {
+        console.log("ChatInterface.js: useEffect - Saving chatHistory to localStorage:", chatHistory);
+        localStorage.setItem('juaCodeChatHistory', JSON.stringify(chatHistory));
+    }
   }, [chatHistory]);
 
+  // STEP 3: Modify handleChatSelect
   const handleChatSelect = (selectedChat) => {
     console.log('handleChatSelect called with chat:', selectedChat);
-    setChatTitle(selectedChat.title);
-    setMessages(selectedChat.messages);
-    setCurrentChatId(getChatId(selectedChat));
+    const chatId = getChatId(selectedChat);
+    if (!chatId) {
+        console.error("Selected chat has no ID!", selectedChat);
+        // Potentially create a new chat or show an error
+        handleNewChat(); 
+        return;
+    }
+    setChatTitle(selectedChat.title || "Chat"); // Fallback title
+    setMessages(selectedChat.messages || []);
+    setCurrentChatId(chatId);
     setChatStarted(true);
     setIsSidebarOpen(false);
     setIsTyping(false);
+    setIsChatPersisted(true); // Loaded chats are considered persisted
   };
 
   useEffect(() => {
-    if (!chatStarted) return; // Exit early if chat hasn't started
+    if (!chatStarted) return;
     if (!chatMessagesRef.current) {
       console.log('Chat messages container not found!');
       return;
@@ -188,98 +234,133 @@ function ChatInterface() {
 
   useEffect(() => {
     const handleKeyNavigation = (e) => {
-      if (e.key === 'ArrowUp' && messages.length > 0) { // Implement message history navigation
+      if (e.key === 'ArrowUp' && messages.length > 0) {
         e.preventDefault();
       }
-      
       if (e.ctrlKey && e.key === '/') {
         document.querySelector('.textarea')?.focus();
       }
     };
-  
     window.addEventListener('keydown', handleKeyNavigation);
     return () => window.removeEventListener('keydown', handleKeyNavigation);
   }, [messages]);
 
-  // Simulate typing effect with proper backend integration
+  // STEP 4: Modify simulateResponse
   const simulateResponse = async (input) => {
     setIsTyping(true);
+    const userMessage = { role: 'user', content: input };
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages); // Show user message immediately
+
+    // Reference for the final state of messages after assistant responds
+    let finalMessagesWithAssistantResponse = []; 
 
     try {
-      // Create conversation history – supports multi-turn conversation
-      const conversationHistory = [...messages, { role: 'user', content: input }];
       const requestBody = {
-        prompt: input,
-        messages: conversationHistory,
+        messages: updatedMessages, // Send the full history including the latest user message
         model_variant: modelVariant,
+        // No need to send 'prompt' separately if 'messages' contains the full history
       };
 
-      console.log('Sending request to:', '/api/generate');
-      console.log('Request body:', requestBody);
-
+      console.log('Sending request to /api/generate with body:', requestBody);
       const res = await fetch('/api/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(requestBody),
       });
 
       if (!res.ok) {
-        console.error('Response status:', res.status);
-        console.error('Response status text:', res.statusText);
+        console.error('Response status:', res.status, 'Text:', res.statusText);
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-
-      // Prepare an assistant message in state that will be updated as chunks stream in.
-      let assistantMessage = { role: 'assistant', content: '' };
-      setMessages(prev => [...prev, assistantMessage]);
-
+      
+      // Stream and display assistant's response
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let done = false;
-      let finalContent = '';
+      let assistantContent = '';
+      // Add a placeholder for the assistant's message for streaming
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
-        const chunk = decoder.decode(value);
-        finalContent += chunk;
-        // Capture the current content to avoid unsafe closure issues.
-        const contentSoFar = finalContent;
+        const chunk = decoder.decode(value, { stream: true }); // stream: true for proper multi-byte char handling
+        assistantContent += chunk;
         setMessages(prev => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1] = { ...assistantMessage, content: contentSoFar };
-          return newMessages;
+          const newMsgs = [...prev];
+          if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].role === 'assistant') {
+            newMsgs[newMsgs.length - 1].content = assistantContent;
+          }
+          return newMsgs;
         });
       }
-
-      // After streaming is done, try to parse JSON so we extract the "response" field.
+      
+      // Finalize assistant's message content (parsing if it was JSON with a 'response' field)
       try {
-        const parsedData = JSON.parse(finalContent);
-        finalContent = parsedData.response || finalContent;
-        if (parsedData.usage) {
-          console.log("Cache hit tokens:", parsedData.usage.prompt_cache_hit_tokens);
-          console.log("Cache miss tokens:", parsedData.usage.prompt_cache_miss_tokens);
+        const parsedData = JSON.parse(assistantContent);
+        if (parsedData && parsedData.response) {
+          assistantContent = parsedData.response;
         }
-      } catch (err) {
-        console.error("Could not parse JSON:", err);
+      } catch (e) {
+        // It wasn't JSON, or not the expected structure, use assistantContent as is
       }
 
-      // Final update with the parsed & formatted content.
-      setMessages(prev => {
-        const newMessages = [...prev];
-        newMessages[newMessages.length - 1] = { ...assistantMessage, content: finalContent };
-        return newMessages;
-      });
+      finalMessagesWithAssistantResponse = [...updatedMessages, { role: 'assistant', content: assistantContent.trim() }];
+      setMessages(finalMessagesWithAssistantResponse);
+
+      // --- Persistence Logic ---
+      if (!isChatPersisted && currentChatId) {
+        // This is the first exchange in a new chat, POST it to the backend
+        const newChatPayload = {
+          chat_id: currentChatId,
+          title: chatTitle, // Use current chatTitle (could be "New Chat X" or user-set for new chat)
+          messages: finalMessagesWithAssistantResponse,
+        };
+        console.log("Persisting new chat to backend:", newChatPayload);
+        try {
+          const postRes = await fetch('/api/chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newChatPayload),
+          });
+          if (!postRes.ok) throw new Error(`Backend POST error: ${postRes.status}`);
+          const postedChat = await postRes.json();
+          setChatHistory(prevHistory => [...prevHistory.filter(c => getChatId(c) !== currentChatId), postedChat.chat || newChatPayload]);
+          setIsChatPersisted(true); // Mark as persisted
+          console.log("New chat persisted to backend successfully.");
+        } catch (error) {
+          console.error("Error persisting new chat to backend:", error);
+          // Decide if you want to revert setMessages or notify user
+        }
+      } else if (isChatPersisted && currentChatId) {
+        // This is an existing, persisted chat. PUT the updated messages.
+        console.log(`Updating messages for persisted chat ${currentChatId} on backend.`);
+        try {
+          const putRes = await fetch(`/api/chats/${currentChatId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: finalMessagesWithAssistantResponse }), // Only send messages for update
+          });
+          if (!putRes.ok) throw new Error(`Backend PUT error: ${putRes.status}`);
+          // Update chatHistory
+          setChatHistory(prevHistory =>
+            prevHistory.map(chat =>
+              getChatId(chat) === currentChatId ? { ...chat, messages: finalMessagesWithAssistantResponse, title: chatTitle } : chat
+            )
+          );
+          console.log(`Messages for chat ${currentChatId} updated on backend.`);
+        } catch (error) {
+          console.error(`Error updating messages for chat ${currentChatId} on backend:`, error);
+        }
+      }
 
     } catch (error) {
-      console.error("Error fetching response:", error);
-      setMessages(prev => [
-        ...prev,
-        { role: 'assistant', content: "Sorry, I couldn't generate a response." }
-      ]);
+      console.error("Error fetching response from /api/generate or during persistence:", error);
+      // Revert to messages before adding the assistant's placeholder if streaming failed early
+      setMessages(prev => prev.filter(msg => msg.role !== 'assistant' || msg.content !== '')); 
+      // Add error message to UI
+      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't generate a response or save the chat." }]);
     } finally {
       setIsTyping(false);
     }
@@ -288,45 +369,63 @@ function ChatInterface() {
   return (
     <div className="chat-container">
       <Sidebar
-      isSidebarOpen={isSidebarOpen}
-      toggleSidebar={toggleSidebar}
-      chatHistory={[...chatHistory].sort((a, b) => extractTimestamp(b) - extractTimestamp(a))} // sort descending
-      onChatSelect={handleChatSelect}
-      onDeleteAllChats={() => {
-        setChatHistory([]);
-        localStorage.removeItem('juaCodeChatHistory');
-        setMessages([]);
-        setChatTitle('New Chat');
-        setChatStarted(false);
-        setCurrentChatId(null);
-      }}
-      onDeleteChat={(chatId) => {
-        setChatHistory(prevHistory => prevHistory.filter(chat => getChatId(chat) !== chatId));
-        if (currentChatId === chatId) {
-          setChatStarted(false);
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
+        chatHistory={[...chatHistory].sort((a, b) => extractTimestamp(b) - extractTimestamp(a))}
+        onChatSelect={handleChatSelect}
+        onDeleteAllChats={() => {
+          // Note: Backend deletion for all chats would be a separate API call
+          setChatHistory([]);
+          localStorage.removeItem('juaCodeChatHistory');
+          // Reset current chat view
+          setCurrentChatId(generateUniqueChatId());
           setMessages([]);
-          setChatTitle('');
-        }
-      }}
-      onRenameChat={(chatId, newTitle) => {
-        setChatHistory(prevHistory =>
-          prevHistory.map(chat => (getChatId(chat) === chatId ? { ...chat, title: newTitle } : chat))
-        );
-        // Also update the backend with the new title
-        fetch(`/api/chats/${chatId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: newTitle })
-        }).catch(error => console.error('Error updating chat title in backend:', error));
-      }}
+          setChatTitle('New Chat');
+          setChatStarted(false); // Go to landing page
+          setIsChatPersisted(false);
+        }}
+        onDeleteChat={async (chatIdToDelete) => {
+          // Backend call to delete the chat
+          try {
+            await fetch(`/api/chats/${chatIdToDelete}`, { method: 'DELETE' }); // Assuming DELETE endpoint exists
+            setChatHistory(prevHistory => prevHistory.filter(chat => getChatId(chat) !== chatIdToDelete));
+            if (currentChatId === chatIdToDelete) {
+              // If current chat is deleted, start a new one
+              handleNewChat(); // This will set up a new, non-persisted chat
+            }
+            console.log(`Chat ${chatIdToDelete} deleted from backend and locally.`);
+          } catch (error) {
+             console.error(`Error deleting chat ${chatIdToDelete} from backend:`, error);
+          }
+        }}
+        onRenameChat={async (chatIdToRename, newTitle) => {
+          // Backend call to update title
+          try {
+            await fetch(`/api/chats/${chatIdToRename}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: newTitle })
+            });
+            setChatHistory(prevHistory =>
+              prevHistory.map(chat => (getChatId(chat) === chatIdToRename ? { ...chat, title: newTitle } : chat))
+            );
+            if (currentChatId === chatIdToRename) {
+              setChatTitle(newTitle); // Update current view if it's the renamed chat
+            }
+             console.log(`Chat ${chatIdToRename} renamed on backend and locally.`);
+          } catch (error) {
+             console.error(`Error renaming chat ${chatIdToRename} on backend:`, error);
+          }
+        }}
       />
       {isSidebarOpen && (
         <div className="sidebar-overlay active" onClick={toggleSidebar}></div>
       )}
       <div className="parent-container">
         <div className={`chat-content-wrapper ${isSidebarOpen ? 'sidebar-open' : ''}`}>
-          {!chatStarted ? ( // Landing page
+          {!chatStarted ? (
             <div className="landing-page">
+              {/* ... landing page content ... */}
               <button className="stb-lp" onClick={toggleSidebar}>
                 <FontAwesomeIcon icon={faBars} />
               </button>
@@ -340,9 +439,15 @@ function ChatInterface() {
                 What can I help with?
               </div>
               <InputArea
-                setMessages={setMessages}
+                setMessages={setMessages} // Direct setMessages might be okay for landing page if not persisted
                 messages={messages}
-                onFirstMessageSent={() => setChatStarted(true)}
+                onFirstMessageSent={() => {
+                    setChatStarted(true);
+                    // Ensure currentChatId is fresh and isChatPersisted is false for the first "real" chat
+                    setCurrentChatId(generateUniqueChatId());
+                    setIsChatPersisted(false); 
+                    setChatTitle("New Chat"); // Default title for the first chat
+                }}
                 isLandingPage={true}
                 chatMessagesRef={chatMessagesRef}
                 simulateResponse={simulateResponse}
@@ -351,7 +456,7 @@ function ChatInterface() {
                 isTyping={isTyping}
               />
             </div>
-          ) : ( // Chat Messages View
+          ) : (
             <div className="chat-messages-area">
               <div className="chat-header">
                <div className="header-left-group">
@@ -364,13 +469,8 @@ function ChatInterface() {
                   className="chat-title-input"
                   value={chatTitle}
                   onChange={handleTitleChange}
-                  onBlur={handleTitleSave}
-                  onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                          handleTitleSave();
-                        }
-                      }
-                    }
+                  onBlur={handleTitleSave} // handleTitleSave will now check isChatPersisted
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleTitleSave(); }}
                   />
                 ) : (
                     <div className="chat-title-display">
@@ -382,14 +482,14 @@ function ChatInterface() {
                     )
                   }
                 </div>
-              </div>
-              <div className="header-right-group">
-                <button className="share-chat-button" onClick={handleShareChat}>
-                  <FontAwesomeIcon icon={faShare} />
-                </button>
-                <button className="new-chat-button" onClick={handleNewChat}>
-                  <FontAwesomeIcon icon={faPlus} />
-                </button>
+                 <div className="header-right-group">
+                    <button className="share-chat-button" onClick={handleShareChat} disabled={!isChatPersisted}>
+                        <FontAwesomeIcon icon={faShare} />
+                    </button>
+                    <button className="new-chat-button" onClick={handleNewChat}>
+                        <FontAwesomeIcon icon={faPlus} />
+                    </button>
+                </div>
               </div>
               <div className="chat-messages" ref={chatMessagesRef}>
                   {messages.map((message, index) => (
@@ -398,11 +498,10 @@ function ChatInterface() {
                       index={index}
                       role={message.role}
                       content={message.content}
-                      isLatestMessage={index === messages.length - 1}
+                      isLatestMessage={index === messages.length - 1 && !isTyping} // Only animate if not typing new response
                       chatMessagesRef={chatMessagesRef}
                     />
                   ))}
-                {/* Typing indicator */}
                 {isTyping && (
                   <div className="typing-indicator">
                     Assistant is typing...
@@ -410,8 +509,13 @@ function ChatInterface() {
                 )}
               </div>
               <InputArea
-                setMessages={setMessages}
-                messages={messages}
+                setMessages={setMessages} // This prop might be less relevant now if simulateResponse handles it
+                messages={messages} // Pass for context, e.g. for up-arrow history in InputArea
+                onFirstMessageSent={() => {
+                    // This might not be needed if simulateResponse handles the first message.
+                    // If kept, ensure it doesn't conflict with chat persistence logic.
+                    setChatStarted(true); // This is fine
+                }}
                 isLandingPage={false}
                 chatMessagesRef={chatMessagesRef}
                 simulateResponse={simulateResponse}
