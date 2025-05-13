@@ -66,6 +66,29 @@
   flex-direction: column;
   align-items: flex-start;
   overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+  }
+  &:hover::-webkit-scrollbar-thumb {
+    background: var(--color-text-secondary);
+  }
+
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+
+  &:hover {
+    scrollbar-color: var(--color-text-secondary) transparent;
+  }
+
+  -ms-overflow-style: none;
 }
 
 .chat-title-display {
@@ -79,7 +102,6 @@
   font-weight: bold;
   margin-right: 10px;
   text-align: left;
-  font-family: 'IBM Plex Mono', monospace;
   margin-top: 0;
   margin-bottom: 0;
 }
@@ -166,7 +188,7 @@
   cursor: pointer;
   padding: 5px;
   border-radius: 5px;
-  font-size: 1.3em;
+  font-size: 1em;
   opacity: 0.7;
   margin-bottom: 0;
 }
@@ -214,7 +236,7 @@
   justify-content: space-between;
   gap: 20px;
   padding: 12px 20px;
-  margin-right: auto;
+  width: 100%;
 }
 
 .share-chat-button,
@@ -258,8 +280,8 @@
   gap: 5px;
 }
 .chat-messages-area .assistant-typing .typing-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   background-color: #bbb;
   border-radius: 50%;
   animation: typing 1.2s infinite;

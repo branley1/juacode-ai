@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import JuaCodeIcon from '../../assets/jua-code-logo.png';
 import ThoughtBlock from '../ThoughtBlock/ThoughtBlock';
 import './ChatMessage.css';
@@ -28,56 +28,51 @@ function ChatMessage({ role, content, chatMessagesRef, index, streamingIndex }) 
   const [displayText, setDisplayText] = useState('');
   const [charIndex, setCharIndex] = useState(0);
   const [parsedContent, setParsedContent] = useState({ mainContent: '', thoughtContent: null });
+  const isInitialStreamForThisMessageRef = useRef(true);
 
   useEffect(() => {
-    // Each time the content updates (as tokens stream in), extract the thought block.
-    const parsed = extractThoughtAndMain(content);
-    setParsedContent(parsed);
-    // Reset animation state only if this message is the one actively streaming
+    const newParsed = extractThoughtAndMain(content);
+    setParsedContent(newParsed);
+
     if (role === 'assistant' && index === streamingIndex) {
-      setDisplayText('');
-      setCharIndex(0);
+      if (isInitialStreamForThisMessageRef.current) {
+        setDisplayText('');
+        setCharIndex(0);
+        isInitialStreamForThisMessageRef.current = false;
+      }
     } else {
-        // If not streaming this message, display full content immediately
-        setDisplayText(parsed.mainContent);
+      setDisplayText(newParsed.mainContent);
+      isInitialStreamForThisMessageRef.current = true;
     }
   }, [content, role, index, streamingIndex]);
 
   useEffect(() => {
-    // Condition changed: animate only if role is assistant AND this message index matches the streaming index
+    if (index !== streamingIndex && !isInitialStreamForThisMessageRef.current) {
+      isInitialStreamForThisMessageRef.current = true;
+    }
+  }, [index, streamingIndex]);
+
+  useEffect(() => {
     if (role !== 'assistant' || index !== streamingIndex) {
-      // If not the assistant message currently streaming, ensure full text is displayed
-      // (This might be redundant with the effect above, but ensures correctness)
-       if (displayText !== parsedContent.mainContent) {
-          setDisplayText(parsedContent.mainContent);
-       }
+      if (displayText !== parsedContent.mainContent) {
+        setDisplayText(parsedContent.mainContent);
+      }
       return;
     }
 
-    // Animation logic (only runs if index === streamingIndex)
     if (charIndex < parsedContent.mainContent.length) {
       const timer = setTimeout(() => {
         setDisplayText(parsedContent.mainContent.slice(0, charIndex + 1));
         setCharIndex(charIndex + 1);
       }, 5);
       return () => clearTimeout(timer);
-    } else {
-      if (chatMessagesRef.current) {
-        // Auto-scroll might be better handled in the parent ChatInterface after streamingIndex becomes null
-        // requestAnimationFrame(() => { 
-        //  chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
-        // });
-      }
     }
-  }, [role, parsedContent.mainContent, charIndex, index, streamingIndex, chatMessagesRef, displayText]); 
-
-  // Removed the useEffect for focusing based on isLatestMessage
-  // Focus management can be handled differently if needed.
+  }, [role, parsedContent.mainContent, charIndex, index, streamingIndex, displayText]);
 
   return (
     <div
       className={`chat-message ${role}`}
-      tabIndex={-1} // Changed from 0 to -1 as programmatic focus was removed
+      tabIndex={-1}
       role="article"
       aria-labelledby={`message-${index}-label`}
       id={`message-${index}`}
@@ -91,9 +86,11 @@ function ChatMessage({ role, content, chatMessagesRef, index, streamingIndex }) 
         )}
         <div className="message-content" id={`message-${index}-label`}>
           <ReactMarkdown>
-            {/* Condition changed: Use displayText for animation only if index matches streamingIndex */}
             {role === 'assistant' && index === streamingIndex ? displayText : parsedContent.mainContent}
           </ReactMarkdown>
+          {role === 'assistant' && index === streamingIndex && charIndex < parsedContent.mainContent.length && (
+            <span className="blinking-caret">▍</span>
+          )}
         </div>
       </div>
     </div>

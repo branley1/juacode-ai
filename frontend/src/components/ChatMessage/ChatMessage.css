@@ -48,12 +48,29 @@
 .message-area {
   display: flex;
   flex-direction: column;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .message-content {
   word-wrap: break-word;
   margin-top: 0;
   padding: 10px 10px;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.blinking-caret {
+  animation: blink 1s step-start 0s infinite;
+  margin-left: 1px;
+  font-weight: bold;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
 }
 
 .hide-scrollbar {

@@ -42,7 +42,7 @@ function ChatInterface() {
   const [chatTitle, setChatTitle] = useState('New Chat');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentChatId, setCurrentChatId] = useState(() => generateUniqueChatId()); // Initialize with a new ID
+  const [currentChatId, setCurrentChatId] = useState(() => generateUniqueChatId());
   const chatMessagesRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
   const [modelVariant, setModelVariant] = useState("normal");
@@ -141,28 +141,30 @@ function ChatInterface() {
 
   const handleNewChat = async () => {
     console.log('\n------handleNewChat called ------');
+    const outgoingChatId = currentChatId;
+    const outgoingMessages = messages;
+    const outgoingTitle = chatTitle;
+    const outgoingIsPersisted = isChatPersisted;
 
-    // If there are messages in the current chat and it's persisted, save its final state (title and messages)
-    if (messages.length > 0 && currentChatId && isChatPersisted) {
-      const existingChatRecord = { chat_id: currentChatId, title: chatTitle, messages };
-      try {
-        await fetch(`/api/chats/${currentChatId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: chatTitle, messages: messages }), // Send title and messages
-        });
-        setChatHistory(prevHistory => {
-          const filtered = prevHistory.filter(chat => getChatId(chat) !== currentChatId);
-          return [...filtered, existingChatRecord];
-        });
-        console.log(`Updated existing chat ${currentChatId} on backend.`);
-      } catch (error) {
-        console.error(`Error updating existing chat ${currentChatId} on backend:`, error);
-      }
-    } else if (messages.length > 0 && currentChatId && !isChatPersisted) {
-        // This is a new chat that had some interaction but wasn't persisted via simulateResponse yet.
-        // Persist it now as the user is navigating away by creating a new chat.
-        const newChatToPersist = { chat_id: currentChatId, title: chatTitle, messages };
+    if (outgoingMessages.length > 0 && outgoingChatId) {
+      if (outgoingIsPersisted) {
+        const existingChatRecord = { chat_id: outgoingChatId, title: outgoingTitle, messages: outgoingMessages };
+        try {
+          await fetch(`/api/chats/${outgoingChatId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: outgoingTitle, messages: outgoingMessages }),
+          });
+          setChatHistory(prevHistory => {
+            const filtered = prevHistory.filter(chat => getChatId(chat) !== outgoingChatId);
+            return [...filtered, existingChatRecord];
+          });
+          console.log(`Updated existing chat ${outgoingChatId} on backend.`);
+        } catch (error) {
+          console.error(`Error updating existing chat ${outgoingChatId} on backend:`, error);
+        }
+      } else {
+        const newChatToPersist = { chat_id: outgoingChatId, title: outgoingTitle, messages: outgoingMessages };
         try {
             await fetch('/api/chats', {
                 method: 'POST',
@@ -170,15 +172,13 @@ function ChatInterface() {
                 body: JSON.stringify(newChatToPersist),
             });
             setChatHistory(prevHistory => [...prevHistory, newChatToPersist]);
-            setIsChatPersisted(true); // Mark it as persisted
-            console.log(`Persisted new chat ${currentChatId} on backend before creating another new chat.`);
+            console.log(`Persisted new chat ${outgoingChatId} on backend before creating another new chat.`);
         } catch (error) {
-            console.error(`Error persisting new chat ${currentChatId} before creating another new chat:`, error);
+            console.error(`Error persisting new chat ${outgoingChatId} before creating another new chat:`, error);
         }
+      }
     }
 
-
-    // Determine a fresh title for the truly new chat
     let baseTitle = 'New Chat';
     const count = chatHistory.filter(chat => chat.title && chat.title.startsWith(baseTitle)).length;
     const newTitle = count > 0 ? `${baseTitle} ${count + 1}` : baseTitle;
@@ -187,8 +187,8 @@ function ChatInterface() {
     setCurrentChatId(newChatId);
     setMessages([]);
     setChatTitle(newTitle);
-    setChatStarted(true); // Keep chat started for the new empty interface
-    setIsChatPersisted(false); // The new chat is not yet persisted
+    setChatStarted(true);
+    setIsChatPersisted(false);
     setStreamingIndex(null);
 
     console.log('New empty chat initialized with ID:', newChatId, 'and title:', newTitle);
@@ -210,11 +210,16 @@ function ChatInterface() {
     const chatId = getChatId(selectedChat);
     if (!chatId) {
         console.error("Selected chat has no ID!", selectedChat);
-        // Potentially create a new chat or show an error
         handleNewChat(); 
         return;
     }
-    setChatTitle(selectedChat.title || "Chat"); // Fallback title
+
+    // Before switching, consider if the current chat (before selecting the new one)
+    // needs to be saved. `handleNewChat` does this, `simulateResponse` does this.
+    // If messages can change outside these flows, saving here would be needed.
+    // For now, assuming changes are captured by simulateResponse or handleNewChat.
+
+    setChatTitle(selectedChat.title || "Chat");
     setMessages(selectedChat.messages || []);
     setCurrentChatId(chatId);
     setChatStarted(true);
@@ -262,23 +267,27 @@ function ChatInterface() {
 
   // STEP 4: Modify simulateResponse
   const simulateResponse = async (input) => {
+    const localChatId = currentChatId;
+    const localIsChatPersisted = isChatPersisted;
+    const localChatTitle = chatTitle;
+    
     setIsTyping(true);
-    setStreamingIndex(null);
+    
     const userMessage = { role: 'user', content: input };
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages); // Show user message immediately
+    const messagesForAPI = [...messages, userMessage];
 
-    // Reference for the final state of messages after assistant responds
-    let finalMessagesWithAssistantResponse = []; 
+    setMessages(messagesForAPI);
+    
+    let finalMessagesWithAssistantResponse = messagesForAPI; 
+    let assistantMessagePlaceholderAdded = false; // Flag to track if placeholder is added
 
     try {
       const requestBody = {
-        messages: updatedMessages, // Send the full history including the latest user message
+        messages: messagesForAPI,
         model_variant: modelVariant,
-        // No need to send 'prompt' separately if 'messages' contains the full history
       };
 
-      console.log('Sending request to /api/generate with body:', requestBody);
+      console.log(`Sending request to /api/generate for chat ${localChatId} with body:`, requestBody);
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -290,126 +299,142 @@ function ChatInterface() {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
       
-      // Stream and display assistant's response
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let done = false;
-      let assistantContent = '';
-      // Add a placeholder for the assistant's message for streaming
-      const assistantMessageIndex = updatedMessages.length;
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-      setStreamingIndex(assistantMessageIndex);
+      let assistantContentAccumulator = ''; 
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
-        const chunk = decoder.decode(value, { stream: true }); // stream: true for proper multi-byte char handling
-        assistantContent += chunk;
-        setMessages(prev => {
-          const newMsgs = [...prev];
-          if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].role === 'assistant') {
-            newMsgs[newMsgs.length - 1].content += chunk;
-          }
-          return newMsgs;
-        });
+        const chunk = decoder.decode(value, { stream: true });
+        
+        if (!assistantMessagePlaceholderAdded && !done) {
+          setIsTyping(false);
+          setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+          setStreamingIndex(messagesForAPI.length);
+          assistantMessagePlaceholderAdded = true;
+        }
+        
+        assistantContentAccumulator += chunk;
+        const currentAccumulatedContentForThisIteration = assistantContentAccumulator;
+
+        if (currentChatId === localChatId && assistantMessagePlaceholderAdded) {
+          setMessages(prev => {
+            const newMsgs = [...prev];
+            if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].role === 'assistant') {
+              newMsgs[newMsgs.length - 1].content = currentAccumulatedContentForThisIteration;
+            }
+            return newMsgs;
+          });
+        }
       }
       
-      // Finalize assistant's message content (parsing if it was JSON with a 'response' field)
-      try {
-        const parsedData = JSON.parse(assistantContent);
-        if (parsedData && parsedData.response) {
-          assistantContent = parsedData.response;
-        }
-      } catch (e) {
-        // It wasn't JSON, or not the expected structure, use assistantContent as is
+      if (!assistantMessagePlaceholderAdded) {
+          setIsTyping(false);
+          setStreamingIndex(null);
       }
 
-      finalMessagesWithAssistantResponse = [...updatedMessages, { role: 'assistant', content: assistantContent.trim() }];
-      setMessages(finalMessagesWithAssistantResponse);
+      try {
+        const parsedData = JSON.parse(assistantContentAccumulator);
+        if (parsedData && parsedData.response) {
+          assistantContentAccumulator = parsedData.response;
+        }
+      } catch (e) { /* Not JSON or not expected structure, use as is */ }
 
-      // --- Persistence Logic ---
-      if (!isChatPersisted && currentChatId) {
-        // This is the first exchange in a new chat, POST it to the backend
+      // Construct the final messages array including the complete assistant response
+      finalMessagesWithAssistantResponse = [...messagesForAPI, { role: 'assistant', content: assistantContentAccumulator.trim() }];
+      
+      // Final update to messages state for this chat, if it's still active
+      if (currentChatId === localChatId) {
+        setMessages(finalMessagesWithAssistantResponse);
+        if (assistantMessagePlaceholderAdded) setStreamingIndex(null);
+      } else if (assistantMessagePlaceholderAdded) {
+        setStreamingIndex(null);
+      }
+
+      // Persistence Logic (using captured local variables)
+      if (!localIsChatPersisted && localChatId) {
         const newChatPayload = {
-          chat_id: currentChatId,
-          title: chatTitle, // Use current chatTitle (could be "New Chat X" or user-set for new chat)
+          chat_id: localChatId,
+          title: localChatTitle,
           messages: finalMessagesWithAssistantResponse,
         };
-        console.log("Persisting new chat to backend:", newChatPayload);
-        try {
-          const postRes = await fetch('/api/chats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newChatPayload),
-          });
-          if (!postRes.ok) throw new Error(`Backend POST error: ${postRes.status}`);
-          
-          const postedChatResponse = await postRes.json();
-          
-          let authoritativeChatData = newChatPayload; // Fallback
-          let authoritativeChatId = currentChatId;    // Fallback
+        console.log("Persisting new chat to backend (chatId, title, messages):", newChatPayload);
+        const postRes = await fetch('/api/chats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newChatPayload),
+        });
+        if (!postRes.ok) throw new Error(`Backend POST error: ${postRes.status}`);
+        
+        const postedChatResponse = await postRes.json();
+        let authoritativeChatData = newChatPayload;
+        let authoritativeChatId = localChatId;
 
-          if (postedChatResponse && postedChatResponse.chat) {
-            authoritativeChatData = postedChatResponse.chat;
-            const backendChatId = getChatId(postedChatResponse.chat); // getChatId handles chat.chat_id or chat.id
-            if (backendChatId) { // Ensure backendChatId is valid
-              authoritativeChatId = backendChatId;
-            }
-          }
+        if (postedChatResponse && postedChatResponse.chat) {
+          authoritativeChatData = postedChatResponse.chat;
+          const backendChatId = getChatId(postedChatResponse.chat);
+          if (backendChatId) authoritativeChatId = backendChatId;
+        }
 
-          // If the authoritative ID from backend is different from the one we sent, update currentChatId state
-          if (authoritativeChatId !== currentChatId) {
-            console.warn(`Chat ID updated: frontend sent ${currentChatId}, backend responded with/confirmed ${authoritativeChatId}. Updating currentChatId state.`);
-            setCurrentChatId(authoritativeChatId);
-          }
-
-          // Update chat history using the authoritative data and ID
-          setChatHistory(prevHistory => {
-            // Filter out based on old currentChatId AND new authoritativeChatId to prevent duplicates if ID changed
-            const filtered = prevHistory.filter(c => {
-              const id = getChatId(c);
-              return id !== currentChatId && id !== authoritativeChatId;
+        setChatHistory(prevHistory => {
+            const newHistory = prevHistory.filter(c => {
+                const id = getChatId(c);
+                return id !== localChatId && (authoritativeChatId ? id !== authoritativeChatId : true);
             });
-            return [...filtered, authoritativeChatData];
-          });
-          
-          setIsChatPersisted(true); // Mark as persisted (now associated with authoritativeChatId)
-          console.log(`New chat (ID: ${authoritativeChatId}) persisted to backend successfully.`);
-        } catch (error) {
-          console.error("Error persisting new chat to backend:", error);
-          // Decide if you want to revert setMessages or notify user
+            return [...newHistory, authoritativeChatData];
+        });
+        
+        if (currentChatId === localChatId) { // If this chat is still active
+            if (authoritativeChatId && authoritativeChatId !== localChatId) {
+                setCurrentChatId(authoritativeChatId);
+            }
+            setIsChatPersisted(true);
         }
-      } else if (isChatPersisted && currentChatId) {
-        // This is an existing, persisted chat. PUT the updated messages.
-        console.log(`Updating messages for persisted chat ${currentChatId} on backend.`);
-        try {
-          const putRes = await fetch(`/api/chats/${currentChatId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages: finalMessagesWithAssistantResponse }), // Only send messages for update
-          });
-          if (!putRes.ok) throw new Error(`Backend PUT error: ${putRes.status}`);
-          // Update chatHistory
-          setChatHistory(prevHistory =>
-            prevHistory.map(chat =>
-              getChatId(chat) === currentChatId ? { ...chat, messages: finalMessagesWithAssistantResponse, title: chatTitle } : chat
-            )
-          );
-          console.log(`Messages for chat ${currentChatId} updated on backend.`);
-        } catch (error) {
-          console.error(`Error updating messages for chat ${currentChatId} on backend:`, error);
-        }
+        console.log(`New chat (ID: ${authoritativeChatId}) persisted to backend successfully.`);
+
+      } else if (localIsChatPersisted && localChatId) {
+        console.log(`Updating messages for persisted chat ${localChatId} on backend.`);
+        await fetch(`/api/chats/${localChatId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: finalMessagesWithAssistantResponse, title: localChatTitle }), // Send title too
+        });
+        setChatHistory(prevHistory =>
+          prevHistory.map(chat =>
+            getChatId(chat) === localChatId ? { ...chat, messages: finalMessagesWithAssistantResponse, title: localChatTitle } : chat
+          )
+        );
+        console.log(`Messages for chat ${localChatId} updated on backend.`);
       }
 
     } catch (error) {
-      console.error("Error fetching response from /api/generate or during persistence:", error);
-      // Revert to messages before adding the assistant's placeholder if streaming failed early
-      setMessages(prev => prev.filter(msg => msg.role !== 'assistant' || msg.content !== '')); 
-      // Add error message to UI
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't generate a response or save the chat." }]);
+      let userFacingErrorMessage;
+      let detailedLogMessage;
+
+      if (error.message && error.message.startsWith('Backend POST error')) {
+        detailedLogMessage = `Error saving new chat ${localChatId}:`;
+        userFacingErrorMessage = "Sorry, I couldn't save the chat.";
+      } else {
+        userFacingErrorMessage = "Sorry, I couldn't generate a response.";
+        detailedLogMessage = `Error fetching AI response for chat ${localChatId}:`;
+        if (localIsChatPersisted) {
+          detailedLogMessage = `Error fetching AI response or updating existing chat ${localChatId}:`;
+        } else {
+          detailedLogMessage = `Error fetching AI response for new chat ${localChatId}:`;
+        }
+      }
+
+      console.error(detailedLogMessage, error);
+
+      if (currentChatId === localChatId) {
+        setMessages([...messagesForAPI, { role: 'assistant', content: userFacingErrorMessage }]);
+        setIsTyping(false); 
+        setStreamingIndex(null);
+      }
     } finally {
-      setIsTyping(false);
-      setStreamingIndex(null);
+      if (isTyping) setIsTyping(false);
     }
   };
 
@@ -550,8 +575,15 @@ function ChatInterface() {
                     />
                   ))}
                 {isTyping && (
-                  <div className="typing-indicator">
-                    Assistant is typing...
+                  <div className="chat-message assistant assistant-typing">
+                    <img src={JuaCodeLogo} alt="JuaCode Icon" className="profile-icon" />
+                    <div className="message-area">
+                      <div className="message-content">
+                        <div className="typing-dot"></div>
+                        <div className="typing-dot"></div>
+                        <div className="typing-dot"></div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

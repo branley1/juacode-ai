@@ -11,7 +11,6 @@ function InputArea({ setMessages, messages, onFirstMessageSent, isLandingPage, c
   const handleSend = () => {
     if (!input.trim() || isTyping) return;
 
-    setMessages([...messages, { role: 'user', content: input }]);
     if (!hasSentFirstMessage && onFirstMessageSent) {
       console.log("InputArea.js: handleSend - Calling onFirstMessageSent()");
       onFirstMessageSent();
