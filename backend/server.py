@@ -467,7 +467,6 @@ class Settings(BaseSettings):
     JWT_EXPIRATION_MINUTES: int = Field(30, description="JWT expiration in minutes")
 
     def validate_environment(self) -> dict[str, bool]:
-        """Validates all environment variables and returns status"""
         validation_results = {}
         for field_name in self.__class__.model_fields:
             try:
@@ -487,7 +486,6 @@ except Exception as e:
 
 # Validate environment on startup
 def validate_environment():
-    """Validates all environment variables on startup"""
     results = settings.validate_environment()
     missing_vars = [var for var, status in results.items() if not status]
     

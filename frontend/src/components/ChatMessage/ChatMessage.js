@@ -24,7 +24,7 @@ function extractThoughtAndMain(content) {
   }
 }
 
-function ChatMessage({ role, content, isLatestMessage, chatMessagesRef, index }) {
+function ChatMessage({ role, content, chatMessagesRef, index, streamingIndex }) {
   const [displayText, setDisplayText] = useState('');
   const [charIndex, setCharIndex] = useState(0);
   const [parsedContent, setParsedContent] = useState({ mainContent: '', thoughtContent: null });
@@ -33,15 +33,28 @@ function ChatMessage({ role, content, isLatestMessage, chatMessagesRef, index })
     // Each time the content updates (as tokens stream in), extract the thought block.
     const parsed = extractThoughtAndMain(content);
     setParsedContent(parsed);
-    setDisplayText('');
-    setCharIndex(0);
-  }, [content]);
+    // Reset animation state only if this message is the one actively streaming
+    if (role === 'assistant' && index === streamingIndex) {
+      setDisplayText('');
+      setCharIndex(0);
+    } else {
+        // If not streaming this message, display full content immediately
+        setDisplayText(parsed.mainContent);
+    }
+  }, [content, role, index, streamingIndex]);
 
   useEffect(() => {
-    if (role !== 'assistant' || !isLatestMessage) {
-      setDisplayText(parsedContent.mainContent);
+    // Condition changed: animate only if role is assistant AND this message index matches the streaming index
+    if (role !== 'assistant' || index !== streamingIndex) {
+      // If not the assistant message currently streaming, ensure full text is displayed
+      // (This might be redundant with the effect above, but ensures correctness)
+       if (displayText !== parsedContent.mainContent) {
+          setDisplayText(parsedContent.mainContent);
+       }
       return;
     }
+
+    // Animation logic (only runs if index === streamingIndex)
     if (charIndex < parsedContent.mainContent.length) {
       const timer = setTimeout(() => {
         setDisplayText(parsedContent.mainContent.slice(0, charIndex + 1));
@@ -50,24 +63,23 @@ function ChatMessage({ role, content, isLatestMessage, chatMessagesRef, index })
       return () => clearTimeout(timer);
     } else {
       if (chatMessagesRef.current) {
-        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+        // Auto-scroll might be better handled in the parent ChatInterface after streamingIndex becomes null
+        // requestAnimationFrame(() => { 
+        //  chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+        // });
       }
     }
-  }, [role, parsedContent.mainContent, charIndex, isLatestMessage, chatMessagesRef]);
+  }, [role, parsedContent.mainContent, charIndex, index, streamingIndex, chatMessagesRef, displayText]); 
 
-  useEffect(() => {
-    if (isLatestMessage) {
-      const messageElement = document.getElementById(`message-${index}`);
-      messageElement?.focus();
-    }
-  }, [isLatestMessage, index]);
+  // Removed the useEffect for focusing based on isLatestMessage
+  // Focus management can be handled differently if needed.
 
   return (
     <div
       className={`chat-message ${role}`}
-      tabIndex={0}
+      tabIndex={-1} // Changed from 0 to -1 as programmatic focus was removed
       role="article"
-      aria-labelledby={`message-${index}`}
+      aria-labelledby={`message-${index}-label`}
       id={`message-${index}`}
     >
       {role === 'assistant' && (
@@ -77,9 +89,10 @@ function ChatMessage({ role, content, isLatestMessage, chatMessagesRef, index })
         {parsedContent.thoughtContent && (
           <ThoughtBlock thought={parsedContent.thoughtContent} />
         )}
-        <div className="message-content">
+        <div className="message-content" id={`message-${index}-label`}>
           <ReactMarkdown>
-            {role === 'assistant' && isLatestMessage ? displayText : parsedContent.mainContent}
+            {/* Condition changed: Use displayText for animation only if index matches streamingIndex */}
+            {role === 'assistant' && index === streamingIndex ? displayText : parsedContent.mainContent}
           </ReactMarkdown>
         </div>
       </div>

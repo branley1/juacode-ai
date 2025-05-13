@@ -47,6 +47,7 @@ function ChatInterface() {
   const [isTyping, setIsTyping] = useState(false);
   const [modelVariant, setModelVariant] = useState("normal");
   const [isChatPersisted, setIsChatPersisted] = useState(false);
+  const [streamingIndex, setStreamingIndex] = useState(null);
 
   const [chatHistory, setChatHistory] = useState(() => {
     const storedHistory = localStorage.getItem('juaCodeChatHistory');
@@ -188,6 +189,7 @@ function ChatInterface() {
     setChatTitle(newTitle);
     setChatStarted(true); // Keep chat started for the new empty interface
     setIsChatPersisted(false); // The new chat is not yet persisted
+    setStreamingIndex(null);
 
     console.log('New empty chat initialized with ID:', newChatId, 'and title:', newTitle);
     console.log('------handleNewChat finished -------\n');
@@ -219,18 +221,31 @@ function ChatInterface() {
     setIsSidebarOpen(false);
     setIsTyping(false);
     setIsChatPersisted(true); // Loaded chats are considered persisted
+    setStreamingIndex(null);
   };
 
   useEffect(() => {
-    if (!chatStarted) return;
-    if (!chatMessagesRef.current) {
-      console.log('Chat messages container not found!');
+    if (!chatStarted || !chatMessagesRef.current) {
+      // console.log('Scroll effect: chat not started or ref not available.');
       return;
     }
-    requestAnimationFrame(() => {
-      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
-    });
-  }, [messages, chatStarted]);
+
+    const attemptScroll = () => {
+      if (chatMessagesRef.current) {
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+        // console.log(`Scrolled for chat ${currentChatId}. ScrollTop: ${chatMessagesRef.current.scrollTop}, ScrollHeight: ${chatMessagesRef.current.scrollHeight}`);
+      }
+    };
+
+    // Using setTimeout to ensure it runs after potential DOM updates from children
+    // triggered by the 'messages' or 'currentChatId' change have settled.
+    const timerId = setTimeout(() => {
+      requestAnimationFrame(attemptScroll);
+    }, 0); 
+
+    return () => clearTimeout(timerId);
+    
+  }, [messages, chatStarted, currentChatId]); // Added currentChatId to dependencies
 
   useEffect(() => {
     const handleKeyNavigation = (e) => {
@@ -248,6 +263,7 @@ function ChatInterface() {
   // STEP 4: Modify simulateResponse
   const simulateResponse = async (input) => {
     setIsTyping(true);
+    setStreamingIndex(null);
     const userMessage = { role: 'user', content: input };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages); // Show user message immediately
@@ -280,7 +296,9 @@ function ChatInterface() {
       let done = false;
       let assistantContent = '';
       // Add a placeholder for the assistant's message for streaming
+      const assistantMessageIndex = updatedMessages.length;
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      setStreamingIndex(assistantMessageIndex);
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
@@ -290,7 +308,7 @@ function ChatInterface() {
         setMessages(prev => {
           const newMsgs = [...prev];
           if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].role === 'assistant') {
-            newMsgs[newMsgs.length - 1].content = assistantContent;
+            newMsgs[newMsgs.length - 1].content += chunk;
           }
           return newMsgs;
         });
@@ -325,10 +343,38 @@ function ChatInterface() {
             body: JSON.stringify(newChatPayload),
           });
           if (!postRes.ok) throw new Error(`Backend POST error: ${postRes.status}`);
-          const postedChat = await postRes.json();
-          setChatHistory(prevHistory => [...prevHistory.filter(c => getChatId(c) !== currentChatId), postedChat.chat || newChatPayload]);
-          setIsChatPersisted(true); // Mark as persisted
-          console.log("New chat persisted to backend successfully.");
+          
+          const postedChatResponse = await postRes.json();
+          
+          let authoritativeChatData = newChatPayload; // Fallback
+          let authoritativeChatId = currentChatId;    // Fallback
+
+          if (postedChatResponse && postedChatResponse.chat) {
+            authoritativeChatData = postedChatResponse.chat;
+            const backendChatId = getChatId(postedChatResponse.chat); // getChatId handles chat.chat_id or chat.id
+            if (backendChatId) { // Ensure backendChatId is valid
+              authoritativeChatId = backendChatId;
+            }
+          }
+
+          // If the authoritative ID from backend is different from the one we sent, update currentChatId state
+          if (authoritativeChatId !== currentChatId) {
+            console.warn(`Chat ID updated: frontend sent ${currentChatId}, backend responded with/confirmed ${authoritativeChatId}. Updating currentChatId state.`);
+            setCurrentChatId(authoritativeChatId);
+          }
+
+          // Update chat history using the authoritative data and ID
+          setChatHistory(prevHistory => {
+            // Filter out based on old currentChatId AND new authoritativeChatId to prevent duplicates if ID changed
+            const filtered = prevHistory.filter(c => {
+              const id = getChatId(c);
+              return id !== currentChatId && id !== authoritativeChatId;
+            });
+            return [...filtered, authoritativeChatData];
+          });
+          
+          setIsChatPersisted(true); // Mark as persisted (now associated with authoritativeChatId)
+          console.log(`New chat (ID: ${authoritativeChatId}) persisted to backend successfully.`);
         } catch (error) {
           console.error("Error persisting new chat to backend:", error);
           // Decide if you want to revert setMessages or notify user
@@ -363,6 +409,7 @@ function ChatInterface() {
       setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't generate a response or save the chat." }]);
     } finally {
       setIsTyping(false);
+      setStreamingIndex(null);
     }
   };
 
@@ -498,7 +545,7 @@ function ChatInterface() {
                       index={index}
                       role={message.role}
                       content={message.content}
-                      isLatestMessage={index === messages.length - 1 && !isTyping} // Only animate if not typing new response
+                      streamingIndex={streamingIndex} // Pass streamingIndex instead of isLatestMessage
                       chatMessagesRef={chatMessagesRef}
                     />
                   ))}
