@@ -201,7 +201,6 @@
 .chat-title-input {
   font-size: 1.2em; 
   font-weight: bold;
-  font-family: 'IBM Plex Mono', monospace;
   border: none; 
   border-bottom: 2px solid var(--color-input-container-border);
   background-color: transparent;
@@ -209,7 +208,7 @@
   padding: 5px;
   outline: none; 
   width: auto; 
-  min-width: 150px; 
+  min-width: 400px; 
   max-width: 400px;
 }
 

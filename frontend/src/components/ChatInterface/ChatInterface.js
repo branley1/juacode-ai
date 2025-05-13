@@ -48,6 +48,7 @@ function ChatInterface() {
   const [modelVariant, setModelVariant] = useState("normal");
   const [isChatPersisted, setIsChatPersisted] = useState(false);
   const [streamingIndex, setStreamingIndex] = useState(null);
+  const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
 
   const [chatHistory, setChatHistory] = useState(() => {
     const storedHistory = localStorage.getItem('juaCodeChatHistory');
@@ -179,9 +180,7 @@ function ChatInterface() {
       }
     }
 
-    let baseTitle = 'New Chat';
-    const count = chatHistory.filter(chat => chat.title && chat.title.startsWith(baseTitle)).length;
-    const newTitle = count > 0 ? `${baseTitle} ${count + 1}` : baseTitle;
+    const newTitle = 'New Chat'; // Always start with 'New Chat'
 
     const newChatId = generateUniqueChatId();
     setCurrentChatId(newChatId);
@@ -190,6 +189,7 @@ function ChatInterface() {
     setChatStarted(true);
     setIsChatPersisted(false);
     setStreamingIndex(null);
+    setIsEditingTitle(false);
 
     console.log('New empty chat initialized with ID:', newChatId, 'and title:', newTitle);
     console.log('------handleNewChat finished -------\n');
@@ -214,11 +214,6 @@ function ChatInterface() {
         return;
     }
 
-    // Before switching, consider if the current chat (before selecting the new one)
-    // needs to be saved. `handleNewChat` does this, `simulateResponse` does this.
-    // If messages can change outside these flows, saving here would be needed.
-    // For now, assuming changes are captured by simulateResponse or handleNewChat.
-
     setChatTitle(selectedChat.title || "Chat");
     setMessages(selectedChat.messages || []);
     setCurrentChatId(chatId);
@@ -230,27 +225,35 @@ function ChatInterface() {
   };
 
   useEffect(() => {
-    if (!chatStarted || !chatMessagesRef.current) {
-      // console.log('Scroll effect: chat not started or ref not available.');
+    const chatMessagesElement = chatMessagesRef.current;
+    if (!chatStarted || !chatMessagesElement) {
       return;
     }
 
-    const attemptScroll = () => {
-      if (chatMessagesRef.current) {
-        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
-        // console.log(`Scrolled for chat ${currentChatId}. ScrollTop: ${chatMessagesRef.current.scrollTop}, ScrollHeight: ${chatMessagesRef.current.scrollHeight}`);
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = chatMessagesElement;
+      // If scrolled up by more than a small threshold, consider it a manual scroll
+      if (scrollHeight - scrollTop - clientHeight > 50) { 
+        setUserHasScrolledUp(true);
+      } else {
+        setUserHasScrolledUp(false);
       }
     };
 
-    // Using setTimeout to ensure it runs after potential DOM updates from children
-    // triggered by the 'messages' or 'currentChatId' change have settled.
-    const timerId = setTimeout(() => {
-      requestAnimationFrame(attemptScroll);
-    }, 0); 
+    chatMessagesElement.addEventListener('scroll', handleScroll);
 
-    return () => clearTimeout(timerId);
-    
-  }, [messages, chatStarted, currentChatId]); // Added currentChatId to dependencies
+    if (!userHasScrolledUp) {
+      requestAnimationFrame(() => {
+        chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
+      });
+    }
+
+    return () => {
+      if (chatMessagesElement) { // Ensure element exists before removing listener
+        chatMessagesElement.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [messages, chatStarted, streamingIndex, userHasScrolledUp, isTyping]);
 
   useEffect(() => {
     const handleKeyNavigation = (e) => {
@@ -265,7 +268,70 @@ function ChatInterface() {
     return () => window.removeEventListener('keydown', handleKeyNavigation);
   }, [messages]);
 
-  // STEP 4: Modify simulateResponse
+  // New function to handle title summarization
+  const summarizeAndSetChatTitle = async (chatIdToSummarize, messagesForSummary) => {
+    if (!chatIdToSummarize || !messagesForSummary || messagesForSummary.length < 2) {
+      console.log("Not enough information to summarize title for chat:", chatIdToSummarize);
+      return;
+    }
+
+    console.log(`Requesting title summarization for chat ${chatIdToSummarize}`);
+    try {
+      const response = await fetch(`/api/chats/${chatIdToSummarize}/summarize-title`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // The backend can fetch messages using chatId, or we can send them.
+        // For now, let's assume backend fetches messages based on chatId to keep payload light.
+        // body: JSON.stringify({ messages: messagesForSummary }) 
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: "Error summarizing title." }));
+        console.error(`Error summarizing title for chat ${chatIdToSummarize}:`, errorData.detail);
+        return;
+      }
+
+      const data = await response.json();
+      const newTitle = data.title;
+
+      if (newTitle) {
+        console.log(`Chat ${chatIdToSummarize} title summarized to: "${newTitle}"`);
+        // If the summarized chat is currently active, update its title in the main view
+        if (currentChatId === chatIdToSummarize) {
+          setChatTitle(newTitle);
+        }
+        // Update the title in the chat history
+        setChatHistory(prevHistory =>
+          prevHistory.map(chat =>
+            getChatId(chat) === chatIdToSummarize ? { ...chat, title: newTitle } : chat
+          )
+        );
+
+        // Directly PUT the new title to the backend upon successful summarization
+        try {
+          console.log(`Directly updating title on backend for ${chatIdToSummarize} after summarization.`);
+          const updateResponse = await fetch(`/api/chats/${chatIdToSummarize}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: newTitle }),
+          });
+          if (!updateResponse.ok) {
+            // Log if this specific update fails, but don't let it block UI updates already made
+            const errorData = await updateResponse.json().catch(() => ({ detail: "Failed to PUT summarized title."}));
+            console.error(`Error PUTting summarized title for chat ${chatIdToSummarize} to backend:`, errorData.detail);
+          } else {
+            console.log(`Successfully PUT summarized title for chat ${chatIdToSummarize} to backend.`);
+          }
+        } catch (putError) {
+          console.error(`Exception during direct PUT of summarized title for ${chatIdToSummarize}:`, putError);
+        }
+
+      }
+    } catch (error) {
+      console.error(`Exception during title summarization for chat ${chatIdToSummarize}:`, error);
+    }
+  };
+
   const simulateResponse = async (input) => {
     const localChatId = currentChatId;
     const localIsChatPersisted = isChatPersisted;
@@ -277,6 +343,13 @@ function ChatInterface() {
     const messagesForAPI = [...messages, userMessage];
 
     setMessages(messagesForAPI);
+    // Ensure view scrolls to user's new message and resets scroll state
+    if (chatMessagesRef.current) {
+      requestAnimationFrame(() => { // Use requestAnimationFrame for smoother scroll after DOM update
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      });
+    }
+    setUserHasScrolledUp(false); // User sending a message implies they want to be at the bottom
     
     let finalMessagesWithAssistantResponse = messagesForAPI; 
     let assistantMessagePlaceholderAdded = false; // Flag to track if placeholder is added
@@ -354,6 +427,9 @@ function ChatInterface() {
       }
 
       // Persistence Logic (using captured local variables)
+      let chatSuccessfullyPersistedOrUpdated = false;
+      let finalChatIdForSummary = localChatId;
+
       if (!localIsChatPersisted && localChatId) {
         const newChatPayload = {
           chat_id: localChatId,
@@ -370,29 +446,29 @@ function ChatInterface() {
         
         const postedChatResponse = await postRes.json();
         let authoritativeChatData = newChatPayload;
-        let authoritativeChatId = localChatId;
 
         if (postedChatResponse && postedChatResponse.chat) {
           authoritativeChatData = postedChatResponse.chat;
           const backendChatId = getChatId(postedChatResponse.chat);
-          if (backendChatId) authoritativeChatId = backendChatId;
+          if (backendChatId) finalChatIdForSummary = backendChatId;
         }
 
         setChatHistory(prevHistory => {
             const newHistory = prevHistory.filter(c => {
                 const id = getChatId(c);
-                return id !== localChatId && (authoritativeChatId ? id !== authoritativeChatId : true);
+                return id !== localChatId && (finalChatIdForSummary ? id !== finalChatIdForSummary : true);
             });
             return [...newHistory, authoritativeChatData];
         });
         
         if (currentChatId === localChatId) { // If this chat is still active
-            if (authoritativeChatId && authoritativeChatId !== localChatId) {
-                setCurrentChatId(authoritativeChatId);
+            if (finalChatIdForSummary && finalChatIdForSummary !== localChatId) {
+                setCurrentChatId(finalChatIdForSummary);
             }
             setIsChatPersisted(true);
         }
-        console.log(`New chat (ID: ${authoritativeChatId}) persisted to backend successfully.`);
+        console.log(`New chat (ID: ${finalChatIdForSummary}) persisted to backend successfully.`);
+        chatSuccessfullyPersistedOrUpdated = true;
 
       } else if (localIsChatPersisted && localChatId) {
         console.log(`Updating messages for persisted chat ${localChatId} on backend.`);
@@ -407,6 +483,23 @@ function ChatInterface() {
           )
         );
         console.log(`Messages for chat ${localChatId} updated on backend.`);
+        chatSuccessfullyPersistedOrUpdated = true;
+        finalChatIdForSummary = localChatId; // Ensure this is set for existing chats too
+      }
+
+      // Summarize only if title is "New Chat" and message count is 4
+      if (chatSuccessfullyPersistedOrUpdated && 
+          localChatTitle === 'New Chat' && 
+          finalMessagesWithAssistantResponse.length === 6) {
+        
+        // Use all 6 messages for the initial summary
+        const messagesForInitialSummary = finalMessagesWithAssistantResponse;
+        
+        console.log(`Attempting initial title summarization for chat ${finalChatIdForSummary} with ${messagesForInitialSummary.length} messages.`);
+        // Small delay still potentially useful for brand new chats
+        setTimeout(async () => {
+          await summarizeAndSetChatTitle(finalChatIdForSummary, messagesForInitialSummary);
+        }, 250);
       }
 
     } catch (error) {

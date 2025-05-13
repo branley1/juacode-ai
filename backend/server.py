@@ -15,7 +15,7 @@ load_dotenv()
 
 import traceback
 import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, AsyncGenerator, Callable
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
@@ -27,6 +27,8 @@ from passlib.hash import bcrypt
 from fastapi.middleware.cors import CORSMiddleware
 from auth import create_access_token
 import re
+from functools import lru_cache
+from fastapi.responses import StreamingResponse
 
 # SQLAlchemy imports
 from sqlalchemy import create_engine, Column, BigInteger, String, DateTime
@@ -37,6 +39,9 @@ from sqlalchemy.orm import sessionmaker, Session
 # Model SDK imports
 from openai import OpenAI
 import google.generativeai
+import httpx
+import json
+import asyncio
 
 # PostgresSQL Setup 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
@@ -107,173 +112,13 @@ def get_db():
 # except ImportError:
 #     raise ImportError("Please install praisonaiagents to use the agent functionality.")
 
-def generate_chat_response(chat_history: str, model: str = "gemini-2.5-pro-preview-05-06") -> Dict[str, str]:
-    """
-    Uses the configured LLM API (DeepSeek, OpenAI, Gemini) to generate a response.
-    The 'model' parameter determines which model/API configuration to use.
-    """
-    api_key = None
-    base_url = None
-    effective_model = model # Default to gemini-2.5-pro-preview-05-06
-    model_variant = model.lower()
-    print(f"Generating response using model: {model} (variant for logic: {model_variant}) with {len(chat_history)} history messages.")
+# Potentially unused function - to be removed
+# def generate_chat_response(chat_history: str, model: str = "gemini-2.5-pro-preview-05-06") -> Dict[str, str]:
+#     ...
 
-    # Prepare messages for API call, ensuring system prompt if necessary
-    api_messages = []
-    if not chat_history or chat_history[0].get("role") != "system":
-        api_messages.append({"role": "system", "content": "You are a helpful assistant."})
-    api_messages.extend(chat_history)
-
-    # Determine provider and settings based on model_variant
-    if model_variant.startswith("deepseek") or \
-       model_variant.startswith("openai-") or \
-       model_variant.startswith("gpt-") or \
-       model_variant.startswith("o3-") or \
-       model_variant.startswith("o1-") or \
-       model_variant.startswith("o4-") or \
-       model_variant.startswith("ollama-"):
-
-        if model_variant.startswith("deepseek"):
-            api_key = settings.DEEPSEEK_API_KEY
-            base_url = settings.DEEPSEEK_BASE_URL.rstrip('/') + "/v1"
-            effective_model = model_variant 
-            print(f"Using DeepSeek: model={effective_model}, base_url={base_url}")
-        elif model_variant.startswith("openai-") or model_variant.startswith("gpt-") or model_variant.startswith("o3-") or model_variant.startswith("o1-") or model_variant.startswith("o4-"):
-            api_key = settings.OPENAI_API_KEY
-            base_url = None 
-            if model_variant == "openai-chat": # Specific alias
-                effective_model = settings.OPENAI_MODEL
-            else:
-                effective_model = model_variant
-            print(f"Using OpenAI: model={effective_model}")
-        elif model_variant.startswith("ollama-"):
-            api_key = "ollama"
-            base_url = settings.OLLAMA_BASE_URL.rstrip('/') + "/v1"
-            effective_model = model_variant.split("ollama-", 1)[1]
-            print(f"Using Ollama: model={effective_model}, base_url={base_url}")
-
-        if not api_key and not model_variant.startswith("ollama-"):
-            print(f"API key not configured for model variant {model_variant}")
-            raise HTTPException(status_code=500, detail=f"API key configuration error for {model_variant}.")
-
-        try:
-            if base_url:
-                client = OpenAI(api_key=api_key, base_url=base_url)
-            else: # OpenAI default
-                client = OpenAI(api_key=api_key)
-            
-            print(f"Attempting API call to model: '{effective_model}' with history.")
-            completion = client.chat.completions.create(
-                model=effective_model,
-                messages=api_messages, # Using full history
-                max_tokens=settings.OPENAI_MAX_TOKENS,
-                temperature=settings.OPENAI_TEMPERATURE,
-                stream=False # Assuming False for now, frontend handles streaming from a non-streaming response
-            )
-            
-            if not completion or not completion.choices:
-                print(f"Invalid response from {model_variant} API (model: {effective_model}): {completion}")
-                raise HTTPException(status_code=500, detail=f"LLM API ({model_variant}) returned invalid response structure.")
-            try:
-                message_content = completion.choices[0].message.content
-            except AttributeError:
-                print(f"Error accessing message content from {model_variant} (model: {effective_model}). Response choice: {completion.choices[0]}")
-                raise HTTPException(status_code=500, detail=f"Failed to parse LLM API response content structure from {model_variant}.")
-            except Exception as e_parse:
-                print(f"Error parsing content from {model_variant} (model: {effective_model}): {str(e_parse)}")
-                print(traceback.format_exc())
-                raise HTTPException(status_code=500, detail=f"Failed to parse LLM API response content from {model_variant}.")
-            
-            if message_content is None:
-                print(f"Empty (None) content from {model_variant} API (model: {effective_model}).")
-                raise HTTPException(status_code=500, detail=f"LLM API ({model_variant}) returned no message content.")
-            
-            return {"response": message_content.strip()}
-
-        except Exception as e_api_call:
-            print(f"Error calling LLM API for {model_variant} (model: {effective_model}): {str(e_api_call)}")
-            print(traceback.format_exc())
-            if isinstance(e_api_call, HTTPException):
-                 raise
-            raise HTTPException(status_code=500, detail=f"Failed to call LLM API for {model_variant}: {str(e_api_call)}")
-
-    elif model_variant.startswith("gemini"):
-        print(f"Using Gemini: model={model} with {len(chat_history)} history messages.")
-        try:
-            google.generativeai.configure(api_key=settings.GEMINI_API_KEY)
-            system_instruction = None
-            processed_chat_history = []
-            if chat_history and chat_history[0].get("role") == "system":
-                system_instruction = chat_history[0].get("content")
-                processed_chat_history = chat_history[1:] # Remove system prompt from history
-            else:
-                processed_chat_history = chat_history
-
-            # Transform roles for Gemini: 'assistant' -> 'model'
-            gemini_history_for_api = []
-            for msg in processed_chat_history:
-                role = msg.get("role")
-                content = msg.get("content")
-                if role == "assistant":
-                    gemini_history_for_api.append({'role': 'model', 'parts': [{'text': content}]})
-                elif role == "user":
-                    gemini_history_for_api.append({'role': 'user', 'parts': [{'text': content}]})
-                # Other roles (like system if not handled by system_instruction) are ignored for now
-            
-            gemini_model_instance = google.generativeai.GenerativeModel(
-                model_name=model,
-                system_instruction=system_instruction
-            )
-            
-            gemini_response = gemini_model_instance.generate_content(gemini_history_for_api)
-
-            if not gemini_response.candidates:
-                try: 
-                    block_reason = gemini_response.prompt_feedback.block_reason
-                    block_message = f"Content blocked by Gemini ({model}) due to: {block_reason}."
-                    if gemini_response.prompt_feedback.safety_ratings:
-                         block_message += f" Safety ratings: {gemini_response.prompt_feedback.safety_ratings}"
-                    print(block_message)
-                    raise HTTPException(status_code=400, detail=block_message)
-                except (AttributeError, IndexError): 
-                    print(f"Gemini API ({model}) returned no candidates. Response: {gemini_response}")
-                    raise HTTPException(status_code=500, detail=f"Gemini API ({model}) returned no response or content.")
-            
-            # Assuming there's at least one candidate and it has content parts
-            if not gemini_response.candidates[0].content.parts:
-                print(f"Gemini API ({model}) returned no content parts. Candidate: {gemini_response.candidates[0]}")
-                raise HTTPException(status_code=500, detail=f"Gemini API ({model}) returned no content parts.")
-
-            message_content = "".join(part.text for part in gemini_response.candidates[0].content.parts if hasattr(part, 'text'))
-            
-            if not message_content.strip(): # Check if content is empty after stripping whitespace
-                print(f"Empty message content received from Gemini API ({model})")
-                raise HTTPException(status_code=500, detail=f"Gemini API ({model}) returned an empty response.")
-
-            return {"response": message_content.strip()}
-
-        except ImportError:
-            print(f"FATAL: google-generativeai library not installed. Needed for Gemini model: {model}.")
-            raise HTTPException(status_code=501, detail=f"Gemini API library not installed on server (model: {model}).")
-        except Exception as e_gemini:
-            print(f"Error with Gemini API for model {model}: {str(e_gemini)}")
-            print(traceback.format_exc())
-            if isinstance(e_gemini, HTTPException):
-                raise
-            raise HTTPException(status_code=500, detail=f"Failed to call Gemini API for model {model}: {str(e_gemini)}")
-    else:
-        print(f"Warning: Unrecognized model_variant '{model_variant}'. Check configuration or frontend request that led to this model name.")
-        raise HTTPException(status_code=400, detail=f"Unsupported or unrecognized model_variant: {model}")
-    
-    # This line should ideally not be reached if all paths return or raise.
-    raise HTTPException(status_code=500, detail="Internal server error in chat generation logic.")
-
-
-def generate_reasoning_response(prompt: str) -> Dict[str, str]:
-    """
-    Uses the DeepSeek Reasoner API to generate a response with reasoning.
-    """
-    return generate_chat_response(prompt, model="deepseek-reasoner")
+# Potentially unused function - to be removed
+# def generate_reasoning_response(prompt: str) -> Dict[str, str]:
+#     ...
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -296,42 +141,67 @@ app.add_middleware(
 # Endpoints
 @app.post("/api/generate")
 async def generate_response(payload: Dict[str, Any]):
-    """
-    Endpoint to generate a response.
-    Expects JSON of form: {"prompt": "your question", "model_variant": "normal" or "reasoner"}
-    """
-    conversation_history = payload.get("messages") # Get full history for model context
-    if not conversation_history:
-        raise HTTPException(status_code=400, detail="Messages (conversation history) are required.")
-    
-    model_variant_from_payload = payload.get("model_variant", settings.LLM_PROVIDER)
+    messages_history = payload.get("messages", [])
+    model_variant = payload.get("model_variant", "normal") # or "reasoner"
 
-    actual_model_to_use = model_variant_from_payload
-    if model_variant_from_payload == "reasoner":
-        # Map "reasoner" to "deepseek-reasoner" for now
-        actual_model_to_use = "deepseek-reasoner"
-        print(f"Info: Frontend requested 'reasoner', mapping to '{actual_model_to_use}'.")
-    elif model_variant_from_payload == "normal":
-        actual_model_to_use = settings.LLM_PROVIDER
-        print(f"Info: Frontend requested 'normal', mapping to '{actual_model_to_use}'.")
+    if not messages_history:
+        raise HTTPException(status_code=400, detail="No messages provided")
+
+    settings = get_settings()
+    # Determine which LLM provider to use based on settings or model_variant
+    # For simplicity, using LLM_PROVIDER from settings directly here.
+    # You might have more complex logic if model_variant implies a different provider.
+    llm_function = llm_provider_actions.get(settings.LLM_PROVIDER)
+
+    if not llm_function:
+        print(f"Error: LLM provider '{settings.LLM_PROVIDER}' not found in llm_provider_actions.")
+        raise HTTPException(status_code=500, detail=f"Invalid LLM provider configured: {settings.LLM_PROVIDER}")
+    
+    print(f"[generate_response] Using LLM provider: {settings.LLM_PROVIDER} for chat generation.")
+
+    # Prepare messages for the LLM (current history)
+    # System prompts can be added here or handled within the LLM functions if needed
+    # For example, if model_variant == "reasoner", prepend a reasoning system prompt.
+    current_llm_payload = messages_history
+    if model_variant == "reasoner" and settings.LLM_PROVIDER == "deepseek-chat": # Example specific to deepseek reasoner
+         current_llm_payload = [
+            {"role": "system", "content": "You are a helpful AI assistant. Your goal is to assist the user with their tasks by thinking step by step. Please output your thoughts in <think></think> XML tags and then provide the final answer to the user."},
+        ] + messages_history
+    elif model_variant == "reasoner": # Generic reasoner prompt if not deepseek
+        current_llm_payload = [
+            {"role": "system", "content": "Think step-by-step. Use <think></think> tags for your thoughts."},
+        ] + messages_history
 
     try:
-        print(f"Debug - Received conversation history with {len(conversation_history)} messages, using actual model: '{actual_model_to_use}' for API call.")
-        result = await run_in_threadpool(generate_chat_response, conversation_history, actual_model_to_use)
-            
-        if not result:
-            raise HTTPException(status_code=500, detail="Failed to generate response (empty result).")
-        return result
-            
-    except Exception as httpe:
-        raise httpe
-    except Exception as e: # Catch any other unexpected errors
-        print(f"Unexpected error in /api/generate endpoint: {e}")
-        print(traceback.format_exc())
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Unexpected error in processing your request: {str(e)}"
+        # Call the selected LLM function for a streaming response
+        response_generator = await llm_function(
+            messages=current_llm_payload, 
+            settings=settings, 
+            stream=True # Always stream for chat responses
+            # max_tokens and temperature can be passed if needed, or use defaults in provider functions
         )
+
+        async def event_stream():
+            async for content_part in response_generator:
+                if content_part:
+                    # For SSE, each part should be prefixed with "data: " and suffixed with "\n\n"
+                    # However, FastAPI's StreamingResponse handles this if you yield strings directly.
+                    # If the LLM function already formats for SSE, ensure no double formatting.
+                    # Here, assuming content_part is just the text content.
+                    yield content_part # FastAPI wraps this in "data: ...\n\n" if client accepts text/event-stream
+                await asyncio.sleep(0.01) # Small sleep to allow other tasks, adjust as needed
+            # Optionally, signal end of stream if your client expects it and LLM doesn't send [DONE]
+            # yield "data: [DONE]\n\n" 
+
+        return StreamingResponse(event_stream(), media_type="text/event-stream") # Ensure correct media type
+    
+    except httpx.HTTPStatusError as e:
+        print(f"LLM service HTTP error for provider {settings.LLM_PROVIDER}: {e.response.text}")
+        raise HTTPException(status_code=e.response.status_code, detail=f"LLM service error: {e.response.text}")
+    except Exception as e:
+        print(f"Error generating response from provider {settings.LLM_PROVIDER}: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to generate response: {str(e)}")
 
 @app.post("/api/chats")
 async def create_chat(chat: ChatCreate, db: Session = Depends(get_db)):
@@ -388,6 +258,128 @@ async def update_chat(chat_id: str, chat_update: ChatUpdate, db: Session = Depen
         db.rollback() # Rollback in case of other errors during DB operations
         raise HTTPException(status_code=500, detail=f"Error updating chat {chat_id}.")
 
+@app.post("/api/chats/{chat_id}/summarize-title")
+async def summarize_chat_title(chat_id: str, db: Session = Depends(get_db)):
+    db_chat = db.query(Chat).filter(Chat.chat_id == chat_id).first()
+    if not db_chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+
+    if not db_chat.messages or len(db_chat.messages) < 1: # Need at least one message to summarize
+        raise HTTPException(status_code=400, detail="Not enough messages to summarize title")
+
+    # Prepare messages for the LLM. Format might need adjustment based on LLM.
+    # We'll take the first few messages for brevity, or all if they are few.
+    # Max 4 messages (2 exchanges) for summary should be enough context.
+    messages_for_summary = db_chat.messages[:4] 
+    
+    formatted_messages_for_llm = []
+    for msg in messages_for_summary:
+        original_content = msg['content']
+        # Strip <think>...</think> blocks for summarization
+        content_for_summary = re.sub(r"<think>.*?<\/think>", "", original_content, flags=re.DOTALL).strip()
+        # If stripping think blocks results in empty content, skip or use original (though unlikely for user messages)
+        if not content_for_summary and msg['role'] == 'user': # Keep original if user message becomes empty
+            content_for_summary = original_content
+        elif not content_for_summary: # Skip if assistant message becomes empty (or very short)
+            continue
+        
+        formatted_messages_for_llm.append({"role": msg['role'], "content": content_for_summary})
+
+    # Add a system message to guide the LLM
+    system_prompt = {
+        "role": "system", 
+        "content": "Create a short, concise chat title of 1-4 words that summarizes the core topic or purpose of this conversation. The title should be clear, descriptive, and relevant to the main subject being discussed. Do not include any other text, just provide the title text with no quotes or other formatting."
+    }
+    title_generation_payload = [system_prompt] + formatted_messages_for_llm
+
+    try:
+        settings = get_settings()
+        
+        # Try primary provider first
+        primary_provider = settings.LLM_PROVIDER
+        fallback_providers = ["deepseek-chat", "openai"] 
+        
+        # Remove the primary provider from fallbacks if it's already in the list
+        if primary_provider in fallback_providers:
+            fallback_providers.remove(primary_provider)
+            
+        # Combine the lists with primary first, then fallbacks
+        provider_order = [primary_provider] + fallback_providers
+        
+        # Try each provider until one succeeds
+        new_title_raw = None
+        for provider in provider_order:
+            llm_function = llm_provider_actions.get(provider)
+            if not llm_function:
+                print(f"Warning: LLM provider '{provider}' not found in llm_provider_actions, skipping.")
+                continue
+                
+            try:
+                print(f"Attempting title generation with provider: {provider}")
+                # Call the selected LLM function for summarization (non-streaming)
+                new_title_raw = await llm_function(
+                    messages=title_generation_payload, 
+                    settings=settings, 
+                    stream=False, 
+                    max_tokens=20,  # Short title
+                    temperature=0.5  # Moderately creative but not too random
+                )
+                
+                # If we got a valid title, break the loop
+                if isinstance(new_title_raw, str) and new_title_raw.strip():
+                    print(f"Successfully generated title with provider: {provider}")
+                    break
+                else:
+                    print(f"Provider {provider} returned empty or invalid title, trying next provider.")
+            except Exception as e:
+                print(f"Error using provider {provider} for title generation: {e}")
+                # Continue to the next provider
+                
+        # If all providers failed, use a default
+        if not new_title_raw or not isinstance(new_title_raw, str) or not new_title_raw.strip():
+            print(f"All providers failed to generate a title for chat {chat_id}. Using default.")
+            new_title_raw = "New Chat"
+        
+        # Clean and format the title
+        new_title = re.sub(r'[*_`~#]', '', new_title_raw.strip())
+        new_title = new_title.replace('"', '').replace("'", "")
+
+        words = new_title.split()
+        if len(words) > 5: # If more than 5 words, take the first 5
+            new_title = " ".join(words[:5])
+        elif len(words) < 1: # If it somehow became empty after split (e.g. all spaces)
+            new_title = "New Chat"
+        # If 1-5 words, use as is. The prompt asks for 3-5, so this covers it.
+
+        db_chat.title = new_title
+        db_chat.updated_at = datetime.datetime.utcnow()
+        db.add(db_chat)
+        db.commit()
+        db.refresh(db_chat)
+
+        return {"chat_id": chat_id, "title": new_title}
+
+    except httpx.HTTPStatusError as e:
+        print(f"HTTP error during title summarization LLM call for chat {chat_id}: {e.response.text}")
+        # Use a fallback title instead of raising 500 for LLM operational errors
+        db_chat.title = "Chat (Title Gen Error)"
+        db_chat.updated_at = datetime.datetime.utcnow()
+        db.add(db_chat)
+        db.commit()
+        db.refresh(db_chat)
+        # Return a 200 with the fallback title to avoid breaking the client flow, but log the error.
+        return {"chat_id": chat_id, "title": db_chat.title, "error": "LLM service error during title generation."}
+    except Exception as e:
+        print(f"Error summarizing title for chat {chat_id}: {e}")
+        # Fallback title if summarization fails critically
+        db_chat.title = "Chat (Summary Failed)"
+        db_chat.updated_at = datetime.datetime.utcnow()
+        db.add(db_chat)
+        db.commit()
+        db.refresh(db_chat)
+        # Return a 200 with the fallback title
+        return {"chat_id": chat_id, "title": db_chat.title, "error": f"Failed to summarize chat title: {str(e)}"}
+
 @app.post("/api/users/register")
 async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     """
@@ -408,7 +400,7 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail="User registration failed.")
 
-# New: Endpoint for user login
+# Endpoint for user login
 @app.post("/api/users/login")
 async def login_user(user: UserLogin, db: Session = Depends(get_db)):
     """
@@ -443,7 +435,7 @@ class Settings(BaseSettings):
     
     # OpenAI
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
-    OPENAI_MODEL: str = Field("o3-mini-2025-01-31", description="OpenAI model name")
+    OPENAI_MODEL: str = Field("o4-mini-2025-04-16", description="OpenAI model name")
     OPENAI_TEMPERATURE: float = Field(0.7, description="OpenAI temperature")
     OPENAI_MAX_TOKENS: int = Field(2000, description="OpenAI max tokens")
     OPENAI_EMBEDDING_MODEL: str = Field("text-embedding-ada-002", description="OpenAI embedding model")
@@ -456,7 +448,7 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = Field("http://localhost:11434", description="Ollama base URL")
     
     # LLM Provider
-    LLM_PROVIDER: str = Field("deepseek-chat", description="LLM provider selection")
+    LLM_PROVIDER: str = Field("o4-mini-2025-04-16", description="LLM provider selection")
 
     # Gemini
     GEMINI_API_KEY: str = Field(..., description="Gemini API key")
@@ -494,3 +486,244 @@ def validate_environment():
     
     print("Environment validation successful!")
     return True 
+
+@lru_cache()
+def get_settings():
+    # Loads and validates environment settings
+    settings_instance = Settings()
+    validation_results = settings_instance.validate_environment() 
+    for setting_name, is_valid in validation_results.items():
+        if not is_valid:
+            print(f"Warning: Environment variable for '{setting_name}' is missing or invalid.")
+            raise ValueError(f"Critical environment variable '{setting_name}' is missing or invalid.")
+    return settings_instance 
+
+# Make an LLM request
+async def _make_llm_request(client: httpx.AsyncClient, url: str, headers: Dict[str, str], payload: Dict[str, Any], stream: bool) -> Any:
+    response = await client.post(url, headers=headers, json=payload, timeout=60)
+    response.raise_for_status() # Will raise an exception for 4XX/5XX responses
+    if stream:
+        # For streaming, the caller will handle the async generator
+        return response # Or yield from it if this function becomes an async gen itself
+    else:
+        return response.json() # For non-streaming, return JSON
+
+async def generate_chat_response_from_messages_deepseek(
+    messages: List[Dict[str, Any]], 
+    settings: Settings, 
+    stream: bool = True, # Control streaming
+    max_tokens: Optional[int] = None, 
+    temperature: Optional[float] = None
+) -> AsyncGenerator[str, None] | str: # Return type depends on stream
+    async with httpx.AsyncClient(base_url=settings.DEEPSEEK_BASE_URL, follow_redirects=True) as client:
+        api_payload = {
+            "model": "deepseek-chat", 
+            "messages": messages,
+            "max_tokens": max_tokens or settings.OPENAI_MAX_TOKENS, # Using OpenAI as a general default
+            "temperature": temperature or settings.OPENAI_TEMPERATURE,
+            "stream": stream
+        }
+        print(f"[DeepSeek] Called with model: {api_payload['model']}")
+        headers = {"Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}", "Content-Type": "application/json"}
+        
+        response_data = await _make_llm_request(client, "/chat/completions", headers, api_payload, stream)
+
+        if stream:
+            async def stream_generator():
+                # Assuming response_data is the httpx.Response object for streaming
+                buffer = ""
+                async for raw_chunk in response_data.aiter_bytes():
+                    if not raw_chunk:
+                        continue
+                    buffer += raw_chunk.decode('utf-8', errors='replace')
+                    
+                    # Process complete SSE events in the buffer
+                    while '\n\n' in buffer:
+                        event_end_index = buffer.find('\n\n')
+                        event_str = buffer[:event_end_index]
+                        buffer = buffer[event_end_index + 2:] # Skip the two newlines
+                        
+                        content_to_yield = ""
+                        for line in event_str.split('\n'):
+                            line = line.strip()
+                            if line.startswith('data: '):
+                                json_str = line[len('data: '):].strip()
+                                if json_str == "[DONE]":
+                                    yield "" # Signal end of stream if needed, or just return
+                                    return
+                                try:
+                                    json_data = json.loads(json_str)
+                                    delta_content = json_data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                                    if delta_content:
+                                        content_to_yield += delta_content
+                                except json.JSONDecodeError:
+                                    # print(f"DeepSeek stream: Skipping non-JSON line: {json_str}")
+                                    pass # Ignore malformed JSON or other non-data lines
+                        if content_to_yield:
+                            yield content_to_yield
+                
+                # Process any remaining buffer content after stream ends (if any partial event)
+                if buffer.strip(): # If there's anything left that wasn't a full event
+                    # This part is tricky for SSE; usually, events are complete or not sent.
+                    # For simplicity, we'll assume any remaining valid data lines are processed if possible
+                    # or ignored if they don't form a complete event.
+                    # print(f"DeepSeek stream: Remaining buffer: {buffer}")
+                    pass
+
+            return stream_generator()
+        else:
+            # Non-streaming: response_data is already parsed JSON from _make_llm_request
+            return response_data.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+
+async def generate_chat_response_from_messages_openai(
+    messages: List[Dict[str, Any]], 
+    settings: Settings, 
+    stream: bool = True, 
+    max_tokens: Optional[int] = None, 
+    temperature: Optional[float] = None
+) -> AsyncGenerator[str, None] | str:
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    model_name = settings.OPENAI_MODEL
+    print(f"[OpenAI] Called with model: {model_name}")
+
+    # OpenAI API expects messages in a specific format, ensure it matches
+    # [{ "role": "user", "content": "hello"}, ...]
+    # The input `messages` should already be in this format.
+
+    if stream:
+        async def stream_generator():
+            response_stream = await asyncio.to_thread( # Run blocking SDK call in a thread
+                client.chat.completions.create,
+                model=model_name,
+                messages=messages,
+                temperature=temperature or settings.OPENAI_TEMPERATURE,
+                max_tokens=max_tokens or settings.OPENAI_MAX_TOKENS,
+                stream=True
+            )
+            for chunk in response_stream:
+                if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+        return stream_generator()
+    else:
+        response = await asyncio.to_thread(
+            client.chat.completions.create,
+            model=model_name,
+            messages=messages,
+            temperature=temperature or settings.OPENAI_TEMPERATURE,
+            max_tokens=max_tokens or settings.OPENAI_MAX_TOKENS,
+            stream=False
+        )
+        return response.choices[0].message.content.strip() if response.choices and response.choices[0].message else ""
+
+async def generate_chat_response_from_messages_gemini(
+    messages: List[Dict[str, Any]], 
+    settings: Settings, 
+    stream: bool = True, 
+    max_tokens: Optional[int] = None, 
+    temperature: Optional[float] = None
+) -> AsyncGenerator[str, None] | str:
+    google.generativeai.configure(api_key=settings.GEMINI_API_KEY)
+    
+    # Extract system message if present
+    system_instruction_content = None
+    formatted_messages = []
+    
+    # First pass: find system message
+    for msg in messages:
+        if msg.get("role") == "system":
+            system_instruction_content = msg.get("content")
+            break
+    
+    # Second pass: format remaining messages
+    for msg in messages:
+        role = msg.get("role")
+        content = msg.get("content")
+        
+        if role == "system":
+            continue
+        elif role == "assistant":
+            formatted_messages.append({'role': 'model', 'parts': [content]})
+        elif role == "user":
+            formatted_messages.append({'role': 'user', 'parts': [content]})
+    
+    # If we have no messages but have a system instruction, create a user message
+    if not formatted_messages and system_instruction_content:
+        formatted_messages.append({'role': 'user', 'parts': [f"Please follow these instructions: {system_instruction_content}"]})
+    
+    # Create the model with system instruction
+    model = google.generativeai.GenerativeModel(
+        'gemini-2.5-pro-preview-05-06',
+        system_instruction=system_instruction_content
+    )
+    print(f"[Gemini] Called with model: gemini-2.5-pro-preview-05-06")
+
+    generation_config = google.generativeai.types.GenerationConfig(
+        candidate_count=1,
+        temperature=temperature if temperature is not None else 0.7, # Default Gemini temperature
+        max_output_tokens=max_tokens or 2048  # Use provided max_tokens or default
+    )
+
+    if stream:
+        async def stream_generator():
+            try:
+                response_stream = await asyncio.to_thread(
+                    model.generate_content,
+                    formatted_messages,
+                    generation_config=generation_config,
+                    stream=True
+                )
+                for chunk in response_stream:
+                    if hasattr(chunk, 'text') and chunk.text: # Check if chunk.text exists and is not None/empty
+                        yield chunk.text
+                    elif not hasattr(chunk, 'text'):
+                        print(f"Gemini stream: Chunk without .text encountered: {chunk}")
+                        pass
+            except Exception as e:
+                print(f"Gemini stream error: {e}")
+                yield ""
+        return stream_generator()
+    else:
+        try:
+            response_object = await asyncio.to_thread(
+                model.generate_content,
+                formatted_messages,
+                generation_config=generation_config,
+                stream=False
+            )
+
+            if response_object and response_object.candidates:
+                candidate = response_object.candidates[0]
+                # Check for safety ratings and block reason before trying to access parts
+                # Normal finish reasons are STOP or MAX_TOKENS.
+                # Others (like SAFETY, OTHER, UNKNOWN, UNCALCULATED) indicate a problem.
+                if candidate.finish_reason.name not in ("STOP", "MAX_TOKENS"):
+                    print(f"Gemini non-stream: Candidate finished with non-normal reason '{candidate.finish_reason.name}'.")
+                    if response_object.prompt_feedback:
+                        print(f"Gemini non-stream: Prompt Feedback: {response_object.prompt_feedback}")
+                    return "" # Return empty if not a normal finish, triggering fallback in summarizer
+
+                if candidate.content and candidate.content.parts:
+                    text_content = "".join(part.text for part in candidate.content.parts if hasattr(part, 'text'))
+                    return text_content.strip()
+                else:
+                    # Candidate exists, but no content.parts (e.g. finish_reason was normal but parts are empty for some reason)
+                    print(f"Gemini non-stream: Candidate has no content parts despite normal finish. Candidate: {candidate}")
+                    if response_object.prompt_feedback:
+                        print(f"Gemini non-stream: Prompt Feedback: {response_object.prompt_feedback}")
+                    return ""
+            else: # No candidates
+                print(f"Gemini non-stream: No candidates found.")
+                if response_object and response_object.prompt_feedback: # Check if response_object itself is not None
+                    print(f"Gemini non-stream: Prompt Feedback: {response_object.prompt_feedback}")
+                return ""
+        except Exception as e:
+            print(f"Gemini non-stream error: {e}")
+            return ""
+
+
+# Define the llm_provider_actions dictionary
+llm_provider_actions: Dict[str, Callable[..., AsyncGenerator[str, None] | str]] = {
+    "deepseek-chat": generate_chat_response_from_messages_deepseek,
+    "openai": generate_chat_response_from_messages_openai,
+    "gemini-2.5-pro-preview-05-06": generate_chat_response_from_messages_gemini,
+} 
