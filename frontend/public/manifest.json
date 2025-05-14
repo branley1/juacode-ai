@@ -1,21 +1,21 @@
 {
-  "short_name": "MyApp",
-  "name": "My Application",
+  "short_name": "JuaCode",
+  "name": "JuaCode AI",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "icons/icon-64.png",
+      "sizes": "94x94",
+      "type": "image/png"
     },
     {
-      "src": "logo192.png",
+      "src": "icons/icon-192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "94x94"
     },
     {
-      "src": "logo512.png",
+      "src": "icons/icon-512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "94x94"
     }
   ],
   "start_url": ".",

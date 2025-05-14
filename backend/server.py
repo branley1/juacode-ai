@@ -163,26 +163,31 @@ async def generate_response(payload: Dict[str, Any]):
     print(f"Using LLM provider: {selected_llm_provider} for chat generation (variant: {model_variant}).")
 
     # Prepare messages for the LLM (current history)
-    # System prompts can be added here or handled within the LLM functions if needed
-    # For example, if model_variant == "reasoner", prepend a reasoning system prompt.
     current_llm_payload = messages_history
-    if model_variant == "reasoner" and selected_llm_provider == "deepseek-chat":
-         current_llm_payload = [
-            {"role": "system", "content": "You are a helpful AI assistant. Your goal is to assist the user with their tasks by thinking step by step. Please output your thoughts in <think></think> XML tags and then provide the final answer to the user."},
-        ] + messages_history
-    elif model_variant == "reasoner":
+    
+    # Add reasoning system prompt for non-DeepSeek models
+    if model_variant == "reasoner" and selected_llm_provider != "deepseek-chat":
         current_llm_payload = [
             {"role": "system", "content": "Think step-by-step. Use <think></think> tags for your thoughts."},
         ] + messages_history
 
     try:
-        # Call the selected LLM function for a streaming response
-        response_generator = await llm_function(
-            messages=current_llm_payload, 
-            settings=settings, 
-            stream=True # Always stream for chat responses
-            # max_tokens and temperature can be passed if needed, or use defaults in provider functions
-        )
+        # For DeepSeek in reasoning mode, use deepseek-reasoner model
+        if model_variant == "reasoner" and selected_llm_provider == "deepseek-chat":
+            response_generator = await generate_chat_response_from_messages_deepseek(
+                messages=messages_history,
+                settings=settings,
+                stream=True,
+                model_name="deepseek-reasoner"  # Use the reasoner model
+            )
+        else:
+            # For other models or normal mode, use the standard function
+            response_generator = await llm_function(
+                messages=current_llm_payload, 
+                settings=settings, 
+                stream=True # Always stream for chat responses
+                # max_tokens and temperature can be passed if needed, or use defaults in provider functions
+            )
 
         async def event_stream():
             async for content_part in response_generator:
@@ -214,14 +219,10 @@ async def create_chat(chat: ChatCreate, db: Session = Depends(get_db)):
     """
     try:
         chat_data = chat.model_dump()
-        print(f"BACKEND: Attempting to create new chat with chat_id: {chat_data.get('chat_id')}")
         new_chat = Chat(**chat_data)
         db.add(new_chat)
-        print(f"BACKEND: About to commit chat_id: {new_chat.chat_id}")
         db.commit()
-        print(f"BACKEND: Commit successful for chat_id: {new_chat.chat_id}")
         db.refresh(new_chat)
-        print(f"BACKEND: Chat refreshed, about to return chat_id: {new_chat.chat_id}")
         return {"message": "Chat saved successfully", "chat": jsonable_encoder(new_chat)}
     except Exception as e:
         print(f"Error saving chat_id: {chat_data.get('chat_id') if 'chat_data' in locals() else 'unknown'}: {e}")
@@ -236,10 +237,8 @@ async def update_chat(chat_id: str, chat_update: ChatUpdate, db: Session = Depen
     If the chat doesn't exist, it returns 404.
     """
     try:
-        print(f"BACKEND: Attempting to update chat with chat_id: {chat_id}")
         db_chat = db.query(Chat).filter(Chat.chat_id == chat_id).first()
         if not db_chat:
-            print(f"BACKEND: Chat not found for chat_id: {chat_id}")
             raise HTTPException(status_code=404, detail="Chat not found")
 
         updated = False
@@ -313,13 +312,12 @@ async def summarize_chat_title(chat_id: str, db: Session = Depends(get_db)):
             raise Exception(f"Invalid LLM provider for title generation: {provider}")
             
         print(f"Generating title with provider: {provider}")
-        # Call DeepSeek for title summarization (non-streaming)
         new_title_raw = await llm_function(
             messages=title_generation_payload, 
             settings=settings, 
             stream=False, 
-            max_tokens=20,  # Short title
-            temperature=0.5  # Moderately creative but not too random
+            max_tokens=20,
+            temperature=0.5
         )
         
         # If we got no title or an invalid title, use default
@@ -502,11 +500,12 @@ async def generate_chat_response_from_messages_deepseek(
     settings: Settings, 
     stream: bool = True, # Control streaming
     max_tokens: Optional[int] = None, 
-    temperature: Optional[float] = None
+    temperature: Optional[float] = None,
+    model_name: Optional[str] = None
 ) -> AsyncGenerator[str, None] | str: # Return type depends on stream
     async with httpx.AsyncClient(base_url=settings.DEEPSEEK_BASE_URL, follow_redirects=True) as client:
         api_payload = {
-            "model": "deepseek-chat", 
+            "model": model_name or "deepseek-chat",
             "messages": messages,
             "max_tokens": max_tokens or settings.OPENAI_MAX_TOKENS, # Using OpenAI as a general default
             "temperature": temperature or settings.OPENAI_TEMPERATURE,
@@ -521,6 +520,17 @@ async def generate_chat_response_from_messages_deepseek(
             async def stream_generator():
                 # Assuming response_data is the httpx.Response object for streaming
                 buffer = ""
+                # Track if we've already emitted a <think> tag
+                thinking_started = False
+                thinking_buffer = ""
+                thinking_complete = False
+                
+                # For DeepSeek Reasoner, track combined response
+                main_content_buffer = ""
+                
+                # Debug tracking
+                total_reasoning_chunks = 0
+                
                 async for raw_chunk in response_data.aiter_bytes():
                     if not raw_chunk:
                         continue
@@ -538,31 +548,81 @@ async def generate_chat_response_from_messages_deepseek(
                             if line.startswith('data: '):
                                 json_str = line[len('data: '):].strip()
                                 if json_str == "[DONE]":
+                                    # If we had thinking content but didn't finish it, close the tag
+                                    if thinking_started and not thinking_complete:
+                                        yield "</think>"
                                     yield "" # Signal end of stream if needed, or just return
                                     return
                                 try:
                                     json_data = json.loads(json_str)
+                                    
+                                    # Check for reasoning_content (DeepSeek Reasoner specific)
+                                    reasoning_content = None
+                                    if "choices" in json_data and len(json_data["choices"]) > 0:
+                                        if "delta" in json_data["choices"][0]:
+                                            if "reasoning_content" in json_data["choices"][0]["delta"]:
+                                                reasoning_content = json_data["choices"][0]["delta"]["reasoning_content"]
+                                                if reasoning_content:
+                                                    total_reasoning_chunks += 1
+                                                
+                                    # Regular content (main response)
                                     delta_content = json_data.get('choices', [{}])[0].get('delta', {}).get('content', '')
+                                    
+                                    # Handle reasoning content for DeepSeek Reasoner
+                                    if reasoning_content is not None:
+                                        if reasoning_content:  # Not empty or None
+                                            if not thinking_started:
+                                                # Start the <think> block
+                                                content_to_yield += "<think>" + reasoning_content
+                                                thinking_started = True
+                                                thinking_buffer = reasoning_content
+                                            else:
+                                                # Continue the thinking block
+                                                content_to_yield += reasoning_content
+                                                thinking_buffer += reasoning_content
+                                        else:
+                                            # Empty reasoning content might indicate it's complete
+                                            if thinking_started and not thinking_complete:
+                                                content_to_yield += "</think>"
+                                                thinking_complete = True
+                                    
+                                    # Regular response content
                                     if delta_content:
+                                        if thinking_started and not thinking_complete:
+                                            # If we're in the middle of sending thoughts, close the block first
+                                            content_to_yield += "</think>"
+                                            thinking_complete = True
+                                        
+                                        # Then add the regular content
                                         content_to_yield += delta_content
+                                        main_content_buffer += delta_content
                                 except json.JSONDecodeError:
-                                    # print(f"DeepSeek stream: Skipping non-JSON line: {json_str}")
-                                    pass # Ignore malformed JSON or other non-data lines
+                                    pass
                         if content_to_yield:
                             yield content_to_yield
                 
                 # Process any remaining buffer content after stream ends (if any partial event)
-                if buffer.strip(): # If there's anything left that wasn't a full event
-                    # This part is tricky for SSE; usually, events are complete or not sent.
-                    # For simplicity, we'll assume any remaining valid data lines are processed if possible
-                    # or ignored if they don't form a complete event.
-                    # print(f"DeepSeek stream: Remaining buffer: {buffer}")
+                if buffer.strip():
                     pass
+                    
+                # Ensure we close the thinking tag if it was opened but not closed
+                if thinking_started and not thinking_complete:
+                    yield "</think>"
 
             return stream_generator()
         else:
             # Non-streaming: response_data is already parsed JSON from _make_llm_request
-            return response_data.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+            message = response_data.get('choices', [{}])[0].get('message', {})
+            
+            # Check for both reasoning_content and regular content
+            reasoning_content = message.get('reasoning_content')
+            main_content = message.get('content', '').strip()
+            
+            # Combine them if reasoning_content exists
+            if reasoning_content:
+                return f"<think>{reasoning_content}</think>\n\n{main_content}"
+            
+            return main_content
 
 async def generate_chat_response_from_messages_openai(
     messages: List[Dict[str, Any]], 

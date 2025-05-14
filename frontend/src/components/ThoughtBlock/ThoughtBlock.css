@@ -1,10 +1,12 @@
 .thought-block {
   margin-bottom: 10px;
+  margin-left: 10px;
   border-left: 4px solid #ccc;
   padding-left: 10px;
   opacity: 0.7;
   cursor: pointer;
   transition: opacity 0.3s ease;
+  line-height: 1.2em;
 }
 
 .thought-header {
@@ -17,7 +19,25 @@
 }
 
 .thought-toggle {
-  transition: transform 0.3s ease;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary, #555);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  position: relative;
+}
+
+.thought-toggle::after {
+  content: "▾";
+  font-size: 12px;
+  line-height: 1;
+}
+
+.thought-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .thought-toggle.open {

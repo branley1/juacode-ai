@@ -338,6 +338,16 @@ function ChatInterface() {
     }
   };
 
+  // Handle first user message
+  const handleFirstMessage = () => {
+    setChatStarted(true);
+    // Ensure we keep same chat ID when changing models
+    if (messages.length === 0) {
+      console.log('Starting a new chat with ID:', currentChatId); // We're starting a truly new chat
+    }
+  };
+
+  // Main message handling function
   const simulateResponse = async (input, selectedModelFromInputArea) => {
     const localChatId = currentChatId;
     let localIsChatPersisted = isChatPersisted;
@@ -675,15 +685,9 @@ function ChatInterface() {
                 What can I help with?
               </div>
               <InputArea
-                setMessages={setMessages} // Direct setMessages might be okay for landing page if not persisted
+                setMessages={setMessages}
                 messages={messages}
-                onFirstMessageSent={() => {
-                    setChatStarted(true);
-                    // Ensure currentChatId is fresh and isChatPersisted is false for the first "real" chat
-                    setCurrentChatId(generateUniqueChatId());
-                    setIsChatPersisted(false); 
-                    setChatTitle("New Chat"); // Default title for the first chat
-                }}
+                onFirstMessageSent={handleFirstMessage}
                 isLandingPage={true}
                 chatMessagesRef={chatMessagesRef}
                 simulateResponse={simulateResponse}
@@ -755,13 +759,9 @@ function ChatInterface() {
                 )}
               </div>
               <InputArea
-                setMessages={setMessages} // This prop might be less relevant now if simulateResponse handles it
-                messages={messages} // Pass for context, e.g. for up-arrow history in InputArea
-                onFirstMessageSent={() => {
-                    // This might not be needed if simulateResponse handles the first message.
-                    // If kept, ensure it doesn't conflict with chat persistence logic.
-                    setChatStarted(true); // This is fine
-                }}
+                setMessages={setMessages}
+                messages={messages}
+                onFirstMessageSent={handleFirstMessage}
                 isLandingPage={false}
                 chatMessagesRef={chatMessagesRef}
                 simulateResponse={simulateResponse}
