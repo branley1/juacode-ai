@@ -17,7 +17,6 @@
   align-items: center;
   display: flex;
   border-radius: 20px;
-  overflow: hidden;
   border: 1px solid var(--color-input-container-border);
   position: relative;
   padding-right: 50px;
@@ -90,10 +89,20 @@ textarea:focus {
   vertical-align: middle;
 }
 
-.model-toggle-button {
+.controls-container {
   position: absolute;
   bottom: 5px;
   left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.model-toggle-button {
+  /* Remove absolute positioning if it was there */
+  position: relative; 
+  /* bottom: 5px; */ /* Handled by controls-container */
+  /* left: 10px; */  /* Handled by controls-container */
   border: none;
   background: transparent;
   color: var(--color-text-secondary, #555);
@@ -101,8 +110,83 @@ textarea:focus {
   font-size: 1rem;
   display: flex;
   align-items: center;
+  padding: 5px;
+}
+
+.model-selector {
+  padding: 5px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-input-container-border, #ccc);
+  background-color: var(--color-input-container-background, white);
+  color: var(--color-text-input, #212121);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.model-selector:focus {
+  outline: none;
+  border-color: var(--color-button-send-background, #555);
 }
 
 .model-toggle-button:hover {
   color: var(--color-text-primary, #333);
+}
+
+/* Styles for the new custom model selector */
+.custom-model-selector-container {
+  position: relative; /* Crucial for positioning the options dropdown */
+  display: inline-block; /* Or block, depending on layout needs */
+}
+
+.custom-model-selector-display {
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--color-input-container-border, #ccc);
+  background-color: var(--color-input-container-background, white);
+  color: var(--color-text-input, #212121);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-width: 120px; /* Adjust as needed */
+}
+
+.custom-model-selector-display:hover {
+  border-color: var(--color-button-send-background, #555);
+}
+
+.custom-model-selector-display span {
+  margin-right: 8px; /* Space between text and icon */
+}
+
+.custom-model-selector-options {
+  position: absolute;
+  bottom: 100%; /* Position above the display area */
+  left: 0;
+  right: 0;
+  background-color: var(--color-input-container-background, white);
+  border: 1px solid var(--color-input-container-border, #ccc);
+  border-radius: 4px; /* Changed from 0 0 4px 4px */
+  z-index: 1050; /* Ensure it's above other elements */
+  max-height: 150px; /* Limit height and make scrollable if many options */
+  overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.custom-model-selector-option {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  color: var(--color-text-input, #212121);
+  cursor: pointer;
+}
+
+.custom-model-selector-option:hover {
+  background-color: var(--color-background-message-user, #f0f0f0); /* Use a hover color */
+}
+
+.custom-model-selector-option.selected {
+  background-color: var(--color-button-send-background, #555);
+  color: var(--color-input-container-background, white); /* Ensure text is visible on selection */
+  font-weight: bold;
 }

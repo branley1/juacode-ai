@@ -36,6 +36,12 @@ const extractTimestamp = (chat) => {
   return 0;
 };
 
+const AVAILABLE_MODELS = [
+  { value: "deepseek-chat", label: "DeepSeek V3" },
+  { value: "o4-mini-2025-04-16", label: "o4-mini" },
+  { value: "gemini-2.5-pro-preview-05-06", label: "Gemini 2.5 Pro" }
+];
+
 function ChatInterface() {
   const [messages, setMessages] = useState([]);
   const [chatStarted, setChatStarted] = useState(false);
@@ -46,6 +52,7 @@ function ChatInterface() {
   const chatMessagesRef = useRef(null);
   const [isTyping, setIsTyping] = useState(false);
   const [modelVariant, setModelVariant] = useState("normal");
+  const [currentModel, setCurrentModel] = useState(AVAILABLE_MODELS[0].value);
   const [isChatPersisted, setIsChatPersisted] = useState(false);
   const [streamingIndex, setStreamingIndex] = useState(null);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
@@ -199,7 +206,6 @@ function ChatInterface() {
     // This effect syncs chatHistory (local representation) to localStorage.
     // Backend persistence is handled by specific actions like simulateResponse and handleNewChat.
     if (chatHistory.length > 0 || localStorage.getItem('juaCodeChatHistory')) {
-        console.log("ChatInterface.js: useEffect - Saving chatHistory to localStorage:", chatHistory);
         localStorage.setItem('juaCodeChatHistory', JSON.stringify(chatHistory));
     }
   }, [chatHistory]);
@@ -332,9 +338,9 @@ function ChatInterface() {
     }
   };
 
-  const simulateResponse = async (input) => {
+  const simulateResponse = async (input, selectedModelFromInputArea) => {
     const localChatId = currentChatId;
-    const localIsChatPersisted = isChatPersisted;
+    let localIsChatPersisted = isChatPersisted;
     const localChatTitle = chatTitle;
     
     setIsTyping(true);
@@ -358,6 +364,7 @@ function ChatInterface() {
       const requestBody = {
         messages: messagesForAPI,
         model_variant: modelVariant,
+        selected_model: selectedModelFromInputArea
       };
 
       console.log(`Sending request to /api/generate for chat ${localChatId} with body:`, requestBody);
@@ -430,76 +437,140 @@ function ChatInterface() {
       let chatSuccessfullyPersistedOrUpdated = false;
       let finalChatIdForSummary = localChatId;
 
-      if (!localIsChatPersisted && localChatId) {
+      if (!localIsChatPersisted && finalChatIdForSummary) {
         const newChatPayload = {
-          chat_id: localChatId,
+          chat_id: finalChatIdForSummary,
           title: localChatTitle,
           messages: finalMessagesWithAssistantResponse,
         };
         console.log("Persisting new chat to backend (chatId, title, messages):", newChatPayload);
-        const postRes = await fetch('/api/chats', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newChatPayload),
-        });
-        if (!postRes.ok) throw new Error(`Backend POST error: ${postRes.status}`);
-        
-        const postedChatResponse = await postRes.json();
-        let authoritativeChatData = newChatPayload;
+        try {
+          const postRes = await fetch('/api/chats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newChatPayload),
+          });
+          
+          if (!postRes.ok) {
+            console.error(`Error persisting new chat: ${postRes.status} ${postRes.statusText}`);
+            throw new Error(`Backend POST error: ${postRes.status}`);
+          }
+          
+          const postedChatResponse = await postRes.json();
+          let authoritativeChatData = newChatPayload;
 
-        if (postedChatResponse && postedChatResponse.chat) {
-          authoritativeChatData = postedChatResponse.chat;
-          const backendChatId = getChatId(postedChatResponse.chat);
-          if (backendChatId) finalChatIdForSummary = backendChatId;
-        }
-
-        setChatHistory(prevHistory => {
-            const newHistory = prevHistory.filter(c => {
-                const id = getChatId(c);
-                return id !== localChatId && (finalChatIdForSummary ? id !== finalChatIdForSummary : true);
-            });
-            return [...newHistory, authoritativeChatData];
-        });
-        
-        if (currentChatId === localChatId) { // If this chat is still active
-            if (finalChatIdForSummary && finalChatIdForSummary !== localChatId) {
-                setCurrentChatId(finalChatIdForSummary);
+          if (postedChatResponse && postedChatResponse.chat) {
+            authoritativeChatData = postedChatResponse.chat;
+            const backendChatId = getChatId(postedChatResponse.chat);
+            if (backendChatId && backendChatId !== finalChatIdForSummary) {
+              console.log(`Chat ID changed by backend from ${finalChatIdForSummary} to ${backendChatId}`);
+              finalChatIdForSummary = backendChatId;
             }
-            setIsChatPersisted(true);
-        }
-        console.log(`New chat (ID: ${finalChatIdForSummary}) persisted to backend successfully.`);
-        chatSuccessfullyPersistedOrUpdated = true;
+          }
 
-      } else if (localIsChatPersisted && localChatId) {
-        console.log(`Updating messages for persisted chat ${localChatId} on backend.`);
-        await fetch(`/api/chats/${localChatId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: finalMessagesWithAssistantResponse, title: localChatTitle }), // Send title too
-        });
-        setChatHistory(prevHistory =>
-          prevHistory.map(chat =>
-            getChatId(chat) === localChatId ? { ...chat, messages: finalMessagesWithAssistantResponse, title: localChatTitle } : chat
-          )
-        );
-        console.log(`Messages for chat ${localChatId} updated on backend.`);
-        chatSuccessfullyPersistedOrUpdated = true;
-        finalChatIdForSummary = localChatId; // Ensure this is set for existing chats too
+          setChatHistory(prevHistory => {
+              // Filter out any potential duplicates using both old and new ID if it changed
+              const idsToRemove = new Set([localChatId, finalChatIdForSummary]);
+              const newHistory = prevHistory.filter(c => !idsToRemove.has(getChatId(c)));
+              return [...newHistory, authoritativeChatData];
+          });
+          
+          if (currentChatId === localChatId || currentChatId === finalChatIdForSummary) { 
+              if (finalChatIdForSummary !== currentChatId) {
+                   setCurrentChatId(finalChatIdForSummary);
+              }
+              setIsChatPersisted(true);
+              localIsChatPersisted = true;
+          }
+          console.log(`New chat (ID: ${finalChatIdForSummary}) persisted to backend successfully.`);
+          chatSuccessfullyPersistedOrUpdated = true;
+        } catch (error) {
+          console.error(`Error persisting new chat ${finalChatIdForSummary}:`, error);
+          // We'll continue with local state but won't try to update backend since persistence failed
+          chatSuccessfullyPersistedOrUpdated = false;
+        }
+      } else if (localIsChatPersisted && finalChatIdForSummary) { 
+        // This is an existing chat that needs to be updated
+        try {
+          console.log(`Updating messages for persisted chat ${finalChatIdForSummary} on backend.`);
+          const updateRes = await fetch(`/api/chats/${finalChatIdForSummary}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: finalMessagesWithAssistantResponse, title: localChatTitle }),
+          });
+          
+          if (!updateRes.ok) {
+            // If update fails with 404, the chat doesn't exist in backend - try to persist it as new
+            if (updateRes.status === 404) {
+              console.log(`Chat ${finalChatIdForSummary} not found in backend, attempting to persist as new chat.`);
+              
+              const newChatPayload = {
+                chat_id: finalChatIdForSummary,
+                title: localChatTitle,
+                messages: finalMessagesWithAssistantResponse,
+              };
+              
+              const postRes = await fetch('/api/chats', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newChatPayload),
+              });
+              
+              if (!postRes.ok) {
+                throw new Error(`Failed to persist chat after 404: ${postRes.status}`);
+              }
+              
+              console.log(`Successfully persisted chat ${finalChatIdForSummary} after 404 not found.`);
+            } else {
+              throw new Error(`Update failed with status: ${updateRes.status}`);
+            }
+          }
+          
+          setChatHistory(prevHistory =>
+            prevHistory.map(chat =>
+              getChatId(chat) === finalChatIdForSummary ? { ...chat, messages: finalMessagesWithAssistantResponse, title: localChatTitle } : chat
+            )
+          );
+          console.log(`Messages for chat ${finalChatIdForSummary} updated on backend.`);
+          chatSuccessfullyPersistedOrUpdated = true;
+        } catch (error) {
+          console.error(`Error updating chat ${finalChatIdForSummary}:`, error);
+          // Update local state but mark as unsuccessful for backend
+          setChatHistory(prevHistory =>
+            prevHistory.map(chat =>
+              getChatId(chat) === finalChatIdForSummary ? { ...chat, messages: finalMessagesWithAssistantResponse, title: localChatTitle } : chat
+            )
+          );
+          chatSuccessfullyPersistedOrUpdated = false;
+        }
       }
 
-      // Summarize only if title is "New Chat" and message count is 4
-      if (chatSuccessfullyPersistedOrUpdated && 
-          localChatTitle === 'New Chat' && 
-          finalMessagesWithAssistantResponse.length === 6) {
-        
-        // Use all 6 messages for the initial summary
-        const messagesForInitialSummary = finalMessagesWithAssistantResponse;
-        
-        console.log(`Attempting initial title summarization for chat ${finalChatIdForSummary} with ${messagesForInitialSummary.length} messages.`);
-        // Small delay still potentially useful for brand new chats
-        setTimeout(async () => {
-          await summarizeAndSetChatTitle(finalChatIdForSummary, messagesForInitialSummary);
-        }, 250);
+      // New title summarization logic
+      if (chatSuccessfullyPersistedOrUpdated) {
+        const currentMessages = finalMessagesWithAssistantResponse;
+        let messagesForSummary = null;
+        let reasonForSummary = "";
+        let requiresSummarization = false;
+
+        if (currentMessages.length > 10) {
+          // For chats longer than 10 messages, always try to refine the title with the latest 6 messages.
+          messagesForSummary = currentMessages.slice(-6);
+          reasonForSummary = "Refining title with latest 6 messages.";
+          requiresSummarization = true;
+        } else if (localChatTitle === 'New Chat' && currentMessages.length >= 6) {
+          // For chats with 6 to 10 messages, summarize if title is still "New Chat".
+          // Use all current messages for this initial summary as context might be building up.
+          messagesForSummary = currentMessages; 
+          reasonForSummary = "Initial title summarization for 'New Chat'.";
+          requiresSummarization = true;
+        }
+
+        if (requiresSummarization && messagesForSummary) {
+          console.log(`Attempting title summarization for chat ${finalChatIdForSummary}: ${reasonForSummary} (${messagesForSummary.length} messages).`);
+          setTimeout(async () => {
+            await summarizeAndSetChatTitle(finalChatIdForSummary, messagesForSummary);
+          }, 250);
+        }
       }
 
     } catch (error) {
@@ -619,6 +690,9 @@ function ChatInterface() {
                 modelVariant={modelVariant}
                 setModelVariant={setModelVariant}
                 isTyping={isTyping}
+                currentModel={currentModel}
+                setCurrentModel={setCurrentModel}
+                availableModels={AVAILABLE_MODELS}
               />
             </div>
           ) : (
@@ -694,6 +768,9 @@ function ChatInterface() {
                 modelVariant={modelVariant}
                 setModelVariant={setModelVariant}
                 isTyping={isTyping}
+                currentModel={currentModel}
+                setCurrentModel={setCurrentModel}
+                availableModels={AVAILABLE_MODELS}
               />
             </div>
           )}

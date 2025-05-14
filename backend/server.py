@@ -42,6 +42,7 @@ import google.generativeai
 import httpx
 import json
 import asyncio
+import openai
 
 # PostgresSQL Setup 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
@@ -143,31 +144,33 @@ app.add_middleware(
 async def generate_response(payload: Dict[str, Any]):
     messages_history = payload.get("messages", [])
     model_variant = payload.get("model_variant", "normal") # or "reasoner"
+    
+    settings = get_settings()
+    selected_llm_provider = payload.get("selected_model", settings.LLM_PROVIDER)
 
     if not messages_history:
         raise HTTPException(status_code=400, detail="No messages provided")
 
-    settings = get_settings()
-    # Determine which LLM provider to use based on settings or model_variant
-    # For simplicity, using LLM_PROVIDER from settings directly here.
-    # You might have more complex logic if model_variant implies a different provider.
-    llm_function = llm_provider_actions.get(settings.LLM_PROVIDER)
+    # Use selected_llm_provider to get the function
+    llm_function = llm_provider_actions.get(selected_llm_provider)
 
     if not llm_function:
-        print(f"Error: LLM provider '{settings.LLM_PROVIDER}' not found in llm_provider_actions.")
-        raise HTTPException(status_code=500, detail=f"Invalid LLM provider configured: {settings.LLM_PROVIDER}")
+        # Log which model was requested
+        print(f"Error: Requested LLM provider '{selected_llm_provider}' not found in llm_provider_actions.")
+        raise HTTPException(status_code=500, detail=f"Invalid LLM provider configured or requested: {selected_llm_provider}")
     
-    print(f"[generate_response] Using LLM provider: {settings.LLM_PROVIDER} for chat generation.")
+    # Log which provider is being used
+    print(f"Using LLM provider: {selected_llm_provider} for chat generation (variant: {model_variant}).")
 
     # Prepare messages for the LLM (current history)
     # System prompts can be added here or handled within the LLM functions if needed
     # For example, if model_variant == "reasoner", prepend a reasoning system prompt.
     current_llm_payload = messages_history
-    if model_variant == "reasoner" and settings.LLM_PROVIDER == "deepseek-chat": # Example specific to deepseek reasoner
+    if model_variant == "reasoner" and selected_llm_provider == "deepseek-chat":
          current_llm_payload = [
             {"role": "system", "content": "You are a helpful AI assistant. Your goal is to assist the user with their tasks by thinking step by step. Please output your thoughts in <think></think> XML tags and then provide the final answer to the user."},
         ] + messages_history
-    elif model_variant == "reasoner": # Generic reasoner prompt if not deepseek
+    elif model_variant == "reasoner":
         current_llm_payload = [
             {"role": "system", "content": "Think step-by-step. Use <think></think> tags for your thoughts."},
         ] + messages_history
@@ -196,10 +199,10 @@ async def generate_response(payload: Dict[str, Any]):
         return StreamingResponse(event_stream(), media_type="text/event-stream") # Ensure correct media type
     
     except httpx.HTTPStatusError as e:
-        print(f"LLM service HTTP error for provider {settings.LLM_PROVIDER}: {e.response.text}")
+        print(f"LLM service HTTP error for provider {selected_llm_provider}: {e.response.text}")
         raise HTTPException(status_code=e.response.status_code, detail=f"LLM service error: {e.response.text}")
     except Exception as e:
-        print(f"Error generating response from provider {settings.LLM_PROVIDER}: {e}")
+        print(f"Error generating response from provider {selected_llm_provider}: {e}")
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Failed to generate response: {str(e)}")
 
@@ -210,16 +213,20 @@ async def create_chat(chat: ChatCreate, db: Session = Depends(get_db)):
     Persists the chat record (chat_id, title, messages) in the database.
     """
     try:
-        # Convert Pydantic model to dict (JSON serializable)
         chat_data = chat.model_dump()
+        print(f"BACKEND: Attempting to create new chat with chat_id: {chat_data.get('chat_id')}")
         new_chat = Chat(**chat_data)
         db.add(new_chat)
+        print(f"BACKEND: About to commit chat_id: {new_chat.chat_id}")
         db.commit()
+        print(f"BACKEND: Commit successful for chat_id: {new_chat.chat_id}")
         db.refresh(new_chat)
+        print(f"BACKEND: Chat refreshed, about to return chat_id: {new_chat.chat_id}")
         return {"message": "Chat saved successfully", "chat": jsonable_encoder(new_chat)}
     except Exception as e:
-        print("Error saving chat:", e)
+        print(f"Error saving chat_id: {chat_data.get('chat_id') if 'chat_data' in locals() else 'unknown'}: {e}")
         print(traceback.format_exc())
+        db.rollback()
         raise HTTPException(status_code=500, detail="Error saving chat.")
 
 @app.put("/api/chats/{chat_id}")
@@ -229,8 +236,10 @@ async def update_chat(chat_id: str, chat_update: ChatUpdate, db: Session = Depen
     If the chat doesn't exist, it returns 404.
     """
     try:
+        print(f"BACKEND: Attempting to update chat with chat_id: {chat_id}")
         db_chat = db.query(Chat).filter(Chat.chat_id == chat_id).first()
         if not db_chat:
+            print(f"BACKEND: Chat not found for chat_id: {chat_id}")
             raise HTTPException(status_code=404, detail="Chat not found")
 
         updated = False
@@ -288,57 +297,37 @@ async def summarize_chat_title(chat_id: str, db: Session = Depends(get_db)):
     # Add a system message to guide the LLM
     system_prompt = {
         "role": "system", 
-        "content": "Create a short, concise chat title of 1-4 words that summarizes the core topic or purpose of this conversation. The title should be clear, descriptive, and relevant to the main subject being discussed. Do not include any other text, just provide the title text with no quotes or other formatting."
+        "content": "Create a short, concise chat title of 2-4 words that summarizes the core topic or purpose of this conversation. Focus on the specific subject matter being discussed, not on the identities of the participants. The title should be clear, descriptive, and capture the essence of the conversation. Do not include phrases like 'I am' or self-references. Only output the title with no quotes or other formatting."
     }
     title_generation_payload = [system_prompt] + formatted_messages_for_llm
 
     try:
         settings = get_settings()
         
-        # Try primary provider first
-        primary_provider = settings.LLM_PROVIDER
-        fallback_providers = ["deepseek-chat", "openai"] 
+        # Use only DeepSeek for title generation
+        provider = "deepseek-chat"
+        llm_function = llm_provider_actions.get(provider)
         
-        # Remove the primary provider from fallbacks if it's already in the list
-        if primary_provider in fallback_providers:
-            fallback_providers.remove(primary_provider)
+        if not llm_function:
+            print(f"Error: LLM provider '{provider}' not found in llm_provider_actions.")
+            raise Exception(f"Invalid LLM provider for title generation: {provider}")
             
-        # Combine the lists with primary first, then fallbacks
-        provider_order = [primary_provider] + fallback_providers
+        print(f"Generating title with provider: {provider}")
+        # Call DeepSeek for title summarization (non-streaming)
+        new_title_raw = await llm_function(
+            messages=title_generation_payload, 
+            settings=settings, 
+            stream=False, 
+            max_tokens=20,  # Short title
+            temperature=0.5  # Moderately creative but not too random
+        )
         
-        # Try each provider until one succeeds
-        new_title_raw = None
-        for provider in provider_order:
-            llm_function = llm_provider_actions.get(provider)
-            if not llm_function:
-                print(f"Warning: LLM provider '{provider}' not found in llm_provider_actions, skipping.")
-                continue
-                
-            try:
-                print(f"Attempting title generation with provider: {provider}")
-                # Call the selected LLM function for summarization (non-streaming)
-                new_title_raw = await llm_function(
-                    messages=title_generation_payload, 
-                    settings=settings, 
-                    stream=False, 
-                    max_tokens=20,  # Short title
-                    temperature=0.5  # Moderately creative but not too random
-                )
-                
-                # If we got a valid title, break the loop
-                if isinstance(new_title_raw, str) and new_title_raw.strip():
-                    print(f"Successfully generated title with provider: {provider}")
-                    break
-                else:
-                    print(f"Provider {provider} returned empty or invalid title, trying next provider.")
-            except Exception as e:
-                print(f"Error using provider {provider} for title generation: {e}")
-                # Continue to the next provider
-                
-        # If all providers failed, use a default
-        if not new_title_raw or not isinstance(new_title_raw, str) or not new_title_raw.strip():
-            print(f"All providers failed to generate a title for chat {chat_id}. Using default.")
+        # If we got no title or an invalid title, use default
+        if not isinstance(new_title_raw, str) or not new_title_raw.strip():
+            print(f"Provider {provider} returned empty or invalid title, using default.")
             new_title_raw = "New Chat"
+        else:
+            print(f"Successfully generated title with provider: {provider}")
         
         # Clean and format the title
         new_title = re.sub(r'[*_`~#]', '', new_title_raw.strip())
@@ -582,38 +571,57 @@ async def generate_chat_response_from_messages_openai(
     max_tokens: Optional[int] = None, 
     temperature: Optional[float] = None
 ) -> AsyncGenerator[str, None] | str:
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
-    model_name = settings.OPENAI_MODEL
-    print(f"[OpenAI] Called with model: {model_name}")
+    try:
+        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        model_name = settings.OPENAI_MODEL
+        print(f"[OpenAI] Called with model: {model_name}")
 
-    # OpenAI API expects messages in a specific format, ensure it matches
-    # [{ "role": "user", "content": "hello"}, ...]
-    # The input `messages` should already be in this format.
-
-    if stream:
-        async def stream_generator():
-            response_stream = await asyncio.to_thread( # Run blocking SDK call in a thread
+        if stream:
+            async def stream_generator():
+                try:
+                    response_stream = await asyncio.to_thread( # Run blocking SDK call in a thread
+                        client.chat.completions.create,
+                        model=model_name,
+                        messages=messages,
+                        temperature=temperature or settings.OPENAI_TEMPERATURE,
+                        max_tokens=max_tokens or settings.OPENAI_MAX_TOKENS,
+                        stream=True
+                    )
+                    for chunk in response_stream:
+                        if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                            yield chunk.choices[0].delta.content
+                except openai.APIError as e:
+                    error_message = f"OpenAI API Error: {str(e)}. Please check your quota or try another model."
+                    print(f"[OpenAI Stream] {error_message}")
+                    yield error_message
+                    return # Stop the generator
+            return stream_generator()
+        else:
+            response = await asyncio.to_thread(
                 client.chat.completions.create,
                 model=model_name,
                 messages=messages,
                 temperature=temperature or settings.OPENAI_TEMPERATURE,
                 max_tokens=max_tokens or settings.OPENAI_MAX_TOKENS,
-                stream=True
+                stream=False
             )
-            for chunk in response_stream:
-                if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
-        return stream_generator()
-    else:
-        response = await asyncio.to_thread(
-            client.chat.completions.create,
-            model=model_name,
-            messages=messages,
-            temperature=temperature or settings.OPENAI_TEMPERATURE,
-            max_tokens=max_tokens or settings.OPENAI_MAX_TOKENS,
-            stream=False
-        )
-        return response.choices[0].message.content.strip() if response.choices and response.choices[0].message else ""
+            return response.choices[0].message.content.strip() if response.choices and response.choices[0].message else ""
+    except openai.APIError as e:
+        error_message = f"OpenAI API Error: {str(e)}. Please check your quota or try another model."
+        print(f"[OpenAI Non-Stream] {error_message}")
+        if stream: # Should ideally be caught by the inner try-except in stream_generator, but as a fallback
+            async def error_gen():
+                yield error_message
+            return error_gen()
+        return error_message # For non-streaming case
+    except Exception as e: # Catch any other unexpected errors
+        error_message = f"An unexpected error occurred with OpenAI: {str(e)}"
+        print(f"[OpenAI Unexpected] {error_message}")
+        if stream:
+            async def error_gen():
+                yield error_message
+            return error_gen()
+        return error_message
 
 async def generate_chat_response_from_messages_gemini(
     messages: List[Dict[str, Any]], 
@@ -712,18 +720,15 @@ async def generate_chat_response_from_messages_gemini(
                         print(f"Gemini non-stream: Prompt Feedback: {response_object.prompt_feedback}")
                     return ""
             else: # No candidates
-                print(f"Gemini non-stream: No candidates found.")
-                if response_object and response_object.prompt_feedback: # Check if response_object itself is not None
-                    print(f"Gemini non-stream: Prompt Feedback: {response_object.prompt_feedback}")
+                print(f"[Gemini non-stream] No candidates found. Full response: {response_object}")
                 return ""
         except Exception as e:
-            print(f"Gemini non-stream error: {e}")
+            print(f"Gemini non-stream error: {e}")      
             return ""
-
-
+        
 # Define the llm_provider_actions dictionary
 llm_provider_actions: Dict[str, Callable[..., AsyncGenerator[str, None] | str]] = {
     "deepseek-chat": generate_chat_response_from_messages_deepseek,
-    "openai": generate_chat_response_from_messages_openai,
+    "o4-mini-2025-04-16": generate_chat_response_from_messages_openai,
     "gemini-2.5-pro-preview-05-06": generate_chat_response_from_messages_gemini,
 } 
