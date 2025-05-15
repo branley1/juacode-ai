@@ -1,4 +1,4 @@
-import React, { useState, forwardRef } from 'react';
+import React, { useState, forwardRef, useEffect } from 'react';
 import './Sidebar.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -8,11 +8,17 @@ import { faUserCircle, faTrash, faEllipsisV } from '@fortawesome/free-solid-svg-
 const getChatId = (chat) => chat.chat_id || chat.id || "";
 
 // Wrap Sidebar with forwardRef
-const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDeleteAllChats, onDeleteChat, onRenameChat }, ref) => {
+const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDeleteAllChats, onDeleteChat, onRenameChat, setCurrentView }, ref) => {
   const [showAccountDetails, setShowAccountDetails] = useState(false);
   const [editingChatId, setEditingChatId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [openMenuChatId, setOpenMenuChatId] = useState(null);
+
+  useEffect(() => {
+    if (!isSidebarOpen) {
+      setShowAccountDetails(false);
+    }
+  }, [isSidebarOpen]);
 
   const handleRenameInitiate = (chat, e) => {
     e.stopPropagation();
@@ -110,7 +116,13 @@ const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatS
         <div className="sidebar-account">
           <div
             className="account-preview"
-            onClick={() => setShowAccountDetails(prev => !prev)}
+            onClick={() => {
+              if (showAccountDetails) {
+                if (setCurrentView) setCurrentView('profile');
+              } else {
+                setShowAccountDetails(true);
+              }
+            }}
             style={{ cursor: 'pointer' }}
           >
             <FontAwesomeIcon icon={faUserCircle} />
@@ -119,7 +131,13 @@ const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatS
             </div>
           </div>
           {showAccountDetails && (
-            <div className="account-full-details">
+            <div 
+              className="account-full-details"
+              onClick={() => {
+                if (setCurrentView) setCurrentView('profile');
+              }}
+              style={{ cursor: 'pointer' }}
+            >
               <p>Email: guest@example.com</p>
             </div>
           )}

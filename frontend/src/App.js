@@ -7,6 +7,7 @@ import MobileDetector from './components/MobileDetector';
 import LandingPage from './components/LandingPage/LandingPage';
 import Login from './components/Login/Login';
 import RegisterUser from './components/RegisterUser/RegisterUser';
+import ProfilePage from './components/ProfilePage/ProfilePage';
 
 function App() {
   const [currentView, setCurrentView] = useState('landing');
@@ -68,6 +69,17 @@ function App() {
     setCurrentView('login');
   };
 
+  const handleNavigateToProfile = () => {
+    setCurrentView('profile');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isUserAuthenticated');
+    localStorage.removeItem('juaUser');
+    setIsUserAuthenticated(false);
+    setCurrentView('login');
+  };
+
   let contentToRender;
   const commonPageProps = {
     isDarkMode,
@@ -75,13 +87,15 @@ function App() {
   };
 
   if (currentView === 'landing') {
-    contentToRender = <LandingPage {...commonPageProps} onStartChatting={handleStartChatting} />;
+    contentToRender = <LandingPage {...commonPageProps} onStartChatting={handleStartChatting} onNavigateToProfile={handleNavigateToProfile} isUserAuthenticated={isUserAuthenticated} onLogout={handleLogout} />;
   } else if (currentView === 'login') {
     contentToRender = <Login {...commonPageProps} onLoginSuccess={handleLoginSuccess} onNavigateToRegister={handleNavigateToRegister} />;
   } else if (currentView === 'register') {
     contentToRender = <RegisterUser {...commonPageProps} onRegistrationSuccess={handleRegistrationSuccess} onNavigateToLogin={handleNavigateToLogin} />;
   } else if (currentView === 'chat') {
-    contentToRender = <ChatInterface setCurrentView={setCurrentView} onNavigateToLogin={handleNavigateToLogin} />;
+    contentToRender = <ChatInterface setCurrentView={setCurrentView} onNavigateToLogin={handleNavigateToLogin} isDarkMode={isDarkMode} isUserAuthenticated={isUserAuthenticated} onLogout={handleLogout} />;
+  } else if (currentView === 'profile') {
+    contentToRender = <ProfilePage setCurrentView={setCurrentView} isDarkMode={isDarkMode} toggleTheme={toggleTheme} isUserAuthenticated={isUserAuthenticated} onNavigateToLogin={handleNavigateToLogin} />;
   }
 
   return (

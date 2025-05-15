@@ -5,7 +5,7 @@ import Sidebar from '../Sidebar/Sidebar';
 import './ChatInterface.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPen, faBars, faPlus, faShare, faUser, faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
+import { faPen, faBars, faPlus, faShare, faUser, faCog, faUserCircle, faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
 
 // Generate a unique string for the chat id.
 const generateUniqueChatId = () => {
@@ -42,7 +42,7 @@ const AVAILABLE_MODELS = [
   { value: "gemini-2.5-pro-preview-05-06", label: "Gemini 2.5 Pro" }
 ];
 
-function ChatInterface({ setCurrentView, onNavigateToLogin }) {
+function ChatInterface({ setCurrentView, onNavigateToLogin, isUserAuthenticated }) {
   const [messages, setMessages] = useState([]);
   const [chatStarted, setChatStarted] = useState(false);
   const [chatTitle, setChatTitle] = useState('New Chat');
@@ -765,6 +765,7 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
              console.error(`Error renaming chat ${chatIdToRename} on backend:`, error);
           }
         }}
+        setCurrentView={setCurrentView}
       />
       {isSidebarOpen && (
         <div className="sidebar-overlay active" onClick={toggleSidebar}></div>
@@ -783,14 +784,23 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
                     </button>
                     {isProfileMenuOpen && (
                         <div className="profile-dropdown-menu">
-                            <button onClick={() => { onNavigateToLogin && onNavigateToLogin(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                                Log In
+                            <button onClick={() => {
+                                if (isUserAuthenticated) {
+                                    setCurrentView('profile');
+                                } else {
+                                    if (onNavigateToLogin) onNavigateToLogin(); else setCurrentView('login');
+                                }
+                                setIsProfileMenuOpen(false);
+                            }} className="profile-dropdown-item">
+                              <FontAwesomeIcon icon={faUserCircle} /> {isUserAuthenticated ? 'My Account' : 'Log In'}
                             </button>
+                            
                             <button onClick={() => { toggleTheme(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                                <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} /> {isDarkMode ? 'Light Mode' : 'Dark Mode'}
                             </button>
-                            <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                                Settings
+
+                            <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false);}} className="profile-dropdown-item">
+                               <FontAwesomeIcon icon={faCog} /> Settings
                             </button>
                         </div>
                     )}
@@ -866,14 +876,23 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
                     </button>
                     {isProfileMenuOpen && (
                       <div className="profile-dropdown-menu">
-                        <button onClick={() => { onNavigateToLogin && onNavigateToLogin(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                          Log In 
+                        <button onClick={() => {
+                            if (isUserAuthenticated) {
+                                setCurrentView('profile');
+                            } else {
+                                if (onNavigateToLogin) onNavigateToLogin(); else setCurrentView('login');
+                            }
+                            setIsProfileMenuOpen(false);
+                        }} className="profile-dropdown-item">
+                          <FontAwesomeIcon icon={faUserCircle} /> {isUserAuthenticated ? 'My Account' : 'Log In'}
                         </button>
+                        
                         <button onClick={() => { toggleTheme(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                          {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                            <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} /> {isDarkMode ? 'Light Mode' : 'Dark Mode'}
                         </button>
+
                         <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false);}} className="profile-dropdown-item">
-                          Settings
+                           <FontAwesomeIcon icon={faCog} /> Settings
                         </button>
                       </div>
                     )}

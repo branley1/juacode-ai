@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import './LandingPage.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSun, faMoon, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faSignInAlt, faCog, faSun, faMoon, faUserCircle } from '@fortawesome/free-solid-svg-icons';
 
-function LandingPage({ onStartChatting, isDarkMode, toggleTheme }) {
+function LandingPage({ onStartChatting, isDarkMode, toggleTheme, onNavigateToProfile, isUserAuthenticated }) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
 
@@ -30,23 +30,36 @@ function LandingPage({ onStartChatting, isDarkMode, toggleTheme }) {
 
   return (
     <div className="landing-page-container">
-      <button onClick={toggleTheme} className="theme-toggle-button page-theme-toggle landing-theme-toggle" title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
-        <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} />
-      </button>
       <div className="landing-profile-menu-container" ref={profileMenuRef}>
         <button className="profile-menu-button landing-profile-menu-button" onClick={toggleProfileMenu} title="Profile and Settings">
             <FontAwesomeIcon icon={faUser} />
         </button>
         {isProfileMenuOpen && (
             <div className="profile-dropdown-menu landing-profile-dropdown-menu">
-                <button onClick={() => { alert('Log In clicked!'); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                    Log In
-                </button>
+                {isUserAuthenticated ? (
+                    <>
+                        <button onClick={() => { onNavigateToProfile(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
+                            <FontAwesomeIcon icon={faUserCircle} /> My Account
+                        </button>
+                        <button onClick={() => { onStartChatting(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
+                            <FontAwesomeIcon icon={faSignInAlt} /> Start Chatting
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <button onClick={() => { onStartChatting(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
+                            <FontAwesomeIcon icon={faSignInAlt} /> Log In / Start Chatting
+                        </button>
+                        <button onClick={() => { onNavigateToProfile(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
+                            <FontAwesomeIcon icon={faUserCircle} /> View Profile
+                        </button>
+                    </>
+                )}
                 <button onClick={() => { toggleTheme(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                    {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                    <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} /> {isDarkMode ? 'Light Mode' : 'Dark Mode'}
                 </button>
-                <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                    Settings
+                <button onClick={() => { alert('Settings from Landing clicked!'); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
+                    <FontAwesomeIcon icon={faCog} /> Settings
                 </button>
             </div>
         )}
