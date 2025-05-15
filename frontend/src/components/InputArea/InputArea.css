@@ -39,12 +39,14 @@
   line-height: 1.5;
   overflow-y: auto;
   background-color: transparent;
-  scrollbar-width: thin; /* Firefox */
-  scrollbar-color: #aaa #eee; /* Firefox */
+  color: var(--color-text-input);
+  caret-color: var(--color-text-input);
+  scrollbar-width: thin;
+  scrollbar-color: #aaa #eee;
 }
 
 textarea::-webkit-scrollbar {
-  width: 8px; /* For Chrome, Safari, Edge - thin scrollbar */
+  width: 8px;
 }
 
 textarea::-webkit-scrollbar-thumb {
@@ -99,10 +101,7 @@ textarea:focus {
 }
 
 .model-toggle-button {
-  /* Remove absolute positioning if it was there */
   position: relative; 
-  /* bottom: 5px; */ /* Handled by controls-container */
-  /* left: 10px; */  /* Handled by controls-container */
   border: none;
   background: transparent;
   color: var(--color-text-secondary, #555);
@@ -132,10 +131,9 @@ textarea:focus {
   color: var(--color-text-primary, #333);
 }
 
-/* Styles for the new custom model selector */
 .custom-model-selector-container {
-  position: relative; /* Crucial for positioning the options dropdown */
-  display: inline-block; /* Or block, depending on layout needs */
+  position: relative;
+  display: inline-block;
 }
 
 .custom-model-selector-display {
@@ -149,7 +147,7 @@ textarea:focus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-width: 120px; /* Adjust as needed */
+  min-width: 120px;
 }
 
 .custom-model-selector-display:hover {
@@ -157,19 +155,19 @@ textarea:focus {
 }
 
 .custom-model-selector-display span {
-  margin-right: 8px; /* Space between text and icon */
+  margin-right: 8px;
 }
 
 .custom-model-selector-options {
   position: absolute;
-  bottom: 100%; /* Position above the display area */
+  bottom: 100%;
   left: 0;
   right: 0;
   background-color: var(--color-input-container-background, white);
   border: 1px solid var(--color-input-container-border, #ccc);
-  border-radius: 4px; /* Changed from 0 0 4px 4px */
-  z-index: 1050; /* Ensure it's above other elements */
-  max-height: 150px; /* Limit height and make scrollable if many options */
+  border-radius: 4px;
+  z-index: 1050;
+  max-height: 150px;
   overflow-y: auto;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
@@ -182,11 +180,11 @@ textarea:focus {
 }
 
 .custom-model-selector-option:hover {
-  background-color: var(--color-background-message-user, #f0f0f0); /* Use a hover color */
+  background-color: var(--color-background-message-user, #f0f0f0);
 }
 
 .custom-model-selector-option.selected {
   background-color: var(--color-button-send-background, #555);
-  color: var(--color-input-container-background, white); /* Ensure text is visible on selection */
+  color: var(--color-input-container-background, white);
   font-weight: bold;
 }

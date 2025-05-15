@@ -8,10 +8,11 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.8",
+    "@types/jsonwebtoken": "9.0.9",
     "concurrently": "^8.0.0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
     "@vercel/analytics": "^1.5.0",
     "bcryptjs": "^3.0.2",
     "jsonwebtoken": "^9.0.2",

@@ -4,7 +4,7 @@ import { faToggleOn, faToggleOff, faChevronDown, faChevronUp } from '@fortawesom
 import SendIcon from '../../assets/send-black.svg';
 import './InputArea.css';
 
-function InputArea({ setMessages, messages, onFirstMessageSent, isLandingPage, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping, currentModel, setCurrentModel, availableModels }) {
+function InputArea({ onFirstMessageSent, isLandingPage, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping, currentModel, setCurrentModel, availableModels }) {
   const [input, setInput] = useState('');
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);

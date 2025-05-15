@@ -26,23 +26,23 @@
 
 body.dark-theme {
   /* Dark Theme Variables */
-  --color-background-body: #121212; 
-  --color-background-chat-container: #121212;
-  --color-border-chat-container: #333;
-  --color-background-message-user: #354a29;
-  --color-text-message-user: #f0f0f0;
+  --color-background-body: #0a0a0a; 
+  --color-background-chat-container: #0a0a0a;
+  --color-border-chat-container: #2c2c2c;
+  --color-background-message-user: #444;
+  --color-text-message-user: #ededed;
   --color-background-message-assistant: transparent; 
-  --color-text-message-assistant: #f0f0f0;
-  --color-profile-icon-border: #555; 
-  --color-input-container-background: #212121;
-  --color-input-container-border: #555;
-  --color-text-input: #f0f0f0; 
-  --color-button-send-background: #64b5f6;
-  --color-button-send-hover-background: #42a5f5;
-  --color-text-primary: #f0f0f0; 
-  --color-text-secondary: #aaa; 
-  --color-background-code-block: #2a2a2a; 
-  --color-text-code-block: #f8f8f2;
+  --color-text-message-assistant: #ededed;
+  --color-profile-icon-border: #444;
+  --color-input-container-background: #171717;
+  --color-input-container-border: #333;
+  --color-text-input: #ededed; 
+  --color-button-send-background: #3b82f6;
+  --color-button-send-hover-background: #2563eb;
+  --color-text-primary: #ededed; 
+  --color-text-secondary: #bbbbbb;
+  --color-background-code-block: #1e1e1e;
+  --color-text-code-block: #d4d4d4;
 }
 
 

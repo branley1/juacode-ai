@@ -78,7 +78,7 @@
   margin: 0;
   font-size: 1.2em;
   font-weight: bold;
-  font-family: 'IBM Plex Mono', monospace;
+  /* font-family: 'IBM Plex Mono', monospace; */
 }
 
 .chat-history-header {
@@ -124,26 +124,29 @@
 
 .account-full-details {
    padding: 10px 15px;
-   background-color: #f9f9f9;
-   border-top: 1px solid #e0e0e0;
+   background-color: transparent;
+   border-top: 1px solid var(--color-border-chat-container);
    font-size: 0.9em;
+   color: var(--color-text-secondary);
  }
 
 .account-preview {
   display: flex;
   align-items: center;
   gap: 12px;
+  color: var(--color-text-primary);
 }
 
 .account-preview svg {
-  width: 40px;
-  height: 40px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
+  color: var(--color-text-primary);
 }
 
 .account-preview span {
-  font-size: 1.1em;
-  font-weight: 600;
+  font-size: 1em;
+  font-weight: 500;
 }
 
 .account-details small {
@@ -155,6 +158,11 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+}
+
+.account-details p {
+  color: var(--color-text-secondary);
+  margin: 0;
 }
 
 .delete-all-chats-button {

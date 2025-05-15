@@ -5,7 +5,7 @@ import Sidebar from '../Sidebar/Sidebar';
 import './ChatInterface.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPen, faBars, faPlus, faShare } from '@fortawesome/free-solid-svg-icons';
+import { faPen, faBars, faPlus, faShare, faSun, faMoon, faUser } from '@fortawesome/free-solid-svg-icons';
 
 // Generate a unique string for the chat id.
 const generateUniqueChatId = () => {
@@ -56,6 +56,55 @@ function ChatInterface() {
   const [isChatPersisted, setIsChatPersisted] = useState(false);
   const [streamingIndex, setStreamingIndex] = useState(null);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
+  const [currentLlmModel, setCurrentLlmModel] = useState(null);
+  // State for theme
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('juaCodeTheme');
+    if (savedTheme) return savedTheme === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.body.classList.add('dark-theme');
+      localStorage.setItem('juaCodeTheme', 'dark');
+    } else {
+      document.body.classList.remove('dark-theme');
+      localStorage.setItem('juaCodeTheme', 'light');
+    }
+  }, [isDarkMode]);
+
+  // Light/Dark mode toggle
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+    setIsProfileMenuOpen(false);
+  };
+
+  const toggleProfileMenu = () => {
+    setIsProfileMenuOpen(!isProfileMenuOpen);
+  };
+
+  // Effect to handle clicks outside the profile menu to close it
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        const profileButton = document.querySelector('.profile-menu-button');
+        if (profileButton && profileButton.contains(event.target)) {
+          return;
+        }
+        setIsProfileMenuOpen(false);
+      }
+    }
+    // Bind the event listener
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Unbind the event listener on clean up
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [profileMenuRef]);
 
   const [chatHistory, setChatHistory] = useState(() => {
     const storedHistory = localStorage.getItem('juaCodeChatHistory');
@@ -154,36 +203,23 @@ function ChatInterface() {
     const outgoingTitle = chatTitle;
     const outgoingIsPersisted = isChatPersisted;
 
-    if (outgoingMessages.length > 0 && outgoingChatId) {
-      if (outgoingIsPersisted) {
-        const existingChatRecord = { chat_id: outgoingChatId, title: outgoingTitle, messages: outgoingMessages };
-        try {
-          await fetch(`/api/chats/${outgoingChatId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: outgoingTitle, messages: outgoingMessages }),
-          });
-          setChatHistory(prevHistory => {
-            const filtered = prevHistory.filter(chat => getChatId(chat) !== outgoingChatId);
-            return [...filtered, existingChatRecord];
-          });
-          console.log(`Updated existing chat ${outgoingChatId} on backend.`);
-        } catch (error) {
-          console.error(`Error updating existing chat ${outgoingChatId} on backend:`, error);
-        }
-      } else {
-        const newChatToPersist = { chat_id: outgoingChatId, title: outgoingTitle, messages: outgoingMessages };
-        try {
-            await fetch('/api/chats', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newChatToPersist),
-            });
-            setChatHistory(prevHistory => [...prevHistory, newChatToPersist]);
-            console.log(`Persisted new chat ${outgoingChatId} on backend before creating another new chat.`);
-        } catch (error) {
-            console.error(`Error persisting new chat ${outgoingChatId} before creating another new chat:`, error);
-        }
+    if (outgoingMessages.length > 0 && outgoingChatId && !outgoingIsPersisted) {
+      const newChatToPersist = { 
+        chat_id: outgoingChatId, 
+        title: outgoingTitle, 
+        messages: outgoingMessages,
+        last_model_used: currentLlmModel
+      };
+      try {
+        await fetch('/api/chats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newChatToPersist),
+        });
+        setChatHistory(prevHistory => [...prevHistory, newChatToPersist]);
+        console.log(`Persisted new chat ${outgoingChatId} on backend before creating another new chat.`);
+      } catch (error) {
+        console.error(`Error persisting new chat ${outgoingChatId} before creating another new chat:`, error);
       }
     }
 
@@ -197,6 +233,8 @@ function ChatInterface() {
     setIsChatPersisted(false);
     setStreamingIndex(null);
     setIsEditingTitle(false);
+    setCurrentLlmModel(null);
+    setIsProfileMenuOpen(false);
 
     console.log('New empty chat initialized with ID:', newChatId, 'and title:', newTitle);
     console.log('------handleNewChat finished -------\n');
@@ -226,8 +264,9 @@ function ChatInterface() {
     setChatStarted(true);
     setIsSidebarOpen(false);
     setIsTyping(false);
-    setIsChatPersisted(true); // Loaded chats are considered persisted
+    setIsChatPersisted(true);
     setStreamingIndex(null);
+    setIsProfileMenuOpen(false);
   };
 
   useEffect(() => {
@@ -399,25 +438,54 @@ function ChatInterface() {
         done = doneReading;
         const chunk = decoder.decode(value, { stream: true });
         
-        if (!assistantMessagePlaceholderAdded && !done) {
-          setIsTyping(false);
-          setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-          setStreamingIndex(messagesForAPI.length);
-          assistantMessagePlaceholderAdded = true;
-        }
+        // Process buffer for complete SSE messages (data: {...}\n\n)
+        let buffer = ''; // Buffer for potentially incomplete SSE messages
+        buffer += chunk;
         
-        assistantContentAccumulator += chunk;
-        const currentAccumulatedContentForThisIteration = assistantContentAccumulator;
+        let eventEndIndex;
+        while ((eventEndIndex = buffer.indexOf('\\n\\n')) !== -1) {
+          const eventStr = buffer.substring(0, eventEndIndex);
+          buffer = buffer.substring(eventEndIndex + 2);
 
-        if (currentChatId === localChatId && assistantMessagePlaceholderAdded) {
-          setMessages(prev => {
-            const newMsgs = [...prev];
-            if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].role === 'assistant') {
-              newMsgs[newMsgs.length - 1].content = currentAccumulatedContentForThisIteration;
+          if (eventStr.startsWith('data: ')) {
+            const jsonStr = eventStr.substring(6).trim();
+            if (jsonStr === '[DONE]') {
+              done = true;
+              break; 
             }
-            return newMsgs;
-          });
+            try {
+              const parsedEvent = JSON.parse(jsonStr);
+              if (parsedEvent.model_used) {
+                console.log("[ChatInterface] Received model_used:", parsedEvent.model_used);
+                setCurrentLlmModel(parsedEvent.model_used);
+              } else if (parsedEvent.text !== undefined) {
+                if (!assistantMessagePlaceholderAdded && !done) {
+                  setIsTyping(false);
+                  setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+                  setStreamingIndex(messagesForAPI.length);
+                  assistantMessagePlaceholderAdded = true;
+                }
+                assistantContentAccumulator += parsedEvent.text;
+                if (currentChatId === localChatId && assistantMessagePlaceholderAdded) {
+                  setMessages(prev => {
+                    const newMsgs = [...prev];
+                    if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].role === 'assistant') {
+                      newMsgs[newMsgs.length - 1].content = assistantContentAccumulator;
+                    }
+                    return newMsgs;
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn("[ChatInterface] Error parsing SSE JSON or non-JSON data chunk:", jsonStr, e);
+              // If it's not JSON, it might be an older format or an error. 
+              // For backward compatibility or simple text streams, you might append directly:
+              // assistantContentAccumulator += jsonStr; 
+            }
+          }
         }
+        // If loop finishes, and there's remaining buffer content, it's an incomplete SSE.
+        // Decide if/how to handle it. For now, we assume SSEs are complete.
       }
       
       if (!assistantMessagePlaceholderAdded) {
@@ -452,6 +520,7 @@ function ChatInterface() {
           chat_id: finalChatIdForSummary,
           title: localChatTitle,
           messages: finalMessagesWithAssistantResponse,
+          last_model_used: currentLlmModel,
         };
         console.log("Persisting new chat to backend (chatId, title, messages):", newChatPayload);
         try {
@@ -503,10 +572,15 @@ function ChatInterface() {
         // This is an existing chat that needs to be updated
         try {
           console.log(`Updating messages for persisted chat ${finalChatIdForSummary} on backend.`);
+          const updatePayload = { 
+            messages: finalMessagesWithAssistantResponse, 
+            title: localChatTitle,
+            last_model_used: currentLlmModel,
+          };
           const updateRes = await fetch(`/api/chats/${finalChatIdForSummary}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages: finalMessagesWithAssistantResponse, title: localChatTitle }),
+            body: JSON.stringify(updatePayload),
           });
           
           if (!updateRes.ok) {
@@ -514,16 +588,17 @@ function ChatInterface() {
             if (updateRes.status === 404) {
               console.log(`Chat ${finalChatIdForSummary} not found in backend, attempting to persist as new chat.`);
               
-              const newChatPayload = {
+              const newChatPayloadIf404 = {
                 chat_id: finalChatIdForSummary,
                 title: localChatTitle,
                 messages: finalMessagesWithAssistantResponse,
+                last_model_used: currentLlmModel,
               };
               
               const postRes = await fetch('/api/chats', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newChatPayload),
+                body: JSON.stringify(newChatPayloadIf404),
               });
               
               if (!postRes.ok) {
@@ -732,6 +807,24 @@ function ChatInterface() {
                     <button className="new-chat-button" onClick={handleNewChat}>
                         <FontAwesomeIcon icon={faPlus} />
                     </button>
+                    <div style={{ position: 'relative' }} ref={profileMenuRef}>
+                        <button className="profile-menu-button" onClick={toggleProfileMenu} title="Profile and Settings">
+                            <FontAwesomeIcon icon={faUser} />
+                        </button>
+                        {isProfileMenuOpen && (
+                            <div className="profile-dropdown-menu">
+                                <button onClick={() => alert('Log In clicked!')} className="profile-dropdown-item">
+                                    Log In
+                                </button>
+                                <button onClick={toggleTheme} className="profile-dropdown-item">
+                                    {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                                </button>
+                                <button onClick={() => alert('Settings clicked!')} className="profile-dropdown-item">
+                                    Settings
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
               </div>
               <div className="chat-messages" ref={chatMessagesRef}>
