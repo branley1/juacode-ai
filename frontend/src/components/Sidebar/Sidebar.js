@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState, forwardRef } from 'react';
 import './Sidebar.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -7,8 +7,8 @@ import { faUserCircle, faTrash, faEllipsisV } from '@fortawesome/free-solid-svg-
 // Safely retrieve the chat id from the chat object.
 const getChatId = (chat) => chat.chat_id || chat.id || "";
 
-
-function Sidebar({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDeleteAllChats, onDeleteChat, onRenameChat }) {
+// Wrap Sidebar with forwardRef
+const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDeleteAllChats, onDeleteChat, onRenameChat }, ref) => {
   const [showAccountDetails, setShowAccountDetails] = useState(false);
   const [editingChatId, setEditingChatId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -28,7 +28,8 @@ function Sidebar({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDe
 
   return (
     <React.Fragment>
-      <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+      {/* Pass the ref to the main div of the Sidebar */}
+      <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`} ref={ref}>
         <div className="sidebar-header">
           <img src={JuaCodeLogo} alt="JuaCode Logo" className="sidebar-logo" />
           <h3 className="sidebar-title">JuaCode</h3>
@@ -126,6 +127,6 @@ function Sidebar({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDe
       </div>
     </React.Fragment>
   );
-}
+});
 
 export default Sidebar;

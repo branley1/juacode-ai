@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ChatUpdate, Chat, ChatMessage } from '@/models/Chat';
 import { LLMMessage, generateChatCompletion, LLMConfig, LLMProvider } from '@/lib/llmService';
+import { Pool } from '../../../../../node_modules/@types/pg';
 
 interface RouteParams {
   chat_id: string;
@@ -196,5 +197,19 @@ export async function POST(req: NextRequest, { params }: { params: RouteParams }
         return NextResponse.json({ error: 'Invalid message format in stored chat.', detail: error.message }, { status: 500 });
     }
     return NextResponse.json({ error: 'Error summarizing chat title.', detail: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: RouteParams }) {
+  const chatId = params.chat_id;
+  try {
+    const result = await db.query('DELETE FROM chats WHERE chat_id = $1 RETURNING chat_id', [chatId]);
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
+    }
+    return NextResponse.json({ message: `Chat ${chatId} deleted successfully` });
+  } catch (error) {
+    console.error(`Error deleting chat ${chatId}:`, error);
+    return NextResponse.json({ error: `Failed to delete chat ${chatId}` }, { status: 500 });
   }
 } 

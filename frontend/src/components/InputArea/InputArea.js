@@ -1,14 +1,44 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faToggleOn, faToggleOff, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
-import SendIcon from '../../assets/send-black.svg';
+import SendIconBlack from '../../assets/send-black.svg';
+import SendIconWhite from '../../assets/send-white.svg';
 import './InputArea.css';
 
-function InputArea({ onFirstMessageSent, isLandingPage, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping, currentModel, setCurrentModel, availableModels }) {
+function InputArea({ onFirstMessageSent, isLandingPage, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping, currentModel, setCurrentModel, availableModels, isDarkMode }) {
   const [input, setInput] = useState('');
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const modelSelectorRef = useRef(null);
+  const textareaRef = useRef(null);
+  const areaRef = useRef(null);
+  const defaultAreaHeightRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!textareaRef.current || !areaRef.current) return;
+    const ta = textareaRef.current;
+    const area = areaRef.current;
+    // Capture the default container height only once
+    if (defaultAreaHeightRef.current == null) {
+      defaultAreaHeightRef.current = area.clientHeight;
+    }
+    // Reset to default sizing when there's no input
+    if (!input) {
+      ta.style.height = '';
+      area.style.height = '';
+      return;
+    }
+    // Auto-resize textarea height, respecting CSS max-height
+    ta.style.height = 'auto';
+    const computed = window.getComputedStyle(ta);
+    const maxHeight = parseFloat(computed.maxHeight) || Infinity;
+    const newTaHeight = Math.min(ta.scrollHeight, maxHeight);
+    ta.style.height = `${newTaHeight}px`;
+    // Resize the container to at least its default height, growing with textarea
+    const defH = defaultAreaHeightRef.current;
+    const newAreaHeight = newTaHeight < defH ? defH : newTaHeight;
+    area.style.height = `${newAreaHeight}px`;
+  }, [input]);
 
   const handleSend = () => {
     if (!input.trim() || isTyping) return;
@@ -46,15 +76,16 @@ function InputArea({ onFirstMessageSent, isLandingPage, chatMessagesRef, simulat
   }, [modelSelectorRef]);
 
   return (
-    <div className={`input-area ${isLandingPage ? 'landing-input-area' : 'input-area'}`}>
-      <div className={`input-container ${isLandingPage ? 'landing-input-container' : 'input-container'}`}>
+    <div ref={areaRef} className="input-area">
+      <div className="input-container">
         <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask me anything..."
-          rows="4"
+          rows={1}
           name="input"
-          className={isLandingPage ? 'landing-textarea' : 'textarea'}
+          className="textarea"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -101,14 +132,14 @@ function InputArea({ onFirstMessageSent, isLandingPage, chatMessagesRef, simulat
               </div>
             )}
           </div>
+          <button
+            onClick={handleSend}
+            disabled={isTyping}
+            className="send-button"
+          >
+            <img src={isDarkMode ? SendIconWhite : SendIconBlack} alt="Send" className="send-icon-img" />
+          </button>
         </div>
-        <button
-          onClick={handleSend}
-          disabled={isTyping}
-          className="send-button"
-        >
-          <img src={SendIcon} alt="Send" className="send-icon-img" />
-        </button>
       </div>
     </div>
   );

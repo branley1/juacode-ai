@@ -115,70 +115,64 @@
 .landing-page { 
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  text-align: center;
-  padding: 5vh 20px; 
-  height: calc(100vh - 100px);
+  align-items: center; 
+  justify-content: space-between;
+  height: 100%;
   width: 100%;
-  max-width: 600px;
-  margin: auto;
-  gap: 2rem;
+  padding: 20px;
   box-sizing: border-box;
+  text-align: center;
+  position: relative;
+}
+
+.initial-chat-header-icons {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: calc(100% - 40px);
+  z-index: 1003;
+}
+
+.initial-chat-header-icons .stb-lp {
+  position: static;
+}
+
+.profile-menu-container-initial {
+  position: relative;
 }
 
 .landing-title-container {
   display: flex;
   flex-direction: column;
-  margin: auto;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
+  flex-grow: 1;
+  width: 100%;
+  padding-top: 60px;
 }
 
-
 .landing-logo {
-  width: clamp(80px, 15vw, 100px);
-  height: auto;
-  display: block;
-  max-width: 100px;
-  margin-top: 3rem;
-  margin-bottom: 3rem;
+  width: 100px; 
+  height: 100px;
+  margin-bottom: 20px;
 }
 
 .landing-chat-title {
-  font-size: clamp(1rem, 4vw, 2rem);
-  font-weight: bold;
-}
-
-.landing-input-area {
-  width: min(90%, 700px);
-  margin: auto auto 10rem auto;
-  flex-shrink: 0;
-}
-
-.landing-input-container {
-  width: 100%;
-  margin: 0 auto;
-}
-
-.landing-textarea {
-  flex-grow: 1;
-  padding: 15px 20px; 
-  font-size: 18px; 
-  border: none;
-  border-radius: 12px;
-  resize: none;
-  min-height: 60px; 
-  max-height: 300px;
-  overflow-y: auto;
-  background-color: transparent;
+  font-size: 2.5em;
+  font-weight: 600;
+  margin-bottom: 8px;
   color: var(--color-text-primary);
-  scrollbar-width: thin;
-  scrollbar-color: #aaa #eee;
-  margin-right: 0;
-  padding-right: 20px;
-  outline: none;
+}
+
+.landing-subtitle {
+  font-size: 2em;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 20px;
 }
 
 .edit-title-button {
@@ -425,7 +419,7 @@
   left: 300px;
 }
 
-.stb-lp {
+.stb-lp { /* Sidebar Toggle Button - Landing Page */
   background: none;
   border: none;
   color: var(--color-text-primary);
@@ -435,11 +429,9 @@
   border-radius: 20%;
   transition: all 0.2s ease;
   font-size: 1.1em;
-  position: inherit;
-  left: 0;
-  transition: left 0.3s ease;
-  margin-top: -50vh;
-  margin-right: -90vw;
+  position: absolute;
+  top: 20px;
+  left: 20px;
 }
 
 .sidebar-overlay {

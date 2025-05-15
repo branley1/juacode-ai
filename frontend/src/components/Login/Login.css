@@ -58,4 +58,147 @@
   text-align: center;
   margin-top: 1rem;
   color: var(--color-text-secondary, #555);
+}
+
+/* Login and Register pages */
+.auth-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background-color: var(--color-background-body);
+  color: var(--color-text-primary);
+  box-sizing: border-box;
+  position: relative;
+}
+
+.auth-form-container {
+  max-width: 400px;
+  width: 100%;
+  padding: 2.5rem;
+  border: 1px solid var(--color-border-chat-container);
+  border-radius: 12px;
+  background-color: var(--color-input-container-background);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.auth-form-container h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.auth-form-container form div {
+  margin-bottom: 1.25rem;
+}
+
+.auth-form-container form label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+}
+
+.auth-form-container form input[type="email"],
+.auth-form-container form input[type="password"],
+.auth-form-container form input[type="text"] {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--color-border-chat-container);
+  border-radius: 8px;
+  background-color: var(--color-background-body);
+  color: var(--color-text-input);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.auth-form-container form input[type="email"]:focus,
+.auth-form-container form input[type="password"]:focus,
+.auth-form-container form input[type="text"]:focus {
+  outline: none;
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-background-message-user);
+}
+
+.auth-button {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-text-primary);
+  color: var(--color-background-body);
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.auth-button:hover {
+  opacity: 0.85;
+}
+
+.auth-message {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.auth-navigation-link {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.auth-navigation-link .link-button {
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  font-weight: 500;
+}
+
+.auth-navigation-link .link-button:hover {
+  opacity: 0.8;
+}
+
+/* Theme toggle button */
+.page-theme-toggle {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: none;
+  border: 1px solid var(--color-border-chat-container);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 1em;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  z-index: 1100;
+}
+
+.page-theme-toggle:hover {
+  background-color: var(--color-background-message-user);
+}
+
+.login-container {
+  border: 1px solid var(--color-border-chat-container);
+  border-radius: 12px;
+  background-color: var(--color-input-container-background);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
 } 

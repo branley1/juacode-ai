@@ -21,3 +21,6 @@ yarn.lock
 jua/
 venv/
 package-lock.json
+
+# old backend
+old_backend/

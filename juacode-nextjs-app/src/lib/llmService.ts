@@ -1,4 +1,4 @@
-import { OpenAI } from 'openai';
+import { OpenAI } from 'openai/index.mjs';
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 export interface LLMMessage {

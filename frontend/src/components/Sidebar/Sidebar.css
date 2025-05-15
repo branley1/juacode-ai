@@ -12,6 +12,8 @@
   display: flex;
   flex-direction: column;
   transform: translateX(-100%);
+  /* overflow-y: auto; // Add this to make the whole sidebar scroll if needed */
+  /* but we want only content to scroll, so apply flex properties */
 }
 
 .sidebar.open {
@@ -61,24 +63,24 @@
 }
 
 .sidebar-content {
-  border-top: 1px solid var(--color-border-chat-container);
-  margin-top: auto;
   flex: 1;
   overflow-y: auto;
+  overflow-x: visible;
   padding: 15px;
+  border-top: 1px solid var(--color-border-chat-container);
 }
 
 .sidebar .chat-history-list {
   list-style: none;
   padding: 0;
   cursor: pointer;
+  overflow: visible;
 }
 
 .chat-history-title {
   margin: 0;
   font-size: 1.2em;
   font-weight: bold;
-  /* font-family: 'IBM Plex Mono', monospace; */
 }
 
 .chat-history-header {
@@ -96,14 +98,23 @@
   padding: 10px 15px;
   margin-bottom: 5px;
   cursor: pointer;
-  border-bottom: 1px solid #e0e0e0;
-  transition: background-color 0.2s ease;
+  border-bottom: 1px solid var(--color-border-chat-container);
+  transition: background-color 0.2s ease, color 0.2s ease;
   position: relative;
   overflow: visible;
+  color: var(--color-text-secondary);
 }
 
 .chat-history-item:hover {
-  background-color: #f0f0f0;
+  background-color: var(--color-input-container-background);
+  color: var(--color-text-primary);
+}
+
+.chat-history-item.selected {
+  background-color: var(--color-background-message-user);
+  color: var(--color-text-primary);
+  border-left: 3px solid var(--color-text-primary);
+  padding-left: 12px;
 }
 
 .chat-item-options {
@@ -135,6 +146,14 @@
   align-items: center;
   gap: 12px;
   color: var(--color-text-primary);
+  outline: none;
+  text-decoration: none;
+}
+
+.account-preview:focus,
+.account-preview:active {
+  outline: none;
+  text-decoration: none;
 }
 
 .account-preview svg {
@@ -176,7 +195,7 @@
 }
 
 .delete-all-chats-button:hover {
-  background-color: rgba(255, 0, 0, 0.1);
+  background-color: none;
   color: var(--color-icon-primary);
   opacity: 1.0;
 }
@@ -208,15 +227,23 @@
 .rename-button:hover,
 .delete-button:hover,
 .delete-all-chats-button:hover {
-  color: var(--color-button-send-hover, #0056b3);
+  color: var(--color-button-send-hover, #444);
 }
 
 .chat-rename-input {
   font-size: 1em;
-  padding: 4px;
-  border: 1px solid var(--color-border-chat-container, #ddd);
-  border-radius: 4px;
-  margin-right: 5px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-input-container-border);
+  border-radius: 6px;
+  background-color: var(--color-background-body);
+  color: var(--color-text-input);
+  flex-grow: 1;
+}
+
+.chat-rename-input:focus {
+  outline: none;
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-background-message-user);
 }
 
 .menu-button {
@@ -224,40 +251,46 @@
   border: none;
   cursor: pointer;
   padding: 8px;
-  font-size: 1.5em;
-  color: var(--color-text-primary, #333);
+  font-size: 1em;
+  color: var(--color-text-secondary);
+}
+
+.menu-button:hover {
+  color: var(--color-text-primary);
 }
 
 .chat-item-menu {
   position: absolute;
-  top: 50%;
-  left: 100%;
-  transform: translateY(-50%);
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  bottom: calc(100% + 5px);
+  right: 0;
+  background-color: var(--color-input-container-background);
+  border: 1px solid var(--color-border-chat-container);
+  border-radius: 6px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
   z-index: 1100;
   white-space: nowrap;
-  margin-left: 5px;
+  padding: 4px 0;
+  min-width: 120px;
 }
 
 .chat-item-menu .menu-item {
   display: block;
-  padding: 5px 10px;
+  padding: 8px 12px;
   background: none;
   border: none;
   width: 100%;
   text-align: left;
   cursor: pointer;
+  color: var(--color-text-primary);
+  font-size: 0.9em;
+  transition: background-color 0.15s ease;
 }
 
 .chat-item-menu .menu-item:hover {
-  background-color: #f0f0f0;
+  background-color: var(--color-background-message-user);
 }
 
 .menu-container {
   display: inline-block;
   position: relative;
-  overflow: visible;
 }
