@@ -81,7 +81,7 @@ function App() {
   } else if (currentView === 'register') {
     contentToRender = <RegisterUser {...commonPageProps} onRegistrationSuccess={handleRegistrationSuccess} onNavigateToLogin={handleNavigateToLogin} />;
   } else if (currentView === 'chat') {
-    contentToRender = <ChatInterface />;
+    contentToRender = <ChatInterface setCurrentView={setCurrentView} onNavigateToLogin={handleNavigateToLogin} />;
   }
 
   return (

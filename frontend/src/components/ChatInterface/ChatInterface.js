@@ -42,7 +42,7 @@ const AVAILABLE_MODELS = [
   { value: "gemini-2.5-pro-preview-05-06", label: "Gemini 2.5 Pro" }
 ];
 
-function ChatInterface() {
+function ChatInterface({ setCurrentView, onNavigateToLogin }) {
   const [messages, setMessages] = useState([]);
   const [chatStarted, setChatStarted] = useState(false);
   const [chatTitle, setChatTitle] = useState('New Chat');
@@ -773,7 +773,7 @@ function ChatInterface() {
           {!chatStarted ? (
             <div className="landing-page">
               <div className="initial-chat-header-icons">
-                <button className="sidebar-toggle-button stb-lp" onClick={toggleSidebar}>
+                <button className="stb-lp" onClick={toggleSidebar}>
                   <FontAwesomeIcon icon={faBars} />
                 </button>
                 <div className="profile-menu-container-initial" ref={profileMenuRef}>
@@ -782,7 +782,7 @@ function ChatInterface() {
                   </button>
                   {isProfileMenuOpen && (
                     <div className="profile-dropdown-menu">
-                      <button onClick={() => { alert('Log In clicked!'); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
+                      <button onClick={() => { onNavigateToLogin && onNavigateToLogin(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
                         Log In
                       </button>
                       <button onClick={() => { toggleTheme(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
@@ -795,22 +795,28 @@ function ChatInterface() {
                   )}
                 </div>
               </div>
-              <div className="landing-title-container">
-                <img src={JuaCodeLogo} alt="JuaCode Logo" className="landing-logo" />
-                <h2 className="landing-subtitle">What can I help with?</h2>
+              <div className="landing-header">
+                <div className="landing-title-container">
+                  <img src={JuaCodeLogo} alt="JuaCode Logo" className="landing-logo" />
+                  <h2 className="chat-title landing-chat-title">JuaCode</h2>
+                </div>
               </div>
-              <InputArea 
-                onSend={handleFirstMessage} 
+              <div className="welcome-message">
+                What can I help with?
+              </div>
+              <InputArea
+                setMessages={setMessages}
+                messages={messages}
                 onFirstMessageSent={handleFirstMessage}
-                chatMessagesRef={chatMessagesRef} 
-                simulateResponse={simulateResponse} 
-                modelVariant={modelVariant} 
-                setModelVariant={setModelVariant} 
+                chatMessagesRef={chatMessagesRef}
+                simulateResponse={simulateResponse}
+                modelVariant={modelVariant}
+                setModelVariant={setModelVariant}
                 isTyping={isTyping}
                 currentModel={currentModel}
                 setCurrentModel={setCurrentModel}
                 availableModels={AVAILABLE_MODELS}
-                isDarkMode={isDarkMode} />
+              />
             </div>
           ) : (
             <div className="chat-messages-area">
@@ -819,27 +825,38 @@ function ChatInterface() {
                   <button className="sidebar-toggle-button" onClick={toggleSidebar}>
                     <FontAwesomeIcon icon={faBars} />
                   </button>
-                  <div className="chat-title-display">
-                    <h2 className="chat-title">{chatTitle}</h2>
-                    <button className="edit-title-button" onClick={handleTitleEditClick}>
-                      <FontAwesomeIcon icon={faPen} />
-                    </button>
-                  </div>
+                  {isEditingTitle ? (
+                    <input
+                      type="text"
+                      className="chat-title-input"
+                      value={chatTitle}
+                      onChange={handleTitleChange}
+                      onBlur={handleTitleSave}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleTitleSave(); }}
+                    />
+                  ) : (
+                    <div className="chat-title-display">
+                      <h2 className="chat-title">{chatTitle}</h2>
+                      <button className="edit-title-button" onClick={handleTitleEditClick}>
+                        <FontAwesomeIcon icon={faPen} />
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="header-right-group">
-                  <button className="new-chat-button" onClick={handleNewChat} title="New Chat">
-                    <FontAwesomeIcon icon={faPlus} />
-                  </button>
-                  <button className="share-chat-button" onClick={handleShareChat} title="Share Chat">
+                  <button className="share-chat-button" onClick={handleShareChat} disabled={!isChatPersisted}>
                     <FontAwesomeIcon icon={faShare} />
                   </button>
-                  <div className="profile-menu-container" ref={profileMenuRef}>
+                  <button className="new-chat-button" onClick={handleNewChat}>
+                    <FontAwesomeIcon icon={faPlus} />
+                  </button>
+                  <div style={{ position: 'relative' }} ref={profileMenuRef} className="profile-menu-container">
                     <button className="profile-menu-button" onClick={toggleProfileMenu} title="Profile and Settings">
                       <FontAwesomeIcon icon={faUser} />
                     </button>
                     {isProfileMenuOpen && (
                       <div className="profile-dropdown-menu">
-                        <button onClick={() => { alert('Log In clicked!'); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
+                        <button onClick={() => { onNavigateToLogin && onNavigateToLogin(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
                           Log In
                         </button>
                         <button onClick={() => { toggleTheme(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
@@ -878,7 +895,9 @@ function ChatInterface() {
                 )}
               </div>
               <InputArea
-                onSend={(message) => simulateResponse(message, currentModel)}
+                setMessages={setMessages}
+                messages={messages}
+                onFirstMessageSent={handleFirstMessage}
                 chatMessagesRef={chatMessagesRef}
                 simulateResponse={simulateResponse}
                 modelVariant={modelVariant}
@@ -887,7 +906,6 @@ function ChatInterface() {
                 currentModel={currentModel}
                 setCurrentModel={setCurrentModel}
                 availableModels={AVAILABLE_MODELS}
-                isDarkMode={isDarkMode}
               />
             </div>
           )}

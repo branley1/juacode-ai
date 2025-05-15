@@ -137,7 +137,7 @@ function InputArea({ onFirstMessageSent, isLandingPage, chatMessagesRef, simulat
             disabled={isTyping}
             className="send-button"
           >
-            <img src={isDarkMode ? SendIconWhite : SendIconBlack} alt="Send" className="send-icon-img" />
+            <img src={SendIconWhite} alt="Send" className="send-icon-img" />
           </button>
         </div>
       </div>
