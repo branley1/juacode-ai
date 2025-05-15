@@ -5,7 +5,7 @@ import Sidebar from '../Sidebar/Sidebar';
 import './ChatInterface.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPen, faBars, faPlus, faShare, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faPen, faBars, faPlus, faShare, faUser, faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
 
 // Generate a unique string for the chat id.
 const generateUniqueChatId = () => {
@@ -778,30 +778,36 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
                   <FontAwesomeIcon icon={faBars} />
                 </button>
                 <div className="profile-menu-container-initial" ref={profileMenuRef}>
-                  <button className="profile-menu-button" onClick={toggleProfileMenu} title="Profile and Settings">
-                    <FontAwesomeIcon icon={faUser} />
-                  </button>
-                  {isProfileMenuOpen && (
-                    <div className="profile-dropdown-menu">
-                      <button onClick={() => { onNavigateToLogin && onNavigateToLogin(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                        Log In
-                      </button>
-                      <button onClick={() => { toggleTheme(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                        {isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                      </button>
-                      <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                        Settings
-                      </button>
-                    </div>
-                  )}
+                    <button className="profile-menu-button" onClick={toggleProfileMenu} title="Profile and Settings">
+                        <FontAwesomeIcon icon={faUser} />
+                    </button>
+                    {isProfileMenuOpen && (
+                        <div className="profile-dropdown-menu">
+                            <button onClick={() => { onNavigateToLogin && onNavigateToLogin(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
+                                Log In
+                            </button>
+                            <button onClick={() => { toggleTheme(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
+                                {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                            </button>
+                            <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
+                                Settings
+                            </button>
+                        </div>
+                    )}
                 </div>
               </div>
-              <div className="landing-header">
-                <div className="landing-title-container">
-                  <img src={JuaCodeLogo} alt="JuaCode Logo" className="landing-logo" />
-                  <h2 className="chat-title landing-chat-title">JuaCode</h2>
-                </div>
-              </div>
+              <img 
+                src={JuaCodeLogo} 
+                alt="JuaCode Logo" 
+                className="landing-logo" 
+                style={{ display: 'block', margin: '20px auto', width: '100px', height: '100px' }} 
+              />
+              <h2 
+                className="chat-title landing-chat-title" 
+                style={{ textAlign: 'center', marginBottom: '30px' }} 
+              >
+                JuaCode
+              </h2>
               <div className="welcome-message">
                 What can I help with?
               </div>
@@ -809,6 +815,7 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
                 setMessages={setMessages}
                 messages={messages}
                 onFirstMessageSent={handleFirstMessage}
+                isLandingPage={true}
                 chatMessagesRef={chatMessagesRef}
                 simulateResponse={simulateResponse}
                 modelVariant={modelVariant}
@@ -817,6 +824,7 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
                 currentModel={currentModel}
                 setCurrentModel={setCurrentModel}
                 availableModels={AVAILABLE_MODELS}
+                isDarkMode={isDarkMode}
               />
             </div>
           ) : (
@@ -834,36 +842,37 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
                       onChange={handleTitleChange}
                       onBlur={handleTitleSave}
                       onKeyDown={(e) => { if (e.key === 'Enter') handleTitleSave(); }}
+                      autoFocus
                     />
                   ) : (
-                    <div className="chat-title-display">
-                      <h2 className="chat-title">{chatTitle}</h2>
-                      <button className="edit-title-button" onClick={handleTitleEditClick}>
-                        <FontAwesomeIcon icon={faPen} />
-                      </button>
-                    </div>
+                  <div className="chat-title-display">
+                    <h2 className="chat-title">{chatTitle}</h2>
+                    <button className="edit-title-button" onClick={handleTitleEditClick}>
+                      <FontAwesomeIcon icon={faPen} />
+                    </button>
+                  </div>
                   )}
                 </div>
                 <div className="header-right-group">
-                  <button className="share-chat-button" onClick={handleShareChat} disabled={!isChatPersisted}>
+                  <button className="share-chat-button" onClick={handleShareChat} disabled={!isChatPersisted} title="Share Chat">
                     <FontAwesomeIcon icon={faShare} />
                   </button>
-                  <button className="new-chat-button" onClick={handleNewChat}>
+                  <button className="new-chat-button" onClick={handleNewChat} title="New Chat">
                     <FontAwesomeIcon icon={faPlus} />
                   </button>
-                  <div style={{ position: 'relative' }} ref={profileMenuRef} className="profile-menu-container">
+                  <div style={{ position: 'relative' }} ref={profileMenuRef}>
                     <button className="profile-menu-button" onClick={toggleProfileMenu} title="Profile and Settings">
                       <FontAwesomeIcon icon={faUser} />
                     </button>
                     {isProfileMenuOpen && (
                       <div className="profile-dropdown-menu">
                         <button onClick={() => { onNavigateToLogin && onNavigateToLogin(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                          Log In
+                          Log In 
                         </button>
                         <button onClick={() => { toggleTheme(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
                           {isDarkMode ? 'Light Mode' : 'Dark Mode'}
                         </button>
-                        <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
+                        <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false);}} className="profile-dropdown-item">
                           Settings
                         </button>
                       </div>
@@ -899,6 +908,7 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
                 setMessages={setMessages}
                 messages={messages}
                 onFirstMessageSent={handleFirstMessage}
+                isLandingPage={false}
                 chatMessagesRef={chatMessagesRef}
                 simulateResponse={simulateResponse}
                 modelVariant={modelVariant}
@@ -907,6 +917,7 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
                 currentModel={currentModel}
                 setCurrentModel={setCurrentModel}
                 availableModels={AVAILABLE_MODELS}
+                isDarkMode={isDarkMode}
               />
             </div>
           )}

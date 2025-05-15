@@ -48,7 +48,7 @@ function RegisterUser({ onRegistrationSuccess, onNavigateToLogin, isDarkMode, to
       setMessage('');
     } catch (err) {
       setMessage('Registration succeeded, but failed to save user profile.');
-    }
+        }
   };
 
   if (showConfirmation) {

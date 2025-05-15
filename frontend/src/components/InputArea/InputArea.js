@@ -130,14 +130,14 @@ function InputArea({ onFirstMessageSent, isLandingPage, chatMessagesRef, simulat
                 ))}
               </div>
             )}
-          </div>
-          <button
-            onClick={handleSend}
-            disabled={isTyping}
-            className="send-button"
-          >
+        </div>
+        <button
+          onClick={handleSend}
+          disabled={isTyping}
+          className="send-button"
+        >
             <img src={SendIconWhite} alt="Send" className="send-icon-img" />
-          </button>
+        </button>
         </div>
       </div>
     </div>
