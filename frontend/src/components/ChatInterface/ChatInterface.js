@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ChatMessage from '../ChatMessage/ChatMessage';
 import InputArea from '../InputArea/InputArea';
 import Sidebar from '../Sidebar/Sidebar';
 import './ChatInterface.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPen, faBars, faPlus, faShare, faSun, faMoon, faUser } from '@fortawesome/free-solid-svg-icons';
+import { faPen, faBars, faPlus, faShare, faUser } from '@fortawesome/free-solid-svg-icons';
 
 // Generate a unique string for the chat id.
 const generateUniqueChatId = () => {
@@ -129,9 +129,9 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
     return [];
   });
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen(prev => !prev);
+  }, []);
 
   const handleShareChat = () => {
     const shareLink = `${window.location.origin}/chat/${currentChatId}`;
@@ -468,6 +468,7 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
                 }
                 assistantContentAccumulator += parsedEvent.text;
                 if (currentChatId === localChatId && assistantMessagePlaceholderAdded) {
+                  // eslint-disable-next-line no-loop-func
                   setMessages(prev => {
                     const newMsgs = [...prev];
                     if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].role === 'assistant') {
@@ -711,7 +712,7 @@ function ChatInterface({ setCurrentView, onNavigateToLogin }) {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isSidebarOpen, sidebarRef]); // Rerun when isSidebarOpen or sidebarRef changes
+  }, [isSidebarOpen, sidebarRef, toggleSidebar]);
 
   return (
     <div className="chat-container">

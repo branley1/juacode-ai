@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ChatUpdate, Chat, ChatMessage } from '@/models/Chat';
 import { LLMMessage, generateChatCompletion, LLMConfig, LLMProvider } from '@/lib/llmService';
-import { Pool } from '../../../../../node_modules/@types/pg';
 
 interface RouteParams {
   chat_id: string;

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faToggleOn, faToggleOff, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
-import SendIconBlack from '../../assets/send-black.svg';
 import SendIconWhite from '../../assets/send-white.svg';
 import './InputArea.css';
 
