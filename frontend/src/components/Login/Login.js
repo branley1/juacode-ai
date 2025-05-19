@@ -30,7 +30,7 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
       const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
 
       try {
-        const response = await fetch('/api/users/login', {
+        const response = await fetch('http://localhost:3000/api/users/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),

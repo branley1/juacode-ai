@@ -3,18 +3,17 @@ import './RegisterUser.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSun, faMoon, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
-import { supabase } from '../../supabaseClient';
 
-function RegisterUser({ onRegistrationSuccess, onNavigateToLogin, isDarkMode, toggleTheme, setCurrentView }) {
-  const [username, setUsername] = useState('');
+function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentView }) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [errorType, setErrorType] = useState('');
-  const [showConfirmation, setShowConfirmation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const [isRegistered, setIsRegistered] = useState(false);
 
   // Password validation states
   const [passwordValidation, setPasswordValidation] = useState({
@@ -45,7 +44,7 @@ function RegisterUser({ onRegistrationSuccess, onNavigateToLogin, isDarkMode, to
     setErrorType('');
     
     // Validate all fields are filled
-    if (!username || !email || !password || !confirmPassword) {
+    if (!name || !email || !password || !confirmPassword) {
       setMessage('Please fill in all fields.');
       setErrorType('form');
       return;
@@ -62,136 +61,149 @@ function RegisterUser({ onRegistrationSuccess, onNavigateToLogin, isDarkMode, to
     // Validate passwords match
     if (password !== confirmPassword) {
       setMessage('Passwords do not match.');
-      setErrorType('confirmation');
+      setErrorType('error-form');
       return;
     }
 
+    // Show loading state
     setIsSubmitting(true);
+    setMessage("Registration in progress... This may take up to 30 seconds, please wait.");
+    setErrorType(null); // No error type as this is an informational message
 
-    try {
-      // Supabase sign up with timeout handling
-      const supabasePromise = supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { username } }
-      });
-      
-      // Set a timeout for the Supabase request
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Supabase request timed out')), 15000)
-      );
-      
-      // Race between the actual request and the timeout
-      const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
+    // Set up a longer timeout for the entire registration process
+    const timeoutId = setTimeout(() => {
+      setIsSubmitting(false);
+      setMessage("Registration timed out. Supabase may be experiencing high traffic. Please try again later.");
+      setErrorType('error-timeout');
+    }, 60000); // 60 seconds timeout
 
-      if (error) {
-        setMessage(formatErrorMessage(error.message) || 'Registration failed.');
-        setErrorType('supabase');
-        setIsSubmitting(false);
-        return;
-      }
+    let success = false;
+    let retries = 0;
+    const maxRetries = 3;
+    const baseDelay = 2000; // 2 seconds base delay between retries
 
-      if (!data.user) {
-        setMessage('Registration failed: No user returned.');
-        setErrorType('supabase');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Store the email for the confirmation screen
-      setRegisteredEmail(email);
-
-      // Call backend to create user profile with timeout handling
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-      
+    const controller = new AbortController();
+    
+    while (retries <= maxRetries && !success) {
       try {
-        const res = await fetch('/api/users/register', {
+        const res = await fetch('http://localhost:3000/api/users/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, email, password }),
-          signal: controller.signal
+          body: JSON.stringify({ name, email, password }),
+          signal: controller.signal,
+          // Use a slightly shorter timeout for the fetch itself to give retry mechanism time
+          timeout: 30000 // 30 second timeout for the fetch
         });
 
-        clearTimeout(timeoutId);
+        if (res.status === 504 || res.status === 429) {
+          retries++;
+          if (retries <= maxRetries) {
+            let waitTime = 3000;
+            if (res.status === 429) {
+              waitTime = 5000;
+              setMessage('Rate limit hit. Waiting longer before retrying...');
+            }
+            await new Promise(resolve => setTimeout(resolve, waitTime * retries));
+            continue;
+          }
+        }
         
         if (!res.ok) {
-          // If response exists but is not ok (e.g. 504, 500, etc.)
+          // If response exists but is not ok
           let errorData = { error: 'Server error' };
           try {
             errorData = await res.json();
           } catch (e) {
-            // If the response can't be parsed as JSON, use status text
-            errorData = { error: `Server error: ${res.status} ${res.statusText}` };
+            // If we can't parse the JSON, use status text
+            errorData = { 
+              error: `Server error: ${res.status} ${res.statusText || 'No response'}`,
+              isNetworkError: true
+            };
+          }
+
+          // Check for specific Supabase rate limit error passed from our backend
+          if (res.status === 429 && errorData.code === 'supabase_rate_limited') {
+            setMessage(errorData.error || 'Too many registration attempts. Please wait a minute and try again.');
+            setErrorType('api_rate_limit'); // Use a more specific error type
+            setIsSubmitting(false);
+            clearTimeout(timeoutId); // Clear the main timeout for the whole registration attempt
+            return; // Stop retrying from the client side for this specific error
           }
           
-          setMessage(formatErrorMessage(errorData.error) || 'Failed to save user profile.');
-          setErrorType(res.status === 504 ? 'timeout' : 'api');
+          if (res.status === 409) {
+            // Email already exists case
+            setMessage(errorData.error || 'This email is already registered. Please log in or use a different email.');
+            setErrorType('error-form');
+            setIsSubmitting(false);
+            clearTimeout(timeoutId);
+            return; // No need to retry for this specific error
+          }
+
+          if (res.status >= 500 || errorData.isNetworkError) {
+            // Server error, try again
+            console.log(`Attempt ${retries + 1} failed with server error. Retrying...`);
+            retries++;
+            // Exponential backoff: wait longer between each retry
+            const delay = Math.min(baseDelay * Math.pow(2, retries), 10000); // Cap at 10 seconds
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue; // Try again
+          }
+
+          // For other errors, show the message and stop
+          setMessage(errorData.error || 'Registration failed, please try again');
+          setErrorType('error-form');
           setIsSubmitting(false);
+          clearTimeout(timeoutId);
           return;
         }
         
-        const result = await res.json();
-
-        if (!res.ok) {
-          setMessage(formatErrorMessage(result.error) || 'Failed to save user profile.');
-          setErrorType(result.code || 'api');
+        // Registration successful - handle success case
+        try {
+          const userData = await res.json();
+          console.log('Registration successful:', userData);
+          
+          // Set the email for confirmation screen
+          setRegisteredEmail(email);
+          
+          // Update UI to show success and confirmation message
+          setIsRegistered(true);
           setIsSubmitting(false);
-          return;
+          clearTimeout(timeoutId);
+          success = true;
+          break;
+        } catch (parseError) {
+          console.error('Error parsing successful response:', parseError);
+          // Still consider it a success if we got a 2xx response
+          setRegisteredEmail(email);
+          setIsRegistered(true);
+          setIsSubmitting(false);
+          clearTimeout(timeoutId);
+          success = true;
+          break;
         }
-
-        setShowConfirmation(true);
-        setMessage('');
-        setIsSubmitting(false);
       } catch (fetchError) {
-        clearTimeout(timeoutId);
-        
         if (fetchError.name === 'AbortError') {
           setMessage('Registration request timed out. The server is taking too long to respond. Please try again later or contact support if the problem persists.');
           setErrorType('timeout');
+          setIsSubmitting(false);
+          clearTimeout(timeoutId);
+          return;
+        } else if (retries < maxRetries) {
+          retries++;
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, baseDelay * retries));
         } else {
-          setMessage('Failed to complete registration. Please try again later. If the problem persists, please contact support.');
+          setMessage('Failed to complete registration after several attempts. Please try again later. If the problem persists, please contact support.');
           setErrorType('api');
+          setIsSubmitting(false);
+          clearTimeout(timeoutId);
+          return;
         }
-        setIsSubmitting(false);
       }
-    } catch (err) {
-      if (err.message === 'Supabase request timed out') {
-        setMessage('Authentication service timed out. Please try again later when the service is more responsive.');
-        setErrorType('timeout');
-      } else {
-        setMessage('An unexpected error occurred. Please try again later.');
-        setErrorType('unexpected');
-      }
-      setIsSubmitting(false);
     }
-  };
-
-  // Helper function to format error messages to be more user-friendly
-  const formatErrorMessage = (error) => {
-    if (!error) return null;
     
-    // Make error messages more user-friendly
-    if (error.includes('already registered')) {
-      return 'This email is already registered. Please use a different email or try logging in.';
-    }
-    if (error.includes('Username already taken')) {
-      return 'This username is already taken. Please choose a different username.';
-    }
-    if (error.includes('email address is invalid')) {
-      return 'The email address you entered appears to be invalid. Please check and try again.';
-    }
-    if (error.includes('password')) {
-      return 'Please ensure your password meets the requirements.';
-    }
-    if (error.includes('timeout') || error.includes('timed out')) {
-      return 'The server took too long to respond. Please try again later when network conditions improve.';
-    }
-    if (error.includes('504') || error.includes('Gateway Timeout')) {
-      return 'The server is temporarily unavailable or overloaded. Please try again in a few minutes.';
-    }
-
-    return error; // Return original error if no specific formatting is needed
+    clearTimeout(timeoutId);
+    
   };
 
   // Function to render a validation item
@@ -202,19 +214,20 @@ function RegisterUser({ onRegistrationSuccess, onNavigateToLogin, isDarkMode, to
     </div>
   );
 
-  if (showConfirmation) {
+  if (isRegistered) {
     return (
       <div className="auth-page-container register-user-container">
-        <div className="auth-form-container confirmation-container" style={{ textAlign: 'center', padding: '2.5rem' }}>
-          <h2 style={{ color: 'var(--color-text-primary)' }}>Confirm Your Email</h2>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.1rem', margin: '1.5rem 0' }}>
-            We've sent a confirmation link to <b>{registeredEmail}</b>.<br />
-            Please check your inbox and click the link to activate your account.
+        <div className="auth-logo-outside">
+          <img src="/jua-logo.png" alt="Jua Code Logo" width={48} height={48} />
+        </div>
+        <div className="confirmation-container">
+          <h2>Confirm Your Email</h2>
+          <p>
+            We've sent a confirmation link to <b>{registeredEmail}</b>.
+            <br />Please check your inbox and click the link to activate your account.
           </p>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-            If you don't see the email, please check your spam folder.
-          </p>
-          <button className="auth-button" onClick={onNavigateToLogin} style={{ marginTop: '1.5rem' }}>
+          <p>If you don't see the email, please check your spam folder.</p>
+          <button onClick={onNavigateToLogin} className="auth-button">
             Go to Login
           </button>
         </div>
@@ -237,15 +250,15 @@ function RegisterUser({ onRegistrationSuccess, onNavigateToLogin, isDarkMode, to
         <h2>Register</h2>
         <form onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="register-username">Username:</label>
+            <label htmlFor="register-name">Name:</label>
             <input 
-              id="register-username"
+              id="register-name"
               type="text" 
-              value={username} 
-              onChange={(e) => setUsername(e.target.value)} 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
               required 
-              className={errorType === 'username' ? 'input-error' : ''}
-              autoComplete="username"
+              className={errorType === 'name' ? 'input-error' : ''}
+              autoComplete="name"
             />
           </div>
           <div>

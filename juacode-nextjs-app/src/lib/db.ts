@@ -47,9 +47,16 @@ export async function createTables() {
         WHERE table_name = 'users' AND column_name = 'id';
       `);
       
-      // If id column is an identity column, we need to recreate the tables
-      if (idColumnCheck.rows.length > 0 && idColumnCheck.rows[0].is_identity === 'YES') {
-        console.log('Need to recreate users table with UUID as primary key instead of identity column...');
+      const usernameColumnCheck = await client.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = 'username';
+      `);
+      
+      // If id column is an identity column, or we need to rename username to name, recreate the tables
+      if ((idColumnCheck.rows.length > 0 && idColumnCheck.rows[0].is_identity === 'YES') || 
+          usernameColumnCheck.rows.length > 0) {
+        console.log('Need to recreate users table with UUID as primary key and/or rename username column to name...');
         
         // First drop the chats table that depends on users
         await client.query('DROP TABLE IF EXISTS chats CASCADE;');
@@ -65,7 +72,7 @@ export async function createTables() {
     await client.query(
       `CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY,
-        username VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP

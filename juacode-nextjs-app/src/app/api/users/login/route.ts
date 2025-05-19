@@ -2,13 +2,39 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 import { db } from '@/lib/db';
 
+// Define response timeout - next.js route config
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
+
+// Helper to add CORS headers
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+}
+
+// Handle OPTIONS requests for CORS preflight
+export async function OPTIONS() {
+  return NextResponse.json({}, { 
+    headers: corsHeaders(),
+    status: 200
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { email, password, bypass_confirmation } = body;
 
     if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
+      return NextResponse.json({ error: 'Email and password are required' }, { 
+        status: 400,
+        headers: corsHeaders()
+      });
     }
 
     // If bypass_confirmation is true and we're in a development environment, 
@@ -32,11 +58,14 @@ export async function POST(req: NextRequest) {
             user: {
                 id: data.user.id,
                 email: data.user.email,
-                username: data.user.user_metadata?.username || null 
+                name: data.user.user_metadata?.name || null 
             },
             session: data.session 
           },
-          { status: 200 }
+          { 
+            status: 200,
+            headers: corsHeaders()
+          }
         );
       }
       
@@ -44,7 +73,7 @@ export async function POST(req: NextRequest) {
       if (error && error.message.includes('Email not confirmed')) {
         // Get the user data from our database
         try {
-          const { rows } = await db.query('SELECT id, username, email FROM users WHERE email = $1', [email]);
+          const { rows } = await db.query('SELECT id, name, email FROM users WHERE email = $1', [email]);
           if (rows.length > 0) {
             const userData = rows[0];
             
@@ -57,7 +86,10 @@ export async function POST(req: NextRequest) {
                 user: userData,
                 test_mode: true
               },
-              { status: 200 }
+              { 
+                status: 200,
+                headers: corsHeaders()
+              }
             );
           }
         } catch (dbError) {
@@ -79,18 +111,30 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ 
           error: 'Email not confirmed. Please check your inbox for a confirmation email.',
           code: 'email_not_confirmed'
-        }, { status: 400 });
+        }, { 
+          status: 400,
+          headers: corsHeaders()
+        });
       }
       
       if (error.message.includes('Invalid login credentials')) {
-         return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+         return NextResponse.json({ error: 'Invalid email or password' }, { 
+           status: 401,
+           headers: corsHeaders()
+         });
       }
       
-      return NextResponse.json({ error: error.message || 'Sign in failed' }, { status: error.status || 500 });
+      return NextResponse.json({ error: error.message || 'Sign in failed' }, { 
+        status: error.status || 500,
+        headers: corsHeaders()
+      });
     }
 
     if (!data || !data.session || !data.user) {
-        return NextResponse.json({ error: 'Sign in succeeded but no session or user data returned' }, { status: 500 });
+        return NextResponse.json({ error: 'Sign in succeeded but no session or user data returned' }, { 
+          status: 500,
+          headers: corsHeaders()
+        });
     }
 
     return NextResponse.json(
@@ -101,11 +145,14 @@ export async function POST(req: NextRequest) {
         user: {
             id: data.user.id,
             email: data.user.email,
-            username: data.user.user_metadata?.username || null 
+            name: data.user.user_metadata?.name || null 
         },
         session: data.session 
       },
-      { status: 200 }
+      { 
+        status: 200,
+        headers: corsHeaders()
+      }
     );
 
   } catch (error: unknown) {
@@ -113,6 +160,9 @@ export async function POST(req: NextRequest) {
     const message = 'Login failed.';
     let detail = '';
     if (error instanceof Error) detail = error.message;
-    return NextResponse.json({ error: message, detail }, { status: 500 });
+    return NextResponse.json({ error: message, detail }, { 
+      status: 500,
+      headers: corsHeaders()
+    });
   }
 } 

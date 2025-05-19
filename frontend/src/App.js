@@ -11,36 +11,27 @@ import ProfilePage from './components/ProfilePage/ProfilePage';
 
 function App() {
   const [currentView, setCurrentView] = useState('landing');
-  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('juaCodeTheme');
-    if (savedTheme) return savedTheme === 'dark';
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(() => localStorage.getItem('isUserAuthenticated') === 'true');
 
   useEffect(() => {
     if (isDarkMode) {
       document.body.classList.add('dark-theme');
-      localStorage.setItem('juaCodeTheme', 'dark');
     } else {
       document.body.classList.remove('dark-theme');
-      localStorage.setItem('juaCodeTheme', 'light');
     }
+    localStorage.setItem('darkMode', isDarkMode);
   }, [isDarkMode]);
+
+  useEffect(() => {
+    if (isUserAuthenticated && currentView === 'login') {
+      setCurrentView('chat');
+    }
+  }, [isUserAuthenticated, currentView]);
 
   const toggleTheme = () => {
     setIsDarkMode(prevMode => !prevMode);
   };
-
-  useEffect(() => {
-    const storedAuthStatus = localStorage.getItem('isUserAuthenticated');
-    if (storedAuthStatus === 'true') {
-      setIsUserAuthenticated(true);
-      setCurrentView('chat');
-    } else {
-      setCurrentView('landing');
-    }
-  }, []);
 
   const handleStartChatting = () => {
     if (isUserAuthenticated) {
@@ -50,9 +41,12 @@ function App() {
     }
   };
 
-  const handleLoginSuccess = () => {
-    setIsUserAuthenticated(true);
+  const handleLoginSuccess = (user) => {
     localStorage.setItem('isUserAuthenticated', 'true');
+    if (user) {
+      localStorage.setItem('juaUser', JSON.stringify(user));
+    }
+    setIsUserAuthenticated(true);
     setCurrentView('chat');
   };
   
@@ -63,11 +57,6 @@ function App() {
   const handleNavigateToLogin = () => {
     setCurrentView('login');
   }
-
-  const handleRegistrationSuccess = () => {
-    alert("Registration successful! Please log in.");
-    setCurrentView('login');
-  };
 
   const handleNavigateToProfile = () => {
     setCurrentView('profile');
@@ -91,7 +80,7 @@ function App() {
   } else if (currentView === 'login') {
     contentToRender = <Login {...commonPageProps} onLoginSuccess={handleLoginSuccess} onNavigateToRegister={handleNavigateToRegister} setCurrentView={setCurrentView} />;
   } else if (currentView === 'register') {
-    contentToRender = <RegisterUser {...commonPageProps} onRegistrationSuccess={handleRegistrationSuccess} onNavigateToLogin={handleNavigateToLogin} setCurrentView={setCurrentView} />;
+    contentToRender = <RegisterUser {...commonPageProps} onNavigateToLogin={handleNavigateToLogin} setCurrentView={setCurrentView} />;
   } else if (currentView === 'chat') {
     contentToRender = <ChatInterface setCurrentView={setCurrentView} onNavigateToLogin={handleNavigateToLogin} isDarkMode={isDarkMode} isUserAuthenticated={isUserAuthenticated} onLogout={handleLogout} />;
   } else if (currentView === 'profile') {

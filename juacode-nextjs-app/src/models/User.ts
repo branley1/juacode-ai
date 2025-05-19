@@ -1,7 +1,7 @@
 // User model
 export interface User {
   id: string;
-  username: string;
+  name: string;
   email: string;
   created_at: Date;
   updated_at: Date;
@@ -9,7 +9,7 @@ export interface User {
 
 export interface UserProfileCreate {
   id: string; // Supabase User ID
-  username: string;
+  name: string;
   email: string;
 }
 
@@ -22,7 +22,7 @@ export interface UserLogin {
 // Data to return for a user profile (publicly safe)
 export interface UserPublic {
   id: string;
-  username: string;
+  name: string;
   email: string;
   created_at: Date;
   updated_at: Date;

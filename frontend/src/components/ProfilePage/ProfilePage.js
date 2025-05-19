@@ -13,10 +13,10 @@ function ProfilePage({ setCurrentView, isDarkMode, isUserAuthenticated, onNaviga
         setUserData(JSON.parse(storedUser));
       } catch (e) {
         console.error("Error parsing user data from localStorage", e);
-        setUserData({ username: 'Guest', email: 'N/A', user_id: 'N/A' });
+        setUserData({ name: 'Guest', email: 'N/A', user_id: 'N/A' });
       }
     } else {
-      setUserData({ username: 'Guest', email: 'N/A', user_id: 'N/A' });
+      setUserData({ name: 'Guest', email: 'N/A', user_id: 'N/A' });
     }
   }, []);
 
@@ -31,52 +31,71 @@ function ProfilePage({ setCurrentView, isDarkMode, isUserAuthenticated, onNaviga
     setCurrentView('login'); 
   };
 
+  if (!isUserAuthenticated) {
+    return (
+      <div className="profile-page-container">
+        <h2>Profile</h2>
+        <p>Please log in to view your profile.</p>
+        <button 
+          className="profile-login-button"
+          onClick={onNavigateToLogin}
+        >
+          Login
+        </button>
+        <button 
+          className="profile-back-button"
+          onClick={handleBack}
+        >
+          Back
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className={`profile-page-container ${isDarkMode ? 'dark' : 'light'}`}>
+    <div className="profile-page-container">
       <div className="profile-page-header">
-        <button onClick={handleBack} className="profile-back-button">
+        <button 
+          className="profile-back-button"
+          onClick={handleBack}
+        >
           <FontAwesomeIcon icon={faArrowLeft} /> Back
         </button>
-        {isUserAuthenticated ? (
-          <h1>Account</h1>
-        ) : (
-          <button onClick={onNavigateToLogin} className="profile-login-button">
-            Log In
-          </button>
-        )}
+        <h1>Your Profile</h1>
       </div>
-      {userData ? (
-        <div className="profile-details">
-          <div className="profile-detail-item">
-            <FontAwesomeIcon icon={faUserCircle} className="profile-detail-icon" />
-            <div>
-              <span className="profile-detail-label">Username:</span>
-              <span className="profile-detail-value">{userData.username || 'N/A'}</span>
-            </div>
+
+      <div className="profile-details">
+        <div className="profile-detail-item">
+          <div className="profile-detail-icon">
+            <FontAwesomeIcon icon={faUserCircle} />
           </div>
-          <div className="profile-detail-item">
-            <FontAwesomeIcon icon={faEnvelope} className="profile-detail-icon" />
-            <div>
-              <span className="profile-detail-label">Email:</span>
-              <span className="profile-detail-value">{userData.email || 'N/A'}</span>
-            </div>
-          </div>
-          <div className="profile-detail-item">
-            <FontAwesomeIcon icon={faIdBadge} className="profile-detail-icon" />
-            <div>
-              <span className="profile-detail-label">User ID:</span>
-              <span className="profile-detail-value">{userData.user_id || 'N/A'}</span>
-            </div>
-          </div>
+          <div className="profile-detail-label">Name:</div>
+          <div className="profile-detail-value">{userData?.name || 'Not available'}</div>
         </div>
-      ) : (
-        <p>Loading profile...</p>
-      )}
-      {isUserAuthenticated && (
-        <button onClick={handleLogout} className="profile-logout-button">
-          <FontAwesomeIcon icon={faSignOutAlt} /> Log Out
-        </button>
-      )}
+
+        <div className="profile-detail-item">
+          <div className="profile-detail-icon">
+            <FontAwesomeIcon icon={faEnvelope} />
+          </div>
+          <div className="profile-detail-label">Email:</div>
+          <div className="profile-detail-value">{userData?.email || 'Not available'}</div>
+        </div>
+
+        <div className="profile-detail-item">
+          <div className="profile-detail-icon">
+            <FontAwesomeIcon icon={faIdBadge} />
+          </div>
+          <div className="profile-detail-label">User ID:</div>
+          <div className="profile-detail-value">{userData?.id || 'Not available'}</div>
+        </div>
+      </div>
+
+      <button 
+        className="profile-logout-button"
+        onClick={handleLogout}
+      >
+        <FontAwesomeIcon icon={faSignOutAlt} /> Logout
+      </button>
     </div>
   );
 }
