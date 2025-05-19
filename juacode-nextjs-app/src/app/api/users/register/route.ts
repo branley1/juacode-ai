@@ -33,6 +33,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: passwordValidation.message }, { status: 400 });
     }
 
+    // First, check if username already exists in our database
+    try {
+      const { rows } = await db.query('SELECT username FROM users WHERE username = $1', [username]);
+      if (rows.length > 0) {
+        return NextResponse.json({ error: 'Username already taken. Please try a different username.' }, { status: 409 });
+      }
+    } catch (err) {
+      console.error('Error checking username:', err);
+      // Continue with registration attempt even if username check fails
+    }
+
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email,
       password: password,
@@ -57,19 +68,13 @@ export async function POST(req: NextRequest) {
 
     const supabaseUserId = authData.user.id;
 
-    const newUserProfile: UserProfileCreate = {
-      id: supabaseUserId,
-      username,
-      email, 
-    };
-
     try {
       const query = `
         INSERT INTO users (id, username, email, created_at, updated_at)
         VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING id, username, email, created_at, updated_at;
       `;
-      const values = [newUserProfile.id, newUserProfile.username, newUserProfile.email];
+      const values = [supabaseUserId, username, email];
       const { rows } = await db.query(query, values);
       
       const createdUser: UserPublic = rows[0];
@@ -88,8 +93,9 @@ export async function POST(req: NextRequest) {
       let errorMessage = 'Failed to save user profile to database after Supabase registration.';
       let errorStatus = 500;
       let detail = '';
-      type PgError = { code?: string; constraint?: string; message?: string };
+      type PgError = { code?: string; constraint?: string; message?: string; detail?: string };
       const pgError = dbError as PgError;
+      
       if (typeof dbError === 'object' && dbError && 'code' in dbError) {
         if (pgError.code === '23505') { 
           if (pgError.constraint === 'users_username_key') {
@@ -104,6 +110,7 @@ export async function POST(req: NextRequest) {
           }
         }
         if (pgError.message) detail = pgError.message;
+        if (pgError.detail) detail += ' ' + pgError.detail;
       } else if (dbError instanceof Error) {
         detail = dbError.message;
       }

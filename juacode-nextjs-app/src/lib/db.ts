@@ -29,7 +29,39 @@ export const db = {
 export async function createTables() {
   const client = await pool.connect();
   try {
-    // Users Table
+    // First check if tables exist, and if they do, alter them if needed
+    const tablesExist = await client.query(
+      `SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_name = 'users'
+      );`
+    );
+
+    if (tablesExist.rows[0].exists) {
+      console.log('Tables already exist, checking schema...');
+      
+      // Check if users table has id column as identity
+      const idColumnCheck = await client.query(`
+        SELECT column_name, column_default, is_identity 
+        FROM information_schema.columns 
+        WHERE table_name = 'users' AND column_name = 'id';
+      `);
+      
+      // If id column is an identity column, we need to recreate the tables
+      if (idColumnCheck.rows.length > 0 && idColumnCheck.rows[0].is_identity === 'YES') {
+        console.log('Need to recreate users table with UUID as primary key instead of identity column...');
+        
+        // First drop the chats table that depends on users
+        await client.query('DROP TABLE IF EXISTS chats CASCADE;');
+        
+        // Then drop the users table
+        await client.query('DROP TABLE IF EXISTS users CASCADE;');
+        
+        console.log('Dropped existing tables, will recreate them...');
+      }
+    }
+
+    // Users Table - now explicitly using UUID type for id
     await client.query(
       `CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY,
