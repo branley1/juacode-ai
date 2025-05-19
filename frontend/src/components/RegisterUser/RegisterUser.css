@@ -6,8 +6,12 @@
   padding: 2rem;
   border: 1px solid var(--color-border-chat-container, #ddd);
   border-radius: 8px;
-  background-color: var(--color-background-chat-container, #fff);
+  background-color: var(--color-input-container-background);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-theme .register-user {
+  background-color: var(--color-background-body);
 }
 
 .register-user h2 {
