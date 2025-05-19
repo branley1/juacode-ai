@@ -113,7 +113,15 @@ function App() {
   } else if (currentView === 'register') {
     contentToRender = <RegisterUser {...commonPageProps} onNavigateToLogin={handleNavigateToLogin} setCurrentView={setCurrentView} />;
   } else if (currentView === 'chat') {
-    contentToRender = <ChatInterface setCurrentView={setCurrentView} onNavigateToLogin={handleNavigateToLogin} isDarkMode={isDarkMode} isUserAuthenticated={isUserAuthenticated} onLogout={handleLogout} userData={userData} onNavigateToProfile={handleNavigateToProfile} />;
+    contentToRender = <ChatInterface 
+      setCurrentView={setCurrentView} 
+      onNavigateToLogin={handleNavigateToLogin} 
+      isDarkMode={isDarkMode} 
+      isUserAuthenticated={isUserAuthenticated} 
+      onLogout={handleLogout} 
+      userData={userData} 
+      onNavigateToProfile={handleNavigateToProfile} 
+    />;
   } else if (currentView === 'profile') {
     contentToRender = <ProfilePage setCurrentView={setCurrentView} isDarkMode={isDarkMode} toggleTheme={toggleTheme} isUserAuthenticated={isUserAuthenticated} onNavigateToLogin={handleNavigateToLogin} onLogout={handleLogout} userData={userData} />;
   }

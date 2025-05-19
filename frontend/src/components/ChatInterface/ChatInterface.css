@@ -482,3 +482,11 @@
 .profile-dropdown-item:hover {
   background-color: var(--color-background-message-user);
 }
+
+.profile-dropdown-item:last-child {
+  border-top: 1px solid var(--color-border-chat-container);
+}
+
+.profile-dropdown-item .fa-sign-out-alt {
+  color: #dc3545;
+}

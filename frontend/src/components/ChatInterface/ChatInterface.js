@@ -5,7 +5,7 @@ import Sidebar from '../Sidebar/Sidebar';
 import './ChatInterface.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPen, faBars, faPlus, faShare, faUser, faCog, faUserCircle, faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
+import { faPen, faBars, faPlus, faShare, faUser, faCog, faUserCircle, faSun, faMoon, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 
 // Generate a unique string for the chat id.
 const generateUniqueChatId = () => {
@@ -47,7 +47,8 @@ function ChatInterface({
   onNavigateToLogin, 
   isUserAuthenticated, 
   userData, 
-  onNavigateToProfile 
+  onNavigateToProfile,
+  onLogout
 }) {
   const [messages, setMessages] = useState([]);
   const [chatStarted, setChatStarted] = useState(false);
@@ -811,6 +812,15 @@ function ChatInterface({
                             <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false);}} className="profile-dropdown-item">
                                <FontAwesomeIcon icon={faCog} /> Settings
                             </button>
+                            
+                            {isUserAuthenticated && (
+                              <button onClick={() => { 
+                                onLogout(); 
+                                setIsProfileMenuOpen(false);
+                              }} className="profile-dropdown-item">
+                                <FontAwesomeIcon icon={faSignOutAlt} /> Logout
+                              </button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -903,6 +913,15 @@ function ChatInterface({
                         <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false);}} className="profile-dropdown-item">
                            <FontAwesomeIcon icon={faCog} /> Settings
                         </button>
+                        
+                        {isUserAuthenticated && (
+                          <button onClick={() => { 
+                            onLogout(); 
+                            setIsProfileMenuOpen(false);
+                          }} className="profile-dropdown-item">
+                            <FontAwesomeIcon icon={faSignOutAlt} /> Logout
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
