@@ -192,10 +192,10 @@ async function generateOpenAICompletion(
 
   const { 
     stream = true, 
-    max_tokens = process.env.OPENAI_MAX_TOKENS ? parseInt(process.env.OPENAI_MAX_TOKENS) : 2000, 
     temperature = process.env.OPENAI_TEMPERATURE ? parseFloat(process.env.OPENAI_TEMPERATURE) : 0.7, 
     model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo' // Fallback model (o4-mini-2025-04-16)
   } = config;
+  const maxTokens = process.env.OPENAI_MAX_TOKENS ? parseInt(process.env.OPENAI_MAX_TOKENS) : 2000;
 
   // Filter out system messages if the model doesn't support them directly in the main list, or handle as per API docs
   // OpenAI generally supports system messages as the first message.
@@ -210,7 +210,7 @@ async function generateOpenAICompletion(
         model: model,
         messages: openAIMessages,
         temperature: temperature,
-        max_tokens: max_tokens,
+        max_tokens: maxTokens,
         stream: true,
       });
 
@@ -227,14 +227,16 @@ async function generateOpenAICompletion(
         model: model,
         messages: openAIMessages,
         temperature: temperature,
-        max_tokens: max_tokens,
+        max_tokens: maxTokens,
         stream: false,
       });
       return response.choices[0]?.message?.content?.trim() || '';
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('OpenAI API Error:', error);
-    throw new Error(`OpenAI API request failed: ${error.message}`);
+    type PgError = { message?: string };
+    const pgError = error as PgError;
+    throw new Error(`OpenAI API request failed: ${pgError.message}`);
   }
 }
 
