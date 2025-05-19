@@ -144,15 +144,71 @@ body.dark-theme .auth-form-container {
   transition: background-color 0.2s ease, opacity 0.2s ease;
 }
 
-.auth-button:hover {
+.auth-button:hover:not(:disabled) {
   opacity: 0.85;
+}
+
+.auth-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .auth-message {
   text-align: center;
   margin-top: 1.5rem;
+  padding: 0.75rem;
   font-size: 0.9rem;
   color: var(--color-text-secondary);
+  border-radius: 8px;
+}
+
+.auth-message.error {
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+}
+
+.auth-message.success {
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+}
+
+.auth-message.warning {
+  color: #856404;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+}
+
+.auth-message.timeout {
+  color: #856404;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+}
+
+body.dark-theme .auth-message.error {
+  color: #f8d7da;
+  background-color: rgba(220, 53, 69, 0.2);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+body.dark-theme .auth-message.success {
+  color: #d4edda;
+  background-color: rgba(40, 167, 69, 0.2);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+body.dark-theme .auth-message.warning {
+  color: #fff3cd;
+  background-color: rgba(255, 193, 7, 0.2);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+body.dark-theme .auth-message.timeout {
+  color: #fff3cd;
+  background-color: rgba(255, 193, 7, 0.2);
+  border: 1px solid rgba(255, 193, 7, 0.3);
 }
 
 .auth-navigation-link {

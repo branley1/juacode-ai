@@ -8,16 +8,89 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState(''); // 'error' or 'success'
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email && password) {
-        setMessage('Login successful (mocked)');
-        if (onLoginSuccess) {
-            onLoginSuccess();
+    setMessage('');
+    setMessageType('');
+    setIsSubmitting(true);
+
+    try {
+      if (!email || !password) {
+        setMessage('Please enter both email and password.');
+        setMessageType('error');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Create an AbortController for timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+
+      try {
+        const response = await fetch('/api/users/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          let errorData = { error: 'Login failed' };
+          try {
+            errorData = await response.json();
+          } catch (e) {
+            // If the response can't be parsed as JSON, use status text
+            errorData = { error: `Server error: ${response.status} ${response.statusText}` };
+          }
+
+          // Handle specific error codes
+          if (response.status === 400 && errorData.code === 'email_not_confirmed') {
+            setMessage('Please check your email and confirm your account before logging in.');
+            setMessageType('warning');
+          } else if (response.status === 401) {
+            setMessage('Invalid email or password. Please try again.');
+            setMessageType('error');
+          } else if (response.status === 504) {
+            setMessage('The server is temporarily unavailable. Please try again later.');
+            setMessageType('timeout');
+          } else {
+            setMessage(errorData.error || 'Login failed. Please try again.');
+            setMessageType('error');
+          }
+          setIsSubmitting(false);
+          return;
         }
-    } else {
-        setMessage('Please enter email and password.');
+
+        const result = await response.json();
+        
+        setMessage('Login successful');
+        setMessageType('success');
+        setIsSubmitting(false);
+        
+        if (onLoginSuccess) {
+          onLoginSuccess(result.user);
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        
+        if (fetchError.name === 'AbortError') {
+          setMessage('Login request timed out. The server is taking too long to respond. Please try again later.');
+          setMessageType('timeout');
+        } else {
+          setMessage('Login failed. Please try again later.');
+          setMessageType('error');
+        }
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      setMessage('An unexpected error occurred. Please try again.');
+      setMessageType('error');
+      setIsSubmitting(false);
     }
   };
 
@@ -43,6 +116,7 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
+              autoComplete="email"
             />
           </div>
           <div>
@@ -53,11 +127,18 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               required 
+              autoComplete="current-password"
             />
           </div>
-          <button type="submit" className="auth-button">Login</button>
+          <button 
+            type="submit" 
+            className="auth-button"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Logging in...' : 'Login'}
+          </button>
         </form>
-        {message && <p className="auth-message">{message}</p>}
+        {message && <p className={`auth-message ${messageType}`}>{message}</p>}
         <p className="auth-navigation-link">
           Don't have an account?{" "}
           <button onClick={onNavigateToRegister} className="link-button">
