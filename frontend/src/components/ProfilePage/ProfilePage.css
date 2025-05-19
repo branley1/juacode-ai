@@ -69,7 +69,7 @@
   gap: 0;
   width: 100%;
   max-width: 600px;
-  background-color: var(--color-input-container-background);
+  background-color: rgba(40, 40, 40, 0.2);
   padding: 0;
   border-radius: 0.75rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -81,8 +81,9 @@
 .profile-detail-item {
   display: flex;
   align-items: center;
-  padding: 1.25rem;
-  border-bottom: 1px solid var(--color-border-chat-container);
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: transparent;
 }
 
 .profile-detail-item:last-child {
@@ -90,22 +91,25 @@
 }
 
 .profile-detail-icon {
-  margin-right: 1rem;
+  margin-right: 1.5rem;
   color: var(--color-text-primary);
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   opacity: 0.7;
 }
 
 .profile-field-label {
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-  margin-bottom: 0.25rem;
+  color: var(--color-text-primary);
+  font-weight: 400;
+  min-width: 70px;
+  margin-right: 0.5rem;
 }
 
 .profile-field-value {
-  font-weight: 500;
+  font-weight: 400;
+  flex: 1;
   word-break: break-all;
+  color: var(--color-text-primary);
 }
 
 .profile-logout-button {

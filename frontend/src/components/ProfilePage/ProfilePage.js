@@ -34,32 +34,26 @@ function ProfilePage({ setCurrentView, isDarkMode, isUserAuthenticated, onNaviga
         <button onClick={handleBack} className="profile-back-button">
           <FontAwesomeIcon icon={faArrowLeft} /> Back
         </button>
-        <h1>Your Profile</h1>
+        <h1>Account Details</h1>
       </div>
 
       <div className="profile-details">
         <div className="profile-detail-item">
           <FontAwesomeIcon icon={faUser} className="profile-detail-icon" />
-          <div>
-            <div className="profile-field-label">Name:</div>
-            <div className="profile-field-value">{userData?.name || 'Guest User'}</div>
-          </div>
+          <div className="profile-field-label">Name:</div>
+          <div className="profile-field-value">{userData?.name || 'Guest User'}</div>
         </div>
         
         <div className="profile-detail-item">
           <FontAwesomeIcon icon={faEnvelope} className="profile-detail-icon" />
-          <div>
-            <div className="profile-field-label">Email:</div>
-            <div className="profile-field-value">{userData?.email || 'guest@example.com'}</div>
-          </div>
+          <div className="profile-field-label">Email:</div>
+          <div className="profile-field-value">{userData?.email || 'guest@example.com'}</div>
         </div>
         
         <div className="profile-detail-item">
           <FontAwesomeIcon icon={faIdCard} className="profile-detail-icon" />
-          <div>
-            <div className="profile-field-label">User ID:</div>
-            <div className="profile-field-value">{userData?.id || 'Not available'}</div>
-          </div>
+          <div className="profile-field-label">User ID:</div>
+          <div className="profile-field-value">{userData?.id || 'Not available'}</div>
         </div>
       </div>
 
