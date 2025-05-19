@@ -59,4 +59,19 @@
   text-align: center;
   margin-top: 1rem;
   color: var(--color-text-secondary, #555);
-} 
+}
+
+/* Styles for RegisterUser.css - can be similar to Login.css for consistency /
+.register-user-container {
+  
+  / Uses .auth-page-container styles from Login.css if that file is imported or styles are global */
+
+.auth-logo-outside {
+  display: block;
+  margin: 20px auto; /* Center the logo and add bottom margin */
+  width: 80px; /* Adjust size as needed */
+  height: 80px; /* Adjust size as needed */
+  cursor: pointer; /* Indicate it's clickable */
+}
+
+/* Ensure .auth-form-container, .page-theme-toggle, etc. are styled if not already globally */ 

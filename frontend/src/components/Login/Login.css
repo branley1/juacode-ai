@@ -168,7 +168,7 @@
 }
 
 .auth-navigation-link .link-button:hover {
-  opacity: 0.8;
+  text-decoration: underline;
 }
 
 /* Theme toggle button */
@@ -201,4 +201,20 @@
   border-radius: 12px;
   background-color: var(--color-input-container-background);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.auth-logo {
+  display: block;
+  margin: 0 auto 20px auto;
+  width: 80px;
+  height: 80px;
+  cursor: pointer;
+}
+
+.auth-logo-outside {
+  display: block;
+  margin: 20px auto;
+  width: 80px; 
+  height: 80px; 
+  cursor: pointer; 
 } 

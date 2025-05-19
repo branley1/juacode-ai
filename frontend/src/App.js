@@ -89,9 +89,9 @@ function App() {
   if (currentView === 'landing') {
     contentToRender = <LandingPage {...commonPageProps} onStartChatting={handleStartChatting} onNavigateToProfile={handleNavigateToProfile} isUserAuthenticated={isUserAuthenticated} onLogout={handleLogout} />;
   } else if (currentView === 'login') {
-    contentToRender = <Login {...commonPageProps} onLoginSuccess={handleLoginSuccess} onNavigateToRegister={handleNavigateToRegister} />;
+    contentToRender = <Login {...commonPageProps} onLoginSuccess={handleLoginSuccess} onNavigateToRegister={handleNavigateToRegister} setCurrentView={setCurrentView} />;
   } else if (currentView === 'register') {
-    contentToRender = <RegisterUser {...commonPageProps} onRegistrationSuccess={handleRegistrationSuccess} onNavigateToLogin={handleNavigateToLogin} />;
+    contentToRender = <RegisterUser {...commonPageProps} onRegistrationSuccess={handleRegistrationSuccess} onNavigateToLogin={handleNavigateToLogin} setCurrentView={setCurrentView} />;
   } else if (currentView === 'chat') {
     contentToRender = <ChatInterface setCurrentView={setCurrentView} onNavigateToLogin={handleNavigateToLogin} isDarkMode={isDarkMode} isUserAuthenticated={isUserAuthenticated} onLogout={handleLogout} />;
   } else if (currentView === 'profile') {

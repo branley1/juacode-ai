@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import './RegisterUser.css';
+import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
 import { supabase } from '../../supabaseClient';
 
-function RegisterUser({ onRegistrationSuccess, onNavigateToLogin, isDarkMode, toggleTheme }) {
+function RegisterUser({ onRegistrationSuccess, onNavigateToLogin, isDarkMode, toggleTheme, setCurrentView }) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -71,9 +72,15 @@ function RegisterUser({ onRegistrationSuccess, onNavigateToLogin, isDarkMode, to
 
   return (
     <div className="auth-page-container register-user-container">
-      <button onClick={toggleTheme} className="theme-toggle-button page-theme-toggle" title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+      <button onClick={toggleTheme} className="page-theme-toggle" title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
         <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} />
       </button>
+      <img 
+        src={JuaCodeLogo} 
+        alt="JuaCode Logo" 
+        className="auth-logo-outside"
+        onClick={() => setCurrentView('landing')} 
+      />
       <div className="auth-form-container">
         <h2>Register</h2>
         <form onSubmit={handleSubmit}>
