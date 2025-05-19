@@ -101,7 +101,7 @@ async function generateDeepSeekCompletion(
 
   const { 
     stream = true, 
-    max_tokens = 2000, 
+    // max_tokens = 2000, 
     temperature = 0.7, 
     model = 'deepseek-chat'
   } = config;
@@ -195,7 +195,7 @@ async function generateOpenAICompletion(
     temperature = process.env.OPENAI_TEMPERATURE ? parseFloat(process.env.OPENAI_TEMPERATURE) : 0.7, 
     model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo' // Fallback model (o4-mini-2025-04-16)
   } = config;
-  const maxTokens = process.env.OPENAI_MAX_TOKENS ? parseInt(process.env.OPENAI_MAX_TOKENS) : 2000;
+  const maxTokens = config.max_tokens || (process.env.OPENAI_MAX_TOKENS ? parseInt(process.env.OPENAI_MAX_TOKENS) : 2000);
 
   // Filter out system messages if the model doesn't support them directly in the main list, or handle as per API docs
   // OpenAI generally supports system messages as the first message.
