@@ -217,16 +217,24 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
   if (isRegistered) {
     return (
       <div className="auth-page-container register-user-container">
-        <div className="auth-logo-outside">
-          <img src="/jua-logo.png" alt="Jua Code Logo" width={48} height={48} />
-        </div>
+        <button onClick={toggleTheme} className="page-theme-toggle" title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
+          <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} />
+        </button>
         <div className="confirmation-container">
+          <div className="robot-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="8" y="2" width="8" height="5" rx="1" />
+              <path d="M18 8v10a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V8m11 0H7a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1z" />
+              <circle cx="10" cy="14" r="1" />
+              <circle cx="14" cy="14" r="1" />
+            </svg>
+          </div>
           <h2>Confirm Your Email</h2>
-          <p>
-            We've sent a confirmation link to <b>{registeredEmail}</b>.
+          <p className="confirmation-message">
+            We've sent a confirmation link to <span className="email-highlight">{registeredEmail}</span>.
             <br />Please check your inbox and click the link to activate your account.
           </p>
-          <p>If you don't see the email, please check your spam folder.</p>
+          <p className="confirmation-note">If you don't see the email, please check your spam folder.</p>
           <button onClick={onNavigateToLogin} className="auth-button">
             Go to Login
           </button>

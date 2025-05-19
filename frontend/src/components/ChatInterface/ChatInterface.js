@@ -42,7 +42,13 @@ const AVAILABLE_MODELS = [
   { value: "gemini-2.5-pro-preview-05-06", label: "Gemini 2.5 Pro" }
 ];
 
-function ChatInterface({ setCurrentView, onNavigateToLogin, isUserAuthenticated }) {
+function ChatInterface({ 
+  setCurrentView, 
+  onNavigateToLogin, 
+  isUserAuthenticated, 
+  userData, 
+  onNavigateToProfile 
+}) {
   const [messages, setMessages] = useState([]);
   const [chatStarted, setChatStarted] = useState(false);
   const [chatTitle, setChatTitle] = useState('New Chat');
@@ -766,6 +772,9 @@ function ChatInterface({ setCurrentView, onNavigateToLogin, isUserAuthenticated 
           }
         }}
         setCurrentView={setCurrentView}
+        isUserAuthenticated={isUserAuthenticated}
+        userData={userData}
+        onNavigateToProfile={onNavigateToProfile}
       />
       {isSidebarOpen && (
         <div className="sidebar-overlay active" onClick={toggleSidebar}></div>

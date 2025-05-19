@@ -8,17 +8,34 @@ import { faUserCircle, faTrash, faEllipsisV } from '@fortawesome/free-solid-svg-
 const getChatId = (chat) => chat.chat_id || chat.id || "";
 
 // Wrap Sidebar with forwardRef
-const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDeleteAllChats, onDeleteChat, onRenameChat, setCurrentView }, ref) => {
+const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDeleteAllChats, onDeleteChat, onRenameChat, setCurrentView, isUserAuthenticated, onNavigateToProfile }, ref) => {
   const [showAccountDetails, setShowAccountDetails] = useState(false);
   const [editingChatId, setEditingChatId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [openMenuChatId, setOpenMenuChatId] = useState(null);
+  const [userData, setUserData] = useState(null);
 
   useEffect(() => {
     if (!isSidebarOpen) {
       setShowAccountDetails(false);
     }
   }, [isSidebarOpen]);
+
+  useEffect(() => {
+    if (isUserAuthenticated) {
+      const storedUserData = localStorage.getItem('userData');
+      if (storedUserData) {
+        try {
+          setUserData(JSON.parse(storedUserData));
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+          setUserData({ name: 'Guest User', email: 'guest@example.com' });
+        }
+      }
+    } else {
+      setUserData({ name: 'Guest User', email: 'guest@example.com' });
+    }
+  }, [isUserAuthenticated]);
 
   const handleRenameInitiate = (chat, e) => {
     e.stopPropagation();
@@ -113,34 +130,17 @@ const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatS
             ))}
           </ul>
         </div>
-        <div className="sidebar-account">
-          <div
-            className="account-preview"
-            onClick={() => {
-              if (showAccountDetails) {
-                if (setCurrentView) setCurrentView('profile');
-              } else {
-                setShowAccountDetails(true);
-              }
-            }}
-            style={{ cursor: 'pointer' }}
-          >
-            <FontAwesomeIcon icon={faUserCircle} />
-            <div className="account-summary">
-              <span className="account-name">Guest User</span>
+        <div className="sidebar-account" onClick={onNavigateToProfile}>
+          <div className="account-preview">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <div className="account-details">
+              <p>{userData?.name || 'Guest User'}</p>
+              <small>{userData?.email || 'guest@example.com'}</small>
             </div>
           </div>
-          {showAccountDetails && (
-            <div 
-              className="account-full-details"
-              onClick={() => {
-                if (setCurrentView) setCurrentView('profile');
-              }}
-              style={{ cursor: 'pointer' }}
-            >
-              <p>Email: guest@example.com</p>
-            </div>
-          )}
         </div>
       </div>
     </React.Fragment>

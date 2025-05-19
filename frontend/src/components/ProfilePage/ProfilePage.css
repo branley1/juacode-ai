@@ -1,29 +1,26 @@
 .profile-page-container {
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  padding: 2rem;
   align-items: center;
-  padding: 20px;
-  height: 100vh;
-  box-sizing: border-box;
   background-color: var(--color-background-body);
   color: var(--color-text-primary);
 }
 
 .profile-page-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  margin-bottom: 2rem;
   width: 100%;
-  max-width: 800px;
-  margin-bottom: 30px;
-  position: relative; /* For absolute positioning if needed or better flex control */
+  position: relative;
 }
 
 .profile-page-header h1 {
-  font-size: 2em;
-  margin: 0;
-  text-align: center; /* Center title */
-  flex-grow: 1; /* Allow title to take available space */
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
 }
 
 .profile-login-button {
@@ -46,86 +43,92 @@
 }
 
 .profile-back-button {
-  background: none;
-  border: 1px solid var(--color-input-container-border);
-  color: var(--color-text-primary);
-  padding: 8px 15px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9em;
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: background-color 0.2s ease;
+  gap: 0.5rem;
+  color: var(--color-text-primary);
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .profile-back-button:hover {
-  background-color: var(--color-background-message-user);
+  opacity: 0.8;
 }
 
 .profile-details {
-  background-color: var(--color-input-container-background); /* Similar to input area background */
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   width: 100%;
   max-width: 600px;
+  background-color: var(--color-input-container-background);
+  padding: 0;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
   border: 1px solid var(--color-border-chat-container);
+  overflow: hidden;
 }
 
 .profile-detail-item {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
+  padding: 1.25rem;
   border-bottom: 1px solid var(--color-border-chat-container);
 }
 
 .profile-detail-item:last-child {
-  margin-bottom: 0;
-  padding-bottom: 0;
   border-bottom: none;
 }
 
 .profile-detail-icon {
-  font-size: 1.8em;
-  margin-right: 20px;
-  color: var(--color-text-secondary);
-  width: 30px; /* Fixed width for alignment */
-  text-align: center;
+  margin-right: 1rem;
+  color: var(--color-text-primary);
+  width: 24px;
+  height: 24px;
+  opacity: 0.7;
 }
 
-.profile-detail-label {
-  display: block;
-  font-size: 0.85em;
+.profile-field-label {
   color: var(--color-text-secondary);
-  margin-bottom: 4px;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
 }
 
-.profile-detail-value {
-  font-size: 1.1em;
+.profile-field-value {
   font-weight: 500;
+  word-break: break-all;
 }
 
 .profile-logout-button {
-  background-color: var(--color-button-danger, #dc3545);
-  color: white;
-  border: none;
-  padding: 12px 25px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1em;
-  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin-top: 30px;
-  transition: background-color 0.2s ease;
+  gap: 0.5rem;
+  background-color: rgb(220, 53, 69);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
   width: 100%;
   max-width: 200px;
+  margin-top: 1rem;
 }
 
 .profile-logout-button:hover {
-  background-color: var(--color-button-danger-hover, #c82333);
+  background-color: rgb(200, 35, 51);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }

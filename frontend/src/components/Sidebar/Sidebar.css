@@ -138,61 +138,48 @@
 }
 
 .sidebar-account {
-  margin-top: auto;
-  padding: 15px;
-  padding-top: 20px;
+  padding: 1rem;
   border-top: 1px solid var(--color-border-chat-container);
+  margin-top: auto;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-.account-full-details {
-   padding: 10px 15px;
-   background-color: transparent;
-   border-top: none;
-   font-size: 0.9em;
-   color: var(--color-text-secondary);
- }
+.sidebar-account:hover {
+  background-color: var(--color-background-message-user);
+}
 
 .account-preview {
   display: flex;
   align-items: center;
-  gap: 12px;
-  color: var(--color-text-primary);
-  outline: none;
-  text-decoration: none;
-}
-
-.account-preview:focus,
-.account-preview:active {
-  outline: none;
-  text-decoration: none;
+  gap: 0.75rem;
 }
 
 .account-preview svg {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
   color: var(--color-text-primary);
+  min-width: 24px;
 }
 
-.account-preview span {
-  font-size: 1em;
+.account-details {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.account-details p {
+  margin: 0;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .account-details small {
   color: var(--color-text-secondary);
-}
-
-.account-details {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.account-details p {
-  color: var(--color-text-secondary);
-  margin: 0;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .delete-all-chats-button {
