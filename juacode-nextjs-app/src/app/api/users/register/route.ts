@@ -88,20 +88,22 @@ export async function POST(req: NextRequest) {
       let errorMessage = 'Failed to save user profile to database after Supabase registration.';
       let errorStatus = 500;
       let detail = '';
+      type PgError = { code?: string; constraint?: string; message?: string };
+      const pgError = dbError as PgError;
       if (typeof dbError === 'object' && dbError && 'code' in dbError) {
-        if ((dbError as any).code === '23505') { 
-          if ((dbError as any).constraint === 'users_username_key') {
+        if (pgError.code === '23505') { 
+          if (pgError.constraint === 'users_username_key') {
             errorMessage = 'Username already taken. Please try a different username.';
             errorStatus = 409;
-          } else if ((dbError as any).constraint === 'users_email_key'){
+          } else if (pgError.constraint === 'users_email_key'){
              errorMessage = 'Email already registered in profiles. Please try to login.';
              errorStatus = 409;
-          } else if ((dbError as any).constraint === 'users_pkey'){
+          } else if (pgError.constraint === 'users_pkey'){
               errorMessage = 'User profile with this ID already exists.';
               errorStatus = 409;
           }
         }
-        if ('message' in dbError) detail = (dbError as any).message;
+        if (pgError.message) detail = pgError.message;
       } else if (dbError instanceof Error) {
         detail = dbError.message;
       }
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error: unknown) {
     console.error('User registration error:', error);
-    let message = 'User registration failed.';
+    const message = 'User registration failed.';
     let detail = '';
     if (error instanceof Error) detail = error.message;
     return NextResponse.json({ error: message, detail }, { status: 500 });

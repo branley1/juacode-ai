@@ -80,6 +80,18 @@ export async function PUT(req: NextRequest, { params }: { params: RouteParams })
     console.error('Error updating chat:', error);
     let message = 'Error updating chat.';
     if (error instanceof Error) message = error.message;
+    type PgError = { code?: string; message?: string };
+    const pgError = error as PgError;
+    if (
+      typeof error === 'object' &&
+      error &&
+      'code' in error &&
+      pgError.code === '22P02' &&
+      pgError.message &&
+      pgError.message.includes('JSON')
+    ) {
+      return NextResponse.json({ error: 'Invalid message format in stored chat.', detail: pgError.message }, { status: 500 });
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -197,8 +209,17 @@ export async function POST(req: NextRequest, { params }: { params: RouteParams }
     console.error(`[Chat Title Summary] Error for chat_id ${params.chat_id}:`, error);
     let message = 'Error summarizing chat title.';
     if (error instanceof Error) message = error.message;
-    if (typeof error === 'object' && error && 'code' in error && (error as any).code === '22P02' && (error as any).message && (error as any).message.includes('JSON')) {
-        return NextResponse.json({ error: 'Invalid message format in stored chat.', detail: (error as any).message }, { status: 500 });
+    type PgError = { code?: string; message?: string };
+    const pgError = error as PgError;
+    if (
+      typeof error === 'object' &&
+      error &&
+      'code' in error &&
+      pgError.code === '22P02' &&
+      pgError.message &&
+      pgError.message.includes('JSON')
+    ) {
+      return NextResponse.json({ error: 'Invalid message format in stored chat.', detail: pgError.message }, { status: 500 });
     }
     return NextResponse.json({ error: message }, { status: 500 });
   }

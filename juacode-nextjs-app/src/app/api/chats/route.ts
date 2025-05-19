@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { ChatCreate, Chat, ChatMessage } from '@/models/Chat';
+import { ChatCreate, Chat } from '@/models/Chat';
 // import { supabase } from '@/lib/supabaseClient'; // We might need this later for user auth
 
 export async function POST(req: NextRequest) {
@@ -60,15 +60,17 @@ export async function POST(req: NextRequest) {
     let errorMessage = 'Error saving chat.';
     let errorStatus = 500;
     let detail = '';
+    type PgError = { code?: string; message?: string };
+    const pgError = error as PgError;
     if (typeof error === 'object' && error && 'code' in error) {
-      if ((error as any).code === '23505') {
+      if (pgError.code === '23505') {
         errorMessage = 'A chat with this ID already exists.';
         errorStatus = 409;
-      } else if ((error as any).code === '23503') {
+      } else if (pgError.code === '23503') {
         errorMessage = 'Invalid user_id provided.';
         errorStatus = 400;
       }
-      if ('message' in error) detail = (error as any).message;
+      if (pgError.message) detail = pgError.message;
     } else if (error instanceof Error) {
       detail = error.message;
     }

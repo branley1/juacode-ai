@@ -46,7 +46,7 @@ if (DEEPSEEK_API_KEY) {
   console.warn('DeepSeek API key not found. DeepSeek provider may be unavailable or use a different auth method.');
 }
 
-// Helper for Streaming HTTP Responses
+/* Helper for Streaming HTTP Responses
 async function* streamSSE(response: Response): AsyncGenerator<unknown, void, unknown> {
   if (!response.body) {
     throw new Error('Response body is null');
@@ -88,6 +88,7 @@ async function* streamSSE(response: Response): AsyncGenerator<unknown, void, unk
     }
   }
 }
+*/
 
 // DeepSeek Implementation
 async function generateDeepSeekCompletion(
@@ -160,13 +161,13 @@ async function generateDeepSeekCompletion(
         stream: false,
       });
 
-      const message = response.choices[0]?.message as Record<string, unknown>; // Cast to a more specific type
+      const message = response.choices[0]?.message;
       let fullContent = '';
       if (message) {
-        if (message.reasoning_content) {
+        if ('reasoning_content' in message && typeof message.reasoning_content === 'string') {
           fullContent += `<think>${message.reasoning_content}</think>`;
         }
-        if (message.content) {
+        if ('content' in message && typeof message.content === 'string') {
           fullContent += (fullContent ? '\n\n' : '') + message.content.trim();
         }
       }
@@ -174,9 +175,9 @@ async function generateDeepSeekCompletion(
     }
   } catch (error: unknown) {
     console.error('DeepSeek API Error (via OpenAI SDK):', error);
-    let message = 'DeepSeek API request failed.';
-    if (error instanceof Error) message = error.message;
-    throw new Error(message);
+    type PgError = { message?: string };
+    const pgError = error as PgError;
+    throw new Error(pgError.message || 'DeepSeek API request failed.');
   }
 }
 
@@ -334,9 +335,11 @@ async function generateGeminiCompletion(
         return '';
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Gemini API Error:', error);
-    throw new Error(`Gemini API request failed: ${error.message}`);
+    type PgError = { message?: string };
+    const pgError = error as PgError;
+    throw new Error(`Gemini API request failed: ${pgError.message}`);
   }
 }
 
