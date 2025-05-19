@@ -83,28 +83,36 @@ export async function POST(req: NextRequest) {
         { status: 201 }
       );
 
-    } catch (dbError: any) {
+    } catch (dbError: unknown) {
       console.error('Database insert error after Supabase sign up:', dbError);
       let errorMessage = 'Failed to save user profile to database after Supabase registration.';
       let errorStatus = 500;
-
-      if (dbError.code === '23505') { 
-        if (dbError.constraint === 'users_username_key') {
-          errorMessage = 'Username already taken. Please try a different username.';
-          errorStatus = 409;
-        } else if (dbError.constraint === 'users_email_key'){
-           errorMessage = 'Email already registered in profiles. Please try to login.';
-           errorStatus = 409;
-        } else if (dbError.constraint === 'users_pkey'){
-            errorMessage = 'User profile with this ID already exists.';
+      let detail = '';
+      if (typeof dbError === 'object' && dbError && 'code' in dbError) {
+        if ((dbError as any).code === '23505') { 
+          if ((dbError as any).constraint === 'users_username_key') {
+            errorMessage = 'Username already taken. Please try a different username.';
             errorStatus = 409;
+          } else if ((dbError as any).constraint === 'users_email_key'){
+             errorMessage = 'Email already registered in profiles. Please try to login.';
+             errorStatus = 409;
+          } else if ((dbError as any).constraint === 'users_pkey'){
+              errorMessage = 'User profile with this ID already exists.';
+              errorStatus = 409;
+          }
         }
+        if ('message' in dbError) detail = (dbError as any).message;
+      } else if (dbError instanceof Error) {
+        detail = dbError.message;
       }
-      return NextResponse.json({ error: errorMessage, detail: dbError.message }, { status: errorStatus });
+      return NextResponse.json({ error: errorMessage, detail }, { status: errorStatus });
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('User registration error:', error);
-    return NextResponse.json({ error: 'User registration failed.', detail: error.message }, { status: 500 });
+    let message = 'User registration failed.';
+    let detail = '';
+    if (error instanceof Error) detail = error.message;
+    return NextResponse.json({ error: message, detail }, { status: 500 });
   }
 } 

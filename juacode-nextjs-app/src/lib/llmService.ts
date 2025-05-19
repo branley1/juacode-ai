@@ -47,7 +47,7 @@ if (DEEPSEEK_API_KEY) {
 }
 
 // Helper for Streaming HTTP Responses
-async function* streamSSE(response: Response): AsyncGenerator<any, void, unknown> {
+async function* streamSSE(response: Response): AsyncGenerator<unknown, void, unknown> {
   if (!response.body) {
     throw new Error('Response body is null');
   }
@@ -124,7 +124,7 @@ async function generateDeepSeekCompletion(
         let thinkTagOpen = false;
         for await (const chunk of responseStream) {
           let yieldBuffer = '';
-          const delta = chunk.choices[0]?.delta as any; // Cast to any for custom properties
+          const delta = chunk.choices[0]?.delta as Record<string, unknown>; // Cast to a more specific type
 
           if (delta) {
             if (delta.reasoning_content) {
@@ -160,7 +160,7 @@ async function generateDeepSeekCompletion(
         stream: false,
       });
 
-      const message = response.choices[0]?.message as any; // Cast to any for custom properties
+      const message = response.choices[0]?.message as Record<string, unknown>; // Cast to a more specific type
       let fullContent = '';
       if (message) {
         if (message.reasoning_content) {
@@ -172,9 +172,11 @@ async function generateDeepSeekCompletion(
       }
       return fullContent;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('DeepSeek API Error (via OpenAI SDK):', error);
-    throw new Error(`DeepSeek API request failed: ${error.message}`);
+    let message = 'DeepSeek API request failed.';
+    if (error instanceof Error) message = error.message;
+    throw new Error(message);
   }
 }
 

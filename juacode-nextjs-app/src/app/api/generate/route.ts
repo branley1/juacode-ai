@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API Generate] Error:', error);
     let errorMessage = 'Internal server error';
     if (error instanceof Error) {

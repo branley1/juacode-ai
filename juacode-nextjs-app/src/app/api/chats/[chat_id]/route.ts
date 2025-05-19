@@ -27,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: RouteParams })
 
     // Dynamically build the SET part of the query and the values array
     const setClauses: string[] = [];
-    const values: any[] = [];
+    const values: (string | number | object | null)[] = [];
     let valueCount = 1;
 
     if (title !== undefined) {
@@ -76,10 +76,11 @@ export async function PUT(req: NextRequest, { params }: { params: RouteParams })
       { status: 200 }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating chat:', error);
-    // Add more specific error handling if needed (e.g., for invalid JSON in messages if not caught by validation)
-    return NextResponse.json({ error: 'Error updating chat.', detail: error.message }, { status: 500 });
+    let message = 'Error updating chat.';
+    if (error instanceof Error) message = error.message;
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -148,9 +149,11 @@ export async function POST(req: NextRequest, { params }: { params: RouteParams }
     let newTitleRaw: string | AsyncGenerator<string, void, unknown>;
     try {
         newTitleRaw = await generateChatCompletion(llmProvider, titleGenerationPayload, llmConfig);
-    } catch (llmError: any) {
+    } catch (llmError: unknown) {
         console.error(`[Chat Title Summary] LLM (${llmProvider}) error for chat ${chat_id}:`, llmError);
-         return NextResponse.json({ error: 'LLM service error during title generation.', detail: llmError.message }, { status: 502 });
+        let message = 'LLM service error during title generation.';
+        if (llmError instanceof Error) message = llmError.message;
+        return NextResponse.json({ error: message }, { status: 502 });
     }
 
     if (typeof newTitleRaw !== 'string' || !newTitleRaw.trim()) {
@@ -190,12 +193,14 @@ export async function POST(req: NextRequest, { params }: { params: RouteParams }
       { status: 200 }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[Chat Title Summary] Error for chat_id ${params.chat_id}:`, error);
-    if (error.code === '22P02' && error.message.includes('JSON')) { 
-        return NextResponse.json({ error: 'Invalid message format in stored chat.', detail: error.message }, { status: 500 });
+    let message = 'Error summarizing chat title.';
+    if (error instanceof Error) message = error.message;
+    if (typeof error === 'object' && error && 'code' in error && (error as any).code === '22P02' && (error as any).message && (error as any).message.includes('JSON')) {
+        return NextResponse.json({ error: 'Invalid message format in stored chat.', detail: (error as any).message }, { status: 500 });
     }
-    return NextResponse.json({ error: 'Error summarizing chat title.', detail: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

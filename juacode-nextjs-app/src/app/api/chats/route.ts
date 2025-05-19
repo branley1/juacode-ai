@@ -55,19 +55,23 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating chat:', error);
     let errorMessage = 'Error saving chat.';
     let errorStatus = 500;
-
-    if (error.code === '23505') {
-      errorMessage = 'A chat with this ID already exists.';
-      errorStatus = 409;
-    } else if (error.code === '23503') {
-      errorMessage = 'Invalid user_id provided.';
-      errorStatus = 400;
+    let detail = '';
+    if (typeof error === 'object' && error && 'code' in error) {
+      if ((error as any).code === '23505') {
+        errorMessage = 'A chat with this ID already exists.';
+        errorStatus = 409;
+      } else if ((error as any).code === '23503') {
+        errorMessage = 'Invalid user_id provided.';
+        errorStatus = 400;
+      }
+      if ('message' in error) detail = (error as any).message;
+    } else if (error instanceof Error) {
+      detail = error.message;
     }
-    
-    return NextResponse.json({ error: errorMessage, detail: error.message }, { status: errorStatus });
+    return NextResponse.json({ error: errorMessage, detail }, { status: errorStatus });
   }
 } 
