@@ -237,12 +237,17 @@ function ChatInterface({
     setCurrentChatId(newChatId);
     setMessages([]);
     setChatTitle(newTitle);
-    setChatStarted(true);
+    setChatStarted(false); // Set to false to show landing view
     setIsChatPersisted(false);
     setStreamingIndex(null);
     setIsEditingTitle(false);
     setCurrentLlmModel(null);
     setIsProfileMenuOpen(false);
+
+    // If not authenticated, redirect to login
+    if (!isUserAuthenticated) {
+      if (onNavigateToLogin) onNavigateToLogin(); else setCurrentView('login');
+    }
 
     console.log('New empty chat initialized with ID:', newChatId, 'and title:', newTitle);
     console.log('------handleNewChat finished -------\n');
