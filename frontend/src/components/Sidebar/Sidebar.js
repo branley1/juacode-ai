@@ -2,7 +2,7 @@ import React, { useState, forwardRef, useEffect } from 'react';
 import './Sidebar.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserCircle, faTrash, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 
 // Safely retrieve the chat id from the chat object.
 const getChatId = (chat) => chat.chat_id || chat.id || "";
