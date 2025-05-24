@@ -76,8 +76,8 @@ export async function POST(req: NextRequest) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`));
             }
           }
-          // Optionally, send a [DONE] message if your client expects it
-          // controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          // Signal the end of the stream
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         } catch (error) {
           console.error('[API Generate] Streaming error:', error);
           controller.error(error);

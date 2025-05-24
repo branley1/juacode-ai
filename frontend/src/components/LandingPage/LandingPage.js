@@ -48,7 +48,7 @@ function LandingPage({ onStartChatting, isDarkMode, toggleTheme, onNavigateToPro
                 ) : (
                     <>
                         <button onClick={() => { onStartChatting(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
-                            <FontAwesomeIcon icon={faSignInAlt} /> Log In / Start Chatting
+                            <FontAwesomeIcon icon={faSignInAlt} /> Log In
                         </button>
                         <button onClick={() => { onNavigateToProfile(); setIsProfileMenuOpen(false); }} className="profile-dropdown-item">
                             <FontAwesomeIcon icon={faUserCircle} /> View Profile

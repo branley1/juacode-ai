@@ -445,6 +445,7 @@ function ChatInterface({
       const decoder = new TextDecoder('utf-8');
       let done = false;
       let assistantContentAccumulator = ''; 
+      let buffer = ''; // Buffer for potentially incomplete SSE messages
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
@@ -452,11 +453,10 @@ function ChatInterface({
         const chunk = decoder.decode(value, { stream: true });
         
         // Process buffer for complete SSE messages (data: {...}\n\n)
-        let buffer = ''; // Buffer for potentially incomplete SSE messages
         buffer += chunk;
         
         let eventEndIndex;
-        while ((eventEndIndex = buffer.indexOf('\\n\\n')) !== -1) {
+        while ((eventEndIndex = buffer.indexOf('\n\n')) !== -1) {
           const eventStr = buffer.substring(0, eventEndIndex);
           buffer = buffer.substring(eventEndIndex + 2);
 
