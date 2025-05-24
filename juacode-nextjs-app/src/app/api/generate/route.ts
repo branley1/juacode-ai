@@ -17,7 +17,9 @@ function mapToLLMProvider(selectedModel?: string): LLMProvider {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('[API Generate] Received POST request.');
     const body = await req.json();
+    console.log('[API Generate] Request body parsed:', body);
     const messages: LLMMessage[] = body.messages || [];
     const model_variant: string = body.model_variant || 'normal';
     const selected_model_str: string | undefined = body.selected_model;
@@ -27,6 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const llmProvider = mapToLLMProvider(selected_model_str);
+    console.log(`[API Generate] Mapped to LLM Provider: ${llmProvider}`);
     
     let specificModelName: string | undefined;
     if (llmProvider === 'openai') {
@@ -51,6 +54,7 @@ export async function POST(req: NextRequest) {
     };
 
     console.log(`[API Generate] Provider: ${llmProvider}, Model: ${specificModelName}, Variant: ${model_variant}`);
+    console.log('[API Generate] Calling generateChatCompletion from llmService...');
 
     const llmStream = await generateChatCompletion(
       llmProvider,
@@ -59,29 +63,35 @@ export async function POST(req: NextRequest) {
     );
 
     if (typeof llmStream === 'string') {
+      console.log('[API Generate] llmService returned a string (non-streamed response). Sending JSON response.');
       return NextResponse.json({ response: llmStream });
     }
 
+    console.log('[API Generate] llmService returned a stream. Preparing ReadableStream for SSE.');
     const encoder = new TextEncoder();
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
           // Send the model name as the first event
           if (specificModelName) {
+            console.log('[API Generate SSE Stream] Sending model_used event:', specificModelName);
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ model_used: specificModelName })}\n\n`));
           }
 
           for await (const chunk of llmStream) {
             if (chunk) { // Ensure chunk is not empty or undefined
+              console.log('[API Generate SSE Stream] Sending text chunk.');
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`));
             }
           }
           // Signal the end of the stream
+          console.log('[API Generate SSE Stream] Sending [DONE] event.');
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         } catch (error) {
           console.error('[API Generate] Streaming error:', error);
           controller.error(error);
         } finally {
+          console.log('[API Generate SSE Stream] Closing controller.');
           controller.close();
         }
       },
@@ -96,7 +106,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    console.error('[API Generate] Error:', error);
+    console.error('[API Generate] Error in POST handler:', error);
     let errorMessage = 'Internal server error';
     if (error instanceof Error) {
         errorMessage = error.message;

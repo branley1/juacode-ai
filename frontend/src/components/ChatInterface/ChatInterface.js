@@ -161,7 +161,7 @@ function ChatInterface({
     // Only save to backend if the chat is persisted
     if (isChatPersisted && currentChatId) {
       try {
-        await fetch(`/api/chats/${currentChatId}`, {
+        await fetch(`http://localhost:3000/api/chats/${currentChatId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: chatTitle })
@@ -185,7 +185,7 @@ function ChatInterface({
     if (isChatPersisted && !isEditingTitle && chatTitle && currentChatId) {
       const timeoutId = setTimeout(async () => {
         try {
-          await fetch(`/api/chats/${currentChatId}`, {
+          await fetch(`http://localhost:3000/api/chats/${currentChatId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title: chatTitle })
@@ -219,7 +219,7 @@ function ChatInterface({
         last_model_used: currentLlmModel
       };
       try {
-        await fetch('/api/chats', {
+        await fetch('http://localhost:3000/api/chats', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newChatToPersist),
@@ -335,7 +335,7 @@ function ChatInterface({
 
     console.log(`Requesting title summarization for chat ${chatIdToSummarize}`);
     try {
-      const response = await fetch(`/api/chats/${chatIdToSummarize}/summarize-title`, {
+      const response = await fetch(`http://localhost:3000/api/chats/${chatIdToSummarize}/summarize-title`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // The backend can fetch messages using chatId, or we can send them.
@@ -368,7 +368,7 @@ function ChatInterface({
         // Directly PUT the new title to the backend upon successful summarization
         try {
           console.log(`Directly updating title on backend for ${chatIdToSummarize} after summarization.`);
-          const updateResponse = await fetch(`/api/chats/${chatIdToSummarize}`, {
+          const updateResponse = await fetch(`http://localhost:3000/api/chats/${chatIdToSummarize}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title: newTitle }),
@@ -430,7 +430,7 @@ function ChatInterface({
       };
 
       console.log(`Sending request to /api/generate for chat ${localChatId} with body:`, requestBody);
-      const res = await fetch('/api/generate', {
+      const res = await fetch('http://localhost:3000/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(requestBody),
@@ -538,7 +538,7 @@ function ChatInterface({
         };
         console.log("Persisting new chat to backend (chatId, title, messages):", newChatPayload);
         try {
-          const postRes = await fetch('/api/chats', {
+          const postRes = await fetch('http://localhost:3000/api/chats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newChatPayload),
@@ -591,7 +591,7 @@ function ChatInterface({
             title: localChatTitle,
             last_model_used: currentLlmModel,
           };
-          const updateRes = await fetch(`/api/chats/${finalChatIdForSummary}`, {
+          const updateRes = await fetch(`http://localhost:3000/api/chats/${finalChatIdForSummary}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updatePayload),
@@ -609,7 +609,7 @@ function ChatInterface({
                 last_model_used: currentLlmModel,
               };
               
-              const postRes = await fetch('/api/chats', {
+              const postRes = await fetch('http://localhost:3000/api/chats', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(newChatPayloadIf404),
@@ -747,7 +747,7 @@ function ChatInterface({
         onDeleteChat={async (chatIdToDelete) => {
           // Backend call to delete the chat
           try {
-            await fetch(`/api/chats/${chatIdToDelete}`, { method: 'DELETE' }); // Assuming DELETE endpoint exists
+            await fetch(`http://localhost:3000/api/chats/${chatIdToDelete}`, { method: 'DELETE' }); // Assuming DELETE endpoint exists
             setChatHistory(prevHistory => prevHistory.filter(chat => getChatId(chat) !== chatIdToDelete));
             if (currentChatId === chatIdToDelete) {
               // If current chat is deleted, start a new one
@@ -761,7 +761,7 @@ function ChatInterface({
         onRenameChat={async (chatIdToRename, newTitle) => {
           // Backend call to update title
           try {
-            await fetch(`/api/chats/${chatIdToRename}`, {
+            await fetch(`http://localhost:3000/api/chats/${chatIdToRename}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ title: newTitle })

@@ -21,19 +21,21 @@ const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
-
+console.log('[LLMService] Environment Keys: OPENAI_API_KEY present:', !!OPENAI_API_KEY, ', DEEPSEEK_API_KEY present:', !!DEEPSEEK_API_KEY, ', GEMINI_API_KEY present:', !!GEMINI_API_KEY);
 let openaiClient: OpenAI | undefined;
 if (OPENAI_API_KEY) {
   openaiClient = new OpenAI({ apiKey: OPENAI_API_KEY });
+  console.log('[LLMService] OpenAI client INITIALIZED.');
 } else {
-  console.warn('OpenAI API key not found. OpenAI provider will be unavailable.');
+  console.warn('[LLMService] OpenAI API key not found. OpenAI provider will be unavailable.');
 }
 
 let googleAIClient: GoogleGenerativeAI | undefined;
 if (GEMINI_API_KEY) {
   googleAIClient = new GoogleGenerativeAI(GEMINI_API_KEY);
+  console.log('[LLMService] Google AI client INITIALIZED.');
 } else {
-  console.warn('Gemini API key not found. Gemini provider will be unavailable.');
+  console.warn('[LLMService] Gemini API key not found. Gemini provider will be unavailable.');
 }
 
 let deepseekOpenAIClient: OpenAI | undefined;
@@ -42,8 +44,9 @@ if (DEEPSEEK_API_KEY) {
     apiKey: DEEPSEEK_API_KEY,
     baseURL: DEEPSEEK_BASE_URL,
   });
+  console.log('[LLMService] DeepSeek client INITIALIZED.');
 } else {
-  console.warn('DeepSeek API key not found. DeepSeek provider may be unavailable or use a different auth method.');
+  console.warn('[LLMService] DeepSeek API key not found. DeepSeek provider may be unavailable or use a different auth method.');
 }
 
 /* Helper for Streaming HTTP Responses
@@ -95,6 +98,7 @@ async function generateDeepSeekCompletion(
   messages: LLMMessage[], 
   config: LLMConfig = {}
 ): Promise<AsyncGenerator<string, void, unknown> | string> {
+  console.log('[LLMService] generateDeepSeekCompletion called.');
   if (!deepseekOpenAIClient) {
     throw new Error('DeepSeek client (OpenAI SDK) not initialized. API key might be missing.');
   }
@@ -186,6 +190,7 @@ async function generateOpenAICompletion(
   messages: LLMMessage[], 
   config: LLMConfig = {}
 ): Promise<AsyncGenerator<string, void, unknown> | string> {
+  console.log('[LLMService] generateOpenAICompletion called.');
   if (!openaiClient) {
     throw new Error('OpenAI API key not found or client not initialized. OpenAI provider will be unavailable.');
   }
@@ -244,6 +249,7 @@ async function generateGeminiCompletion(
   messages: LLMMessage[], 
   config: LLMConfig = {}
 ): Promise<AsyncGenerator<string, void, unknown> | string> {
+  console.log('[LLMService] generateGeminiCompletion called.');
   if (!googleAIClient) {
     throw new Error('Gemini API key not found or client not initialized. Gemini provider will be unavailable.');
   }
