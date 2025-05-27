@@ -7,10 +7,10 @@ interface RouteParams {
   chat_id: string;
 }
 
-export async function PUT(req: NextRequest, context: { params: RouteParams }) {
+export async function PUT(req: NextRequest, context: { params: Promise<RouteParams> }) {
   try {
     const body = await req.json() as ChatUpdate;
-    const { chat_id } = context.params;
+    const { chat_id } = await context.params;
     const { title, messages, last_model_used } = body;
 
     if (!chat_id) {
@@ -37,7 +37,7 @@ export async function PUT(req: NextRequest, context: { params: RouteParams }) {
 
     if (messages !== undefined) {
       setClauses.push(`messages = $${valueCount++}`);
-      values.push(messages);
+      values.push(JSON.stringify(messages));
     }
 
     if (last_model_used !== undefined) {
@@ -59,13 +59,6 @@ export async function PUT(req: NextRequest, context: { params: RouteParams }) {
       WHERE chat_id = $${valueCount}
       RETURNING chat_id, title, messages, user_id, last_model_used, created_at, updated_at;
     `;
-
-    console.log('[PUT /api/chats/:chat_id] Query:', query);
-    console.log('[PUT /api/chats/:chat_id] Values for query:', JSON.stringify(values, null, 2));
-    // Also log the messages specifically if it exists
-    if (messages !== undefined) {
-      console.log('[PUT /api/chats/:chat_id] Messages content before query:', JSON.stringify(messages, null, 2));
-    }
 
     const { rows, rowCount } = await db.query(query, values);
 
@@ -103,9 +96,9 @@ export async function PUT(req: NextRequest, context: { params: RouteParams }) {
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: RouteParams }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   try {
-    const { chat_id } = params;
+    const { chat_id } = await params;
 
     if (!chat_id) {
       return NextResponse.json({ error: 'chat_id is required in the URL' }, { status: 400 });
@@ -156,7 +149,7 @@ export async function POST(req: NextRequest, { params }: { params: RouteParams }
     const titleGenerationPayload: LLMMessage[] = [systemPrompt, ...llmMessages];
 
     // Call LLM to generate title
-    const llmProvider: LLMProvider = (process.env.TITLE_GENERATION_LLM_PROVIDER as LLMProvider) || 'gemini';
+    const llmProvider: LLMProvider = (process.env.TITLE_GENERATION_LLM_PROVIDER as LLMProvider) || 'deepseek';
     const llmConfig: LLMConfig = {
       stream: false, 
       max_tokens: 20, 
@@ -213,7 +206,8 @@ export async function POST(req: NextRequest, { params }: { params: RouteParams }
     );
 
   } catch (error: unknown) {
-    console.error(`[Chat Title Summary] Error for chat_id ${params.chat_id}:`, error);
+    const resolvedParams = await params;
+    console.error(`[Chat Title Summary] Error for chat_id ${resolvedParams.chat_id}:`, error);
     let message = 'Error summarizing chat title.';
     if (error instanceof Error) message = error.message;
     type PgError = { code?: string; message?: string };
@@ -232,8 +226,8 @@ export async function POST(req: NextRequest, { params }: { params: RouteParams }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: RouteParams }) {
-  const chatId = params.chat_id;
+export async function DELETE(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  const { chat_id: chatId } = await params;
   try {
     const result = await db.query('DELETE FROM chats WHERE chat_id = $1 RETURNING chat_id', [chatId]);
     if (result.rowCount === 0) {

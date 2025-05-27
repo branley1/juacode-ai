@@ -19,7 +19,6 @@ export async function POST(req: NextRequest) {
   try {
     console.log('[API Generate] Received POST request.');
     const body = await req.json();
-    console.log('[API Generate] Request body parsed:', body);
     const messages: LLMMessage[] = body.messages || [];
     const model_variant: string = body.model_variant || 'normal';
     const selected_model_str: string | undefined = body.selected_model;

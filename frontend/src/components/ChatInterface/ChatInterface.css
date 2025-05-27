@@ -21,7 +21,6 @@
   flex-direction: column;
   flex-grow: 1;
   position: relative;
-  border: 1px solid blue;
 }
 
 .chat-content-wrapper {
@@ -36,7 +35,6 @@
   margin-left: 0;
   margin-top: 0;
   margin-bottom: 0;
-  border: 1px solid red;
 }
 
 .chat-content-wrapper.sidebar-open {
@@ -271,6 +269,7 @@
   align-items: center;
   overflow: hidden;
   padding: 0 20px;
+  margin-left: 0px;
 }
 
 .chat-messages-area .assistant-typing{
@@ -362,11 +361,6 @@
   .input-area {
     bottom: 10px;
     padding: 0 10px;
-  }
-
-  .parent-container {
-    /* padding: 0 20px; */
-    /* border: 1px solid blue; */
   }
 }
 

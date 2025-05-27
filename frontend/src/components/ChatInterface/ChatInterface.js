@@ -335,12 +335,10 @@ function ChatInterface({
 
     console.log(`Requesting title summarization for chat ${chatIdToSummarize}`);
     try {
-      const response = await fetch(`http://localhost:3000/api/chats/${chatIdToSummarize}/summarize-title`, {
+      const response = await fetch(`http://localhost:3000/api/chats/${chatIdToSummarize}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // The backend can fetch messages using chatId, or we can send them.
-        // For now, let's assume backend fetches messages based on chatId to keep payload light.
-        // body: JSON.stringify({ messages: messagesForSummary }) 
+        // The backend fetches messages using chatId from the database
       });
 
       if (!response.ok) {
@@ -365,25 +363,7 @@ function ChatInterface({
           )
         );
 
-        // Directly PUT the new title to the backend upon successful summarization
-        try {
-          console.log(`Directly updating title on backend for ${chatIdToSummarize} after summarization.`);
-          const updateResponse = await fetch(`http://localhost:3000/api/chats/${chatIdToSummarize}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: newTitle }),
-          });
-          if (!updateResponse.ok) {
-            // Log if this specific update fails, but don't let it block UI updates already made
-            const errorData = await updateResponse.json().catch(() => ({ detail: "Failed to PUT summarized title."}));
-            console.error(`Error PUTting summarized title for chat ${chatIdToSummarize} to backend:`, errorData.detail);
-          } else {
-            console.log(`Successfully PUT summarized title for chat ${chatIdToSummarize} to backend.`);
-          }
-        } catch (putError) {
-          console.error(`Exception during direct PUT of summarized title for ${chatIdToSummarize}:`, putError);
-        }
-
+        console.log(`Title successfully updated for chat ${chatIdToSummarize} via POST endpoint.`);
       }
     } catch (error) {
       console.error(`Exception during title summarization for chat ${chatIdToSummarize}:`, error);
@@ -656,12 +636,19 @@ function ChatInterface({
           messagesForSummary = currentMessages.slice(-6);
           reasonForSummary = "Refining title with latest 6 messages.";
           requiresSummarization = true;
-        } else if (localChatTitle === 'New Chat' && currentMessages.length >= 6) {
-          // For chats with 6 to 10 messages, summarize if title is still "New Chat".
-          // Use all current messages for this initial summary as context might be building up.
+        } else if (localChatTitle === 'New Chat' && currentMessages.length >= 2) {
+          // Initial title summarization for new chats with at least 2 messages
           messagesForSummary = currentMessages; 
           reasonForSummary = "Initial title summarization for 'New Chat'.";
           requiresSummarization = true;
+        } else if (localChatTitle !== 'New Chat' && currentMessages.length >= 6 && currentMessages.length <= 10) {
+          // For chats with 6-10 messages that already have a title, refine it periodically
+          // Only refine every 6 messages to avoid too frequent updates
+          if (currentMessages.length % 6 === 0) {
+            messagesForSummary = currentMessages;
+            reasonForSummary = `Refining existing title with ${currentMessages.length} messages.`;
+            requiresSummarization = true;
+          }
         }
 
         if (requiresSummarization && messagesForSummary) {

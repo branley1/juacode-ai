@@ -290,12 +290,12 @@ async function generateGeminiCompletion(
     temperature: temperature,
   };
 
-  // Define safety settings to match Python SDK example (adjust as needed)
+  // Define safety settings to be more lenient for title generation
   const safetySettings = [
-    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
   ];
 
   try {
@@ -321,10 +321,28 @@ async function generateGeminiCompletion(
     } else {
       const result = await generativeModel.generateContent({ contents: geminiMessages, generationConfig, safetySettings });
       const response = result.response;
+      
+      console.log('Gemini non-stream response:', {
+        candidates: response?.candidates?.length || 0,
+        promptFeedback: response?.promptFeedback,
+        usageMetadata: response?.usageMetadata
+      });
+      
       if (response && response.candidates && response.candidates.length > 0) {
         const candidate = response.candidates[0];
+        
+        console.log('Gemini candidate details:', {
+          finishReason: candidate.finishReason,
+          safetyRatings: candidate.safetyRatings,
+          hasContent: !!candidate.content,
+          partsCount: candidate.content?.parts?.length || 0
+        });
+        
         if (candidate.finishReason && candidate.finishReason !== 'STOP' && candidate.finishReason !== 'MAX_TOKENS') {
           console.warn(`Gemini non-stream: Candidate finished with reason: ${candidate.finishReason}`);
+          if (candidate.safetyRatings) {
+            console.warn(`Gemini non-stream: Safety Ratings: ${JSON.stringify(candidate.safetyRatings)}`);
+          }
           if (response.promptFeedback) {
             console.warn(`Gemini non-stream: Prompt Feedback: ${JSON.stringify(response.promptFeedback)}`);
           }
@@ -332,11 +350,18 @@ async function generateGeminiCompletion(
         }
         // Consolidate parts for non-streaming response as well
         if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-          return candidate.content.parts.map(part => part.text).join('').trim();
+          const text = candidate.content.parts.map(part => part.text).join('').trim();
+          console.log('Gemini extracted text:', text);
+          return text;
         }
+        console.warn('Gemini non-stream: No content parts found in candidate');
         return ''; // Return empty if no parts even with normal finish
       } else {
-        console.warn("Gemini non-stream: No candidates or response text found", response);
+        console.warn("Gemini non-stream: No candidates or response text found", {
+          hasResponse: !!response,
+          candidatesLength: response?.candidates?.length || 0,
+          promptFeedback: response?.promptFeedback
+        });
         if (response?.promptFeedback) {
             console.warn(`Gemini non-stream: Prompt Feedback: ${JSON.stringify(response.promptFeedback)}`);
         }
