@@ -18,7 +18,7 @@ export default function Home() {
         </header>
 
         <p className={styles.description}>
-          Your intelligent coding assistant. Let&apos;s build something amazing together.
+          Your intelligent coding assistant. Let's build something amazing together.
         </p>
 
         <div className={styles.ctaContainer}>

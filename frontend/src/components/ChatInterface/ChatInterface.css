@@ -21,6 +21,7 @@
   flex-direction: column;
   flex-grow: 1;
   position: relative;
+  border: 1px solid blue;
 }
 
 .chat-content-wrapper {
@@ -32,6 +33,10 @@
   flex-grow: 1;
   transition: margin-right 0.3s ease;
   margin-right: 0;
+  margin-left: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  border: 1px solid red;
 }
 
 .chat-content-wrapper.sidebar-open {
@@ -101,6 +106,7 @@
   font-size: 1.2em;
   font-weight: bold;
   margin-right: 10px;
+  margin-left: 10px;
   text-align: left;
   margin-top: 0;
   margin-bottom: 0;
@@ -359,7 +365,8 @@
   }
 
   .parent-container {
-    padding: 0 20px;
+    /* padding: 0 20px; */
+    /* border: 1px solid blue; */
   }
 }
 

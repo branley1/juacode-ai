@@ -80,7 +80,6 @@ export async function POST(req: NextRequest) {
 
           for await (const chunk of llmStream) {
             if (chunk) { // Ensure chunk is not empty or undefined
-              console.log('[API Generate SSE Stream] Sending text chunk.');
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`));
             }
           }

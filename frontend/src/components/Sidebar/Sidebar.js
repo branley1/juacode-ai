@@ -2,24 +2,17 @@ import React, { useState, forwardRef, useEffect } from 'react';
 import './Sidebar.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faEllipsisV } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faEllipsisV, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 // Safely retrieve the chat id from the chat object.
 const getChatId = (chat) => chat.chat_id || chat.id || "";
 
 // Wrap Sidebar with forwardRef
 const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDeleteAllChats, onDeleteChat, onRenameChat, setCurrentView, isUserAuthenticated, onNavigateToProfile }, ref) => {
-  const [showAccountDetails, setShowAccountDetails] = useState(false);
   const [editingChatId, setEditingChatId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [openMenuChatId, setOpenMenuChatId] = useState(null);
   const [userData, setUserData] = useState(null);
-
-  useEffect(() => {
-    if (!isSidebarOpen) {
-      setShowAccountDetails(false);
-    }
-  }, [isSidebarOpen]);
 
   useEffect(() => {
     if (isUserAuthenticated) {
@@ -57,6 +50,9 @@ const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatS
           <img src={JuaCodeLogo} alt="JuaCode Logo" className="sidebar-logo" />
           <h3 className="sidebar-title">JuaCode</h3>
           <h4 className="sidebar-subtitle">AI Coding Assistant</h4>
+          <button onClick={toggleSidebar} className="sidebar-close-button" title="Close Sidebar">
+            <FontAwesomeIcon icon={faTimes} />
+          </button>
         </div>
         <div className="sidebar-content">
           <div className="chat-history-header">

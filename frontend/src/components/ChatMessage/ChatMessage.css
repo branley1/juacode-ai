@@ -87,11 +87,16 @@
 }
 
 @media (max-width: 768px) {
-  .chat-message.user,
+  .chat-message.user {
+    max-width: 90%;
+    margin-left: auto;
+    margin-right: 10px;
+  }
+
   .chat-message.assistant {
     max-width: 90%;
-    margin-left: 20px;
-    margin-right: 20px;
+    margin-left: 10px;
+    margin-right: 10px;
   }
   
   .profile-icon {

@@ -7,10 +7,10 @@ interface RouteParams {
   chat_id: string;
 }
 
-export async function PUT(req: NextRequest, { params }: { params: RouteParams }) {
+export async function PUT(req: NextRequest, context: { params: RouteParams }) {
   try {
-    const { chat_id } = params;
     const body = await req.json() as ChatUpdate;
+    const { chat_id } = context.params;
     const { title, messages, last_model_used } = body;
 
     if (!chat_id) {
@@ -59,6 +59,13 @@ export async function PUT(req: NextRequest, { params }: { params: RouteParams })
       WHERE chat_id = $${valueCount}
       RETURNING chat_id, title, messages, user_id, last_model_used, created_at, updated_at;
     `;
+
+    console.log('[PUT /api/chats/:chat_id] Query:', query);
+    console.log('[PUT /api/chats/:chat_id] Values for query:', JSON.stringify(values, null, 2));
+    // Also log the messages specifically if it exists
+    if (messages !== undefined) {
+      console.log('[PUT /api/chats/:chat_id] Messages content before query:', JSON.stringify(messages, null, 2));
+    }
 
     const { rows, rowCount } = await db.query(query, values);
 
