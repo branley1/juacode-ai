@@ -395,37 +395,3 @@ export async function generateChatCompletion(
       return generateDeepSeekCompletion(messages, config); // Default to DeepSeek if provider is unknown or not set
   }
 }
-
-/* Test function to verify LLM functionality
-async function testLLM() {
-  const testMessages: LLMMessage[] = [
-    { role: 'user', content: 'Hello, who are you?' },
-  ];
-
-  try {
-    console.log('\n--- Testing DeepSeek ---');
-    const deepseekResponse = await generateChatCompletion('deepseek', testMessages, { stream: false, model: 'deepseek-chat' });
-    console.log('DeepSeek Response:', deepseekResponse);
-  } catch (e) {
-    console.error('DeepSeek Test Error:', e);
-  }
-
-  try {
-    console.log('\n--- Testing OpenAI ---');
-    const openaiResponse = await generateChatCompletion('openai', testMessages, { stream: false, model: 'gpt-3.5-turbo'});
-    console.log('OpenAI Response:', openaiResponse);
-  } catch (e) {
-    console.error('OpenAI Test Error:', e);
-  }
-
-  try {
-    console.log('\n--- Testing Gemini ---');
-    const geminiResponse = await generateChatCompletion('gemini', testMessages, { stream: false, model: 'gemini-1.5-flash-latest' });
-    console.log('Gemini Response:', geminiResponse);
-  } catch (e) {
-    console.error('Gemini Test Error:', e);
-  }
-}
-
-// testLLM(); // Uncomment to run tests when the server starts
-*/

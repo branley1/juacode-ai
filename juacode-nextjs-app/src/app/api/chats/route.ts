@@ -77,7 +77,6 @@ export async function POST(req: NextRequest) {
   console.log('[API Chats POST /] Received request.');
   try {
     const body = await req.json();
-    console.log('[API Chats POST /] Request body parsed:', body);
     const { chat_id, title, messages, last_model_used } = body as ChatCreate;
 
     if (!chat_id || !title || !messages) {
