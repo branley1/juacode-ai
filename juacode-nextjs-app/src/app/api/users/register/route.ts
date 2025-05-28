@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 import { db } from '@/lib/db';
-import { UserProfileCreate, UserPublic } from '@/models/User';
+import { UserPublic } from '@/models/User';
 
 // Define response timeout - next.js route config
 export const runtime = 'nodejs';

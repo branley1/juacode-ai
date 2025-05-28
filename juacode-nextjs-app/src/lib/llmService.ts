@@ -376,48 +376,56 @@ async function generateGeminiCompletion(
   }
 }
 
-
-// Main Dispatcher Function
+// Main function to select provider and generate completion
 export async function generateChatCompletion(
   provider: LLMProvider,
   messages: LLMMessage[],
   config: LLMConfig = {}
 ): Promise<AsyncGenerator<string, void, unknown> | string> {
+  console.log(`[LLMService] generateChatCompletion called with provider: ${provider}`);
   switch (provider) {
-    case 'deepseek':
-      return generateDeepSeekCompletion(messages, config);
     case 'openai':
       return generateOpenAICompletion(messages, config);
     case 'gemini':
       return generateGeminiCompletion(messages, config);
+    case 'deepseek':
+      return generateDeepSeekCompletion(messages, config);
     default:
-      throw new Error(`Unsupported LLM provider: ${provider}`);
+      console.error(`[LLMService] Unknown LLM provider: ${provider}. Defaulting to DeepSeek.`);
+      return generateDeepSeekCompletion(messages, config); // Default to DeepSeek if provider is unknown or not set
   }
 }
 
-// Testing
+/* Test function to verify LLM functionality
 async function testLLM() {
+  const testMessages: LLMMessage[] = [
+    { role: 'user', content: 'Hello, who are you?' },
+  ];
+
   try {
-    const messages: LLMMessage[] = [{ role: 'user', content: 'Hello, DeepSeek! Tell me a joke about AI with reasoning.' }];
-    
-    // Test DeepSeek Streaming (with reasoner model if applicable)
-    console.log('\n Testing DeepSeek (Streaming)');
-    const dsStream = await generateChatCompletion('deepseek', messages, { stream: true, model: 'deepseek-chat' }); // or deepseek-reasoner
-    if (typeof dsStream !== 'string') {
-      for await (const chunk of dsStream) {
-        process.stdout.write(chunk);
-      }
-      console.log('\n');
-    }
+    console.log('\n--- Testing DeepSeek ---');
+    const deepseekResponse = await generateChatCompletion('deepseek', testMessages, { stream: false, model: 'deepseek-chat' });
+    console.log('DeepSeek Response:', deepseekResponse);
+  } catch (e) {
+    console.error('DeepSeek Test Error:', e);
+  }
 
-    // Test DeepSeek Non-Streaming
-    console.log('\n Testing DeepSeek (Non-Streaming)');
-    const dsResponse = await generateChatCompletion('deepseek', messages, { stream: false, model: 'deepseek-chat' });
-    console.log(dsResponse);
+  try {
+    console.log('\n--- Testing OpenAI ---');
+    const openaiResponse = await generateChatCompletion('openai', testMessages, { stream: false, model: 'gpt-3.5-turbo'});
+    console.log('OpenAI Response:', openaiResponse);
+  } catch (e) {
+    console.error('OpenAI Test Error:', e);
+  }
 
-  } catch (error) {
-    console.error('LLM Test Error:', error);
+  try {
+    console.log('\n--- Testing Gemini ---');
+    const geminiResponse = await generateChatCompletion('gemini', testMessages, { stream: false, model: 'gemini-1.5-flash-latest' });
+    console.log('Gemini Response:', geminiResponse);
+  } catch (e) {
+    console.error('Gemini Test Error:', e);
   }
 }
 
-// testLLM();
+// testLLM(); // Uncomment to run tests when the server starts
+*/

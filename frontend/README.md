@@ -85,7 +85,7 @@ This will generate a `build` folder with optimized assets to deploy.
     - **Sidebar/**: Optional sidebar for additional features.
     - **ErrorBoundary/**: Catches runtime errors in the UI to prevent the whole app from crashing, displaying a fallback UI instead.
     - **MobileDetector/**: Detects and handles mobile-specific layouts or behavior.
-    - **ThoughtBlock/**: (Optional) Displays extra information or context, for instance, to show the AI’s thought process. Customize as needed.
+    - **ThoughtBlock/**: (Optional) Displays extra information or context, for instance, to show the AI's thought process. Customize as needed.
   - **App.js:** Main app component.
   - **index.js:** Entry point for the React application.
 
@@ -109,8 +109,8 @@ To change styling or behavior:
 ## Troubleshooting
 
 - **Chat Not Saving:** Ensure the backend server is running correctly. Check your network console for API errors.
-- **Local Storage Issues:** If your chat history isn’t loading as expected, try clearing your browser’s local storage.
-- ** UI Bugs:** If components don’t display as expected, inspect the browser console for JavaScript errors and verify the component props.
+- **Local Storage Issues:** If your chat history isn't loading as expected, try clearing your browser's local storage.
+- ** UI Bugs:** If components don't display as expected, inspect the browser console for JavaScript errors and verify the component props.
 
 ## Contributing
 

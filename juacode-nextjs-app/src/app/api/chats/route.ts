@@ -13,7 +13,7 @@ function setCorsHeaders<T>(response: NextResponse<T>): NextResponse<T> {
 }
 
 // OPTIONS handler for preflight requests
-export async function OPTIONS(_req: NextRequest) {
+export async function OPTIONS() {
   // Use NextResponse with null body and 204 status for OPTIONS preflight
   const response = new NextResponse(null, { status: 204 });
   response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3001');
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     const authResult = await authenticateRequest(req);
     if (!authResult.success || !authResult.user) {
       console.error('[API Chats GET /] Authentication failed:', authResult.error);
-      let response = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
+      const response = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
       return setCorsHeaders(response);
     }
 
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
 
     console.log(`[API Chats GET /] Found ${userChats.length} chats for user ${userId}`);
     
-    let response = NextResponse.json({
+    const response = NextResponse.json({
       message: 'Chats retrieved successfully',
       chats: userChats,
       count: userChats.length
@@ -68,8 +68,8 @@ export async function GET(req: NextRequest) {
     if (error instanceof Error) {
       errorMessage = error.message;
     }
-    let response = NextResponse.json({ error: errorMessage }, { status: 500 });
-    return setCorsHeaders(response);
+    const finalResponse = NextResponse.json({ error: errorMessage }, { status: 500 });
+    return setCorsHeaders(finalResponse);
   }
 }
 
@@ -82,13 +82,13 @@ export async function POST(req: NextRequest) {
 
     if (!chat_id || !title || !messages) {
       console.error('[API Chats POST /] Validation Error: chat_id, title, and messages are required.');
-      let response = NextResponse.json({ error: 'chat_id, title, and messages are required' }, { status: 400 });
+      const response = NextResponse.json({ error: 'chat_id, title, and messages are required' }, { status: 400 });
       return setCorsHeaders(response);
     }
 
     if (!Array.isArray(messages) || messages.some(msg => typeof msg.role !== 'string' || typeof msg.content !== 'string')) {
         console.error('[API Chats POST /] Validation Error: Invalid messages format.');
-        let response = NextResponse.json({ error: 'Messages must be an array of {role: string, content: string} objects' }, { status: 400 });
+        const response = NextResponse.json({ error: 'Messages must be an array of {role: string, content: string} objects' }, { status: 400 });
         return setCorsHeaders(response);
     }
 
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     const authResult = await authenticateRequest(req);
     if (!authResult.success || !authResult.user) {
       console.error('[API Chats POST /] Authentication failed:', authResult.error);
-      let response = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
+      const response = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
       return setCorsHeaders(response);
     }
 
@@ -131,14 +131,14 @@ export async function POST(req: NextRequest) {
     const createdChat: Chat = rows[0];
 
     console.log(`[API Chats POST /] Chat ${createdChat.chat_id} saved successfully for user ${userId}.`);
-    let response = NextResponse.json(
+    const postResponse = NextResponse.json(
       {
         message: 'Chat saved successfully',
         chat: createdChat,
       },
       { status: 201 }
     );
-    return setCorsHeaders(response);
+    return setCorsHeaders(postResponse);
 
   } catch (error: unknown) {
     console.error('[API Chats POST /] Error in POST handler:', error);
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
     } else if (error instanceof Error) {
       detail = error.message;
     }
-    let response = NextResponse.json({ error: errorMessage, detail }, { status: errorStatus });
-    return setCorsHeaders(response);
+    const errorResponse = NextResponse.json({ error: errorMessage, detail }, { status: errorStatus });
+    return setCorsHeaders(errorResponse);
   }
 } 
