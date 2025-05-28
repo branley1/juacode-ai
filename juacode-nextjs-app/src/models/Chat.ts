@@ -8,7 +8,7 @@ export interface Chat {
   chat_id: string;
   title: string;
   messages: ChatMessage[];
-  user_id?: bigint | null;
+  user_id?: string | null;
   last_model_used?: string | null;
   created_at: Date;
   updated_at: Date;
@@ -19,7 +19,7 @@ export interface ChatCreate {
   chat_id: string;
   title: string;
   messages: ChatMessage[];
-  user_id?: bigint | null;
+  user_id?: string | null;
   last_model_used?: string | null;
 }
 

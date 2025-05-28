@@ -50,6 +50,24 @@ export async function POST(req: NextRequest) {
 
       // If it succeeded, great - just return the response
       if (!error && data) {
+        // After successful login, ensure a corresponding user profile row exists in the local "users" table.
+        try {
+          // Attempt to insert (or do nothing on conflict) so that repeated logins are idempotent.
+          const upsertQuery = `
+            INSERT INTO users (id, name, email, created_at, updated_at)
+            VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (id) DO UPDATE
+            SET email = EXCLUDED.email,
+                name = COALESCE(EXCLUDED.name, users.name),
+                updated_at = CURRENT_TIMESTAMP;
+          `;
+          const upsertValues = [data.user.id, data.user.user_metadata?.name || null, data.user.email];
+          await db.query(upsertQuery, upsertValues);
+        } catch (profileError) {
+          // Log but do not fail the login if profile insert fails; chats may still fail separately and expose the error.
+          console.error('[Login] Failed to upsert user profile row:', profileError);
+        }
+
         return NextResponse.json(
           {
             message: 'User logged in successfully',
@@ -135,6 +153,24 @@ export async function POST(req: NextRequest) {
           status: 500,
           headers: corsHeaders()
         });
+    }
+
+    // After successful login, ensure a corresponding user profile row exists in the local "users" table.
+    try {
+      // Attempt to insert (or do nothing on conflict) so that repeated logins are idempotent.
+      const upsertQuery = `
+        INSERT INTO users (id, name, email, created_at, updated_at)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT (id) DO UPDATE
+        SET email = EXCLUDED.email,
+            name = COALESCE(EXCLUDED.name, users.name),
+            updated_at = CURRENT_TIMESTAMP;
+      `;
+      const upsertValues = [data.user.id, data.user.user_metadata?.name || null, data.user.email];
+      await db.query(upsertQuery, upsertValues);
+    } catch (profileError) {
+      // Log but do not fail the login if profile insert fails; chats may still fail separately and expose the error.
+      console.error('[Login] Failed to upsert user profile row:', profileError);
     }
 
     return NextResponse.json(

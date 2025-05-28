@@ -2,9 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ChatUpdate, Chat, ChatMessage } from '@/models/Chat';
 import { LLMMessage, generateChatCompletion, LLMConfig, LLMProvider } from '@/lib/llmService';
+import { authenticateRequest } from '@/lib/auth';
 
 interface RouteParams {
   chat_id: string;
+}
+
+// Helper to set CORS headers
+function setCorsHeaders<T>(response: NextResponse<T>): NextResponse<T> {
+  response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3001');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return response;
+}
+
+// OPTIONS handler for preflight requests
+export async function OPTIONS(_req: NextRequest) {
+  // Use NextResponse with null body and 204 status for OPTIONS preflight
+  const response = new NextResponse(null, { status: 204 });
+  response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3001');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  response.headers.set('Access-Control-Max-Age', '86400'); // Optional: Cache preflight for 1 day
+  return response;
 }
 
 export async function PUT(req: NextRequest, context: { params: Promise<RouteParams> }) {
@@ -14,16 +34,29 @@ export async function PUT(req: NextRequest, context: { params: Promise<RoutePara
     const { title, messages, last_model_used } = body;
 
     if (!chat_id) {
-      return NextResponse.json({ error: 'chat_id is required in the URL' }, { status: 400 });
+      let R = NextResponse.json({ error: 'chat_id is required in the URL' }, { status: 400 });
+      return setCorsHeaders(R);
     }
 
     if (title === undefined && messages === undefined && last_model_used === undefined) {
-      return NextResponse.json({ error: 'At least title, messages, or last_model_used must be provided for update' }, { status: 400 });
+      let R = NextResponse.json({ error: 'At least title, messages, or last_model_used must be provided for update' }, { status: 400 });
+      return setCorsHeaders(R);
     }
 
     if (messages !== undefined && (!Array.isArray(messages) || messages.some(msg => typeof msg.role !== 'string' || typeof msg.content !== 'string'))) {
-      return NextResponse.json({ error: 'If provided, messages must be an array of {role: string, content: string} objects' }, { status: 400 });
+      let R = NextResponse.json({ error: 'If provided, messages must be an array of {role: string, content: string} objects' }, { status: 400 });
+      return setCorsHeaders(R);
     }
+
+    // Authenticate the user
+    const authResult = await authenticateRequest(req);
+    if (!authResult.success || !authResult.user) {
+      console.error('[API Chats PUT] Authentication failed:', authResult.error);
+      let R = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
+      return setCorsHeaders(R);
+    }
+
+    const userId = authResult.user.id;
 
     // Dynamically build the SET part of the query and the values array
     const setClauses: string[] = [];
@@ -46,35 +79,38 @@ export async function PUT(req: NextRequest, context: { params: Promise<RoutePara
     }
 
     if (setClauses.length === 0) {
-      // This case should be caught by the check above, but as a safeguard
-      return NextResponse.json({ message: 'No changes provided to update' }, { status: 200 });
+      let R = NextResponse.json({ message: 'No changes provided to update' }, { status: 200 });
+      return setCorsHeaders(R);
     }
 
     setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
-    values.push(chat_id); // For the WHERE clause
+    values.push(chat_id);
+    values.push(userId); // Add user_id for WHERE clause
 
     const query = `
       UPDATE chats
       SET ${setClauses.join(', ')}
-      WHERE chat_id = $${valueCount}
+      WHERE chat_id = $${valueCount} AND user_id = $${valueCount + 1}
       RETURNING chat_id, title, messages, user_id, last_model_used, created_at, updated_at;
     `;
 
     const { rows, rowCount } = await db.query(query, values);
 
     if (rowCount === 0) {
-      return NextResponse.json({ error: 'Chat not found or no changes made' }, { status: 404 });
+      let R = NextResponse.json({ error: 'Chat not found or access denied' }, { status: 404 });
+      return setCorsHeaders(R);
     }
 
     const updatedChat: Chat = rows[0];
 
-    return NextResponse.json(
+    let Rfinal = NextResponse.json(
       {
         message: 'Chat updated successfully',
         chat: updatedChat,
       },
       { status: 200 }
     );
+    return setCorsHeaders(Rfinal);
 
   } catch (error: unknown) {
     console.error('Error updating chat:', error);
@@ -90,9 +126,11 @@ export async function PUT(req: NextRequest, context: { params: Promise<RoutePara
       pgError.message &&
       pgError.message.includes('JSON')
     ) {
-      return NextResponse.json({ error: 'Invalid message format in stored chat.', detail: pgError.message }, { status: 500 });
+      let R = NextResponse.json({ error: 'Invalid message format in stored chat.', detail: pgError.message }, { status: 500 });
+      return setCorsHeaders(R);
     }
-    return NextResponse.json({ error: message }, { status: 500 });
+    let Rerr = NextResponse.json({ error: message }, { status: 500 });
+    return setCorsHeaders(Rerr);
   }
 }
 
@@ -101,28 +139,40 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
     const { chat_id } = await params;
 
     if (!chat_id) {
-      return NextResponse.json({ error: 'chat_id is required in the URL' }, { status: 400 });
+      let R = NextResponse.json({ error: 'chat_id is required in the URL' }, { status: 400 });
+      return setCorsHeaders(R);
     }
 
-    // Fetch chat from DB
-    const chatQuery = 'SELECT messages FROM chats WHERE chat_id = $1';
-    const { rows, rowCount } = await db.query(chatQuery, [chat_id]);
+    // Authenticate the user
+    const authResult = await authenticateRequest(req);
+    if (!authResult.success || !authResult.user) {
+      console.error('[API Chats POST] Authentication failed:', authResult.error);
+      let R = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
+      return setCorsHeaders(R);
+    }
+
+    const userId = authResult.user.id;
+
+    // Fetch chat from DB - ensure it belongs to the user
+    const chatQuery = 'SELECT messages FROM chats WHERE chat_id = $1 AND user_id = $2';
+    const { rows, rowCount } = await db.query(chatQuery, [chat_id, userId]);
 
     if (rowCount === 0) {
-      return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
+      let R = NextResponse.json({ error: 'Chat not found or access denied' }, { status: 404 });
+      return setCorsHeaders(R);
     }
 
     const chatMessagesFromDB: ChatMessage[] = rows[0].messages;
 
     if (!chatMessagesFromDB || chatMessagesFromDB.length === 0) {
-      return NextResponse.json({ error: 'No messages in chat to summarize title from' }, { status: 400 });
+      let R = NextResponse.json({ error: 'No messages in chat to summarize title from' }, { status: 400 });
+      return setCorsHeaders(R);
     }
 
     // Prepare messages for LLM
     const messagesForSummary = chatMessagesFromDB.slice(0, 4);
     
     const llmMessages: LLMMessage[] = messagesForSummary.map((msg: ChatMessage) => {
-        // Replace /<think>.*?<\/think>/gs with a more compatible regex
         const contentForSummary = msg.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
         
         let role: LLMMessage['role'] = 'user'; 
@@ -137,7 +187,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
     }).filter(msg => msg.content) as LLMMessage[];
 
     if (llmMessages.length === 0) {
-        return NextResponse.json({ error: 'Not enough content after processing messages to summarize title.' }, { status: 400 });
+        let R = NextResponse.json({ error: 'Not enough content after processing messages to summarize title.' }, { status: 400 });
+        return setCorsHeaders(R);
     }
     
     const systemPromptText = "Create a short, concise chat title of 2-5 words that summarizes the core topic or purpose of this conversation. Focus on the specific subject matter. Do not include phrases like 'I am' or self-references. Only output the title with no quotes or other formatting.";
@@ -148,7 +199,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
 
     const titleGenerationPayload: LLMMessage[] = [systemPrompt, ...llmMessages];
 
-    // Call LLM to generate title
     const llmProvider: LLMProvider = (process.env.TITLE_GENERATION_LLM_PROVIDER as LLMProvider) || 'deepseek';
     const llmConfig: LLMConfig = {
       stream: false, 
@@ -165,7 +215,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
         console.error(`[Chat Title Summary] LLM (${llmProvider}) error for chat ${chat_id}:`, llmError);
         let message = 'LLM service error during title generation.';
         if (llmError instanceof Error) message = llmError.message;
-        return NextResponse.json({ error: message }, { status: 502 });
+        let R = NextResponse.json({ error: message }, { status: 502 });
+        return setCorsHeaders(R);
     }
 
     if (typeof newTitleRaw !== 'string' || !newTitleRaw.trim()) {
@@ -173,7 +224,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
       newTitleRaw = "Chat Summary"; 
     }
 
-    // Clean and format title
     let newTitle = newTitleRaw.replace(/["'*`~#""]/g, '').trim();
     const words = newTitle.split(/\s+/);
     if (words.length > 5) {
@@ -182,21 +232,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
       newTitle = "Chat Summary"; 
     }
     
-    // Update chat in DB
     const updateQuery = `
       UPDATE chats
       SET title = $1, updated_at = CURRENT_TIMESTAMP
-      WHERE chat_id = $2
+      WHERE chat_id = $2 AND user_id = $3
       RETURNING chat_id, title;
     `;
-    const updateValues = [newTitle, chat_id];
+    const updateValues = [newTitle, chat_id, userId];
     const { rows: updatedRows, rowCount: updatedRowCount } = await db.query(updateQuery, updateValues);
 
     if (updatedRowCount === 0) {
-      return NextResponse.json({ error: 'Chat not found during update' }, { status: 404 });
+      let R = NextResponse.json({ error: 'Chat not found or access denied during update' }, { status: 404 });
+      return setCorsHeaders(R);
     }
 
-    return NextResponse.json(
+    let Rfinal = NextResponse.json(
       {
         message: 'Chat title summarized and updated successfully',
         chat_id: updatedRows[0].chat_id,
@@ -204,6 +254,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
       },
       { status: 200 }
     );
+    return setCorsHeaders(Rfinal);
 
   } catch (error: unknown) {
     const resolvedParams = await params;
@@ -220,22 +271,38 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
       pgError.message &&
       pgError.message.includes('JSON')
     ) {
-      return NextResponse.json({ error: 'Invalid message format in stored chat.', detail: pgError.message }, { status: 500 });
+      let R = NextResponse.json({ error: 'Invalid message format in stored chat.', detail: pgError.message }, { status: 500 });
+      return setCorsHeaders(R);
     }
-    return NextResponse.json({ error: message }, { status: 500 });
+    let Rerr = NextResponse.json({ error: message }, { status: 500 });
+    return setCorsHeaders(Rerr);
   }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const { chat_id: chatId } = await params;
   try {
-    const result = await db.query('DELETE FROM chats WHERE chat_id = $1 RETURNING chat_id', [chatId]);
-    if (result.rowCount === 0) {
-      return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
+    // Authenticate the user
+    const authResult = await authenticateRequest(req);
+    if (!authResult.success || !authResult.user) {
+      console.error('[API Chats DELETE] Authentication failed:', authResult.error);
+      let R = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
+      return setCorsHeaders(R);
     }
-    return NextResponse.json({ message: `Chat ${chatId} deleted successfully` });
+
+    const userId = authResult.user.id;
+
+    // Delete chat only if it belongs to the user
+    const result = await db.query('DELETE FROM chats WHERE chat_id = $1 AND user_id = $2 RETURNING chat_id', [chatId, userId]);
+    if (result.rowCount === 0) {
+      let R = NextResponse.json({ error: 'Chat not found or access denied' }, { status: 404 });
+      return setCorsHeaders(R);
+    }
+    let Rfinal = NextResponse.json({ message: `Chat ${chatId} deleted successfully` });
+    return setCorsHeaders(Rfinal);
   } catch (error) {
     console.error(`Error deleting chat ${chatId}:`, error);
-    return NextResponse.json({ error: `Failed to delete chat ${chatId}` }, { status: 500 });
+    let R = NextResponse.json({ error: `Failed to delete chat ${chatId}` }, { status: 500 });
+    return setCorsHeaders(R);
   }
 } 

@@ -6,6 +6,7 @@ import './ChatInterface.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPen, faBars, faPlus, faShare, faUser, faCog, faUserCircle, faSun, faMoon, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { fetchUserChats, createChat, updateChat, deleteChat, summarizeChatTitle } from '../../utils/api';
 
 // Generate a unique string for the chat id.
 const generateUniqueChatId = () => {
@@ -37,7 +38,7 @@ const extractTimestamp = (chat) => {
 };
 
 const AVAILABLE_MODELS = [
-  { value: "deepseek-chat", label: "DeepSeek V3" },
+  { value: "deepseek-chat", label: "DeepSeek" },
   { value: "o4-mini-2025-04-16", label: "o4-mini" },
   { value: "gemini-2.5-pro-preview-05-06", label: "Gemini 2.5 Pro" }
 ];
@@ -74,6 +75,62 @@ function ChatInterface({
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
+
+  const [chatHistory, setChatHistory] = useState([]);
+
+  // Load user chats from backend
+  const loadUserChats = useCallback(async () => {
+    if (!isUserAuthenticated) {
+      console.log('[ChatInterface] User not authenticated, clearing chat history');
+      setChatHistory([]);
+      return;
+    }
+
+    try {
+      console.log('[ChatInterface] Loading user chats from backend...');
+      const userChats = await fetchUserChats();
+      console.log(`[ChatInterface] Loaded ${userChats.length} chats from backend:`, userChats);
+      setChatHistory(userChats);
+      
+      // Also update localStorage for offline access
+      localStorage.setItem('juaCodeChatHistory', JSON.stringify(userChats));
+    } catch (error) {
+      console.error('[ChatInterface] Error loading user chats:', error);
+      
+      // If authentication failed, handle logout
+      if (error.message.includes('Authentication required')) {
+        console.log('[ChatInterface] Authentication failed, logging out...');
+        onLogout();
+        return;
+      }
+      
+      // Fallback to localStorage if backend fails
+      const storedHistory = localStorage.getItem('juaCodeChatHistory');
+      if (storedHistory) {
+        try {
+          let parsedHistory = JSON.parse(storedHistory);
+          parsedHistory = parsedHistory.map(chat => {
+            if (!chat.chat_id && chat.id) {
+              return { ...chat, chat_id: chat.id };
+            } else if (!chat.chat_id) {
+              return { ...chat, chat_id: generateUniqueChatId() };
+            }
+            return chat;
+          });
+          console.log('[ChatInterface] Using fallback localStorage chat history:', parsedHistory);
+          setChatHistory(parsedHistory);
+        } catch (err) {
+          console.error("[ChatInterface] Error parsing chat history from localStorage:", err);
+          setChatHistory([]);
+        }
+      }
+    }
+  }, [isUserAuthenticated, onLogout]);
+
+  // Load user chats when authentication status changes
+  useEffect(() => {
+    loadUserChats();
+  }, [loadUserChats]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -114,28 +171,6 @@ function ChatInterface({
     };
   }, [profileMenuRef]);
 
-  const [chatHistory, setChatHistory] = useState(() => {
-    const storedHistory = localStorage.getItem('juaCodeChatHistory');
-    if (storedHistory) {
-      try {
-        let parsedHistory = JSON.parse(storedHistory);
-        parsedHistory = parsedHistory.map(chat => {
-          if (!chat.chat_id && chat.id) {
-            return { ...chat, chat_id: chat.id };
-          } else if (!chat.chat_id) {
-            return { ...chat, chat_id: generateUniqueChatId() };
-          }
-          return chat;
-        });
-        return parsedHistory;
-      } catch (err) {
-        console.error("Error parsing chat history from localStorage:", err);
-        return [];
-      }
-    }
-    return [];
-  });
-
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(prev => !prev);
   }, []);
@@ -161,11 +196,7 @@ function ChatInterface({
     // Only save to backend if the chat is persisted
     if (isChatPersisted && currentChatId) {
       try {
-        await fetch(`http://localhost:3000/api/chats/${currentChatId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: chatTitle })
-        });
+        await updateChat(currentChatId, { title: chatTitle });
         // Update chatHistory with the new title
         setChatHistory(prevHistory =>
           prevHistory.map(chat =>
@@ -174,6 +205,10 @@ function ChatInterface({
         );
       } catch (error) {
         console.error('Error saving chat title to backend:', error);
+        // If authentication failed, handle logout
+        if (error.message.includes('Authentication required')) {
+          onLogout();
+        }
       }
     } else {
       console.log("Title changed for a new (non-persisted) chat. Will be saved with first message.");
@@ -185,11 +220,7 @@ function ChatInterface({
     if (isChatPersisted && !isEditingTitle && chatTitle && currentChatId) {
       const timeoutId = setTimeout(async () => {
         try {
-          await fetch(`http://localhost:3000/api/chats/${currentChatId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: chatTitle })
-          });
+          await updateChat(currentChatId, { title: chatTitle });
           // Update chatHistory with the new title
            setChatHistory(prevHistory =>
             prevHistory.map(chat =>
@@ -198,11 +229,15 @@ function ChatInterface({
           );
         } catch (error) {
           console.error('Error auto-saving chat title to backend:', error);
+          // If authentication failed, handle logout
+          if (error.message.includes('Authentication required')) {
+            onLogout();
+          }
         }
       }, 1000); // 1-second debounce delay for auto-save
       return () => clearTimeout(timeoutId);
     }
-  }, [chatTitle, isEditingTitle, currentChatId, isChatPersisted]);
+  }, [chatTitle, isEditingTitle, currentChatId, isChatPersisted, onLogout]);
 
   const handleNewChat = async () => {
     console.log('\n------handleNewChat called ------');
@@ -219,15 +254,16 @@ function ChatInterface({
         last_model_used: currentLlmModel
       };
       try {
-        await fetch('http://localhost:3000/api/chats', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newChatToPersist),
-        });
+        await createChat(newChatToPersist);
         setChatHistory(prevHistory => [...prevHistory, newChatToPersist]);
         console.log(`Persisted new chat ${outgoingChatId} on backend before creating another new chat.`);
       } catch (error) {
         console.error(`Error persisting new chat ${outgoingChatId} before creating another new chat:`, error);
+        // If authentication failed, handle logout
+        if (error.message.includes('Authentication required')) {
+          onLogout();
+          return;
+        }
       }
     }
 
@@ -335,19 +371,7 @@ function ChatInterface({
 
     console.log(`Requesting title summarization for chat ${chatIdToSummarize}`);
     try {
-      const response = await fetch(`http://localhost:3000/api/chats/${chatIdToSummarize}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // The backend fetches messages using chatId from the database
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: "Error summarizing title." }));
-        console.error(`Error summarizing title for chat ${chatIdToSummarize}:`, errorData.detail);
-        return;
-      }
-
-      const data = await response.json();
+      const data = await summarizeChatTitle(chatIdToSummarize);
       const newTitle = data.title;
 
       if (newTitle) {
@@ -367,6 +391,10 @@ function ChatInterface({
       }
     } catch (error) {
       console.error(`Exception during title summarization for chat ${chatIdToSummarize}:`, error);
+      // If authentication failed, handle logout
+      if (error.message.includes('Authentication required')) {
+        onLogout();
+      }
     }
   };
 
@@ -512,75 +540,72 @@ function ChatInterface({
       if (!localIsChatPersisted && finalChatIdForSummary) {
         const newChatPayload = {
           chat_id: finalChatIdForSummary,
-          title: localChatTitle,
+          title: localChatTitle, // Should be "New Chat" or user-input if they edited it quickly
           messages: finalMessagesWithAssistantResponse,
-          last_model_used: currentLlmModel,
+          last_model_used: currentLlmModel, // Ensure this is set from the stream
         };
-        console.log("Persisting new chat to backend (chatId, title, messages):", newChatPayload);
+        console.log("[ChatInterface] Persisting new chat to backend:", newChatPayload);
         try {
-          const postRes = await fetch('http://localhost:3000/api/chats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newChatPayload),
-          });
+          const postedChatResponse = await createChat(newChatPayload);
           
-          if (!postRes.ok) {
-            console.error(`Error persisting new chat: ${postRes.status} ${postRes.statusText}`);
-            throw new Error(`Backend POST error: ${postRes.status}`);
-          }
-          
-          const postedChatResponse = await postRes.json();
-          let authoritativeChatData = newChatPayload;
+          // IMPORTANT: Check if the chat creation was successful and we have valid chat data
+          if (postedChatResponse && postedChatResponse.chat && postedChatResponse.chat.chat_id) {
+            const authoritativeChatData = postedChatResponse.chat;
+            const backendChatId = getChatId(authoritativeChatData);
 
-          if (postedChatResponse && postedChatResponse.chat) {
-            authoritativeChatData = postedChatResponse.chat;
-            const backendChatId = getChatId(postedChatResponse.chat);
-            if (backendChatId && backendChatId !== finalChatIdForSummary) {
-              console.log(`Chat ID changed by backend from ${finalChatIdForSummary} to ${backendChatId}`);
-              finalChatIdForSummary = backendChatId;
+            console.log(`[ChatInterface] New chat successfully created on backend. Client ID: ${localChatId}, Backend ID: ${backendChatId}`);
+
+            finalChatIdForSummary = backendChatId; // Use the ID from the backend
+
+            setChatHistory(prevHistory => {
+                // Filter out any potential duplicates using both old and new ID if it changed
+                const idsToRemove = new Set([localChatId, finalChatIdForSummary]);
+                const newHistory = prevHistory.filter(c => !idsToRemove.has(getChatId(c)));
+                return [...newHistory, authoritativeChatData];
+            });
+            
+            // Update current chat context only if this is still the active chat
+            if (currentChatId === localChatId || currentChatId === finalChatIdForSummary) { 
+                if (finalChatIdForSummary !== currentChatId) {
+                     setCurrentChatId(finalChatIdForSummary);
+                }
+                // Only set as persisted if the API call was truly successful and we have a chat object
+                setIsChatPersisted(true);
+                localIsChatPersisted = true; // Update local flag for subsequent logic in this function call
             }
+            chatSuccessfullyPersistedOrUpdated = true;
+          } else {
+            // Backend did not return a valid chat object
+            console.error("[ChatInterface] Error persisting new chat: Backend response was not successful or chat data is missing.", postedChatResponse);
+            // Display an error message to the user or retry? For now, we don't set it as persisted.
+            chatSuccessfullyPersistedOrUpdated = false;
+            // Potentially add user-facing error message here
           }
-
-          setChatHistory(prevHistory => {
-              // Filter out any potential duplicates using both old and new ID if it changed
-              const idsToRemove = new Set([localChatId, finalChatIdForSummary]);
-              const newHistory = prevHistory.filter(c => !idsToRemove.has(getChatId(c)));
-              return [...newHistory, authoritativeChatData];
-          });
-          
-          if (currentChatId === localChatId || currentChatId === finalChatIdForSummary) { 
-              if (finalChatIdForSummary !== currentChatId) {
-                   setCurrentChatId(finalChatIdForSummary);
-              }
-              setIsChatPersisted(true);
-              localIsChatPersisted = true;
-          }
-          console.log(`New chat (ID: ${finalChatIdForSummary}) persisted to backend successfully.`);
-          chatSuccessfullyPersistedOrUpdated = true;
         } catch (error) {
-          console.error(`Error persisting new chat ${finalChatIdForSummary}:`, error);
-          // We'll continue with local state but won't try to update backend since persistence failed
+          console.error(`[ChatInterface] Error persisting new chat ${finalChatIdForSummary}:`, error);
+          if (error.message.includes('Authentication required')) {
+            onLogout();
+            return; // Stop further execution in this function
+          }
           chatSuccessfullyPersistedOrUpdated = false;
+          // Potentially add user-facing error message here
         }
       } else if (localIsChatPersisted && finalChatIdForSummary) { 
         // This is an existing chat that needs to be updated
         try {
-          console.log(`Updating messages for persisted chat ${finalChatIdForSummary} on backend.`);
+          console.log(`[ChatInterface] Updating messages for persisted chat ${finalChatIdForSummary} on backend.`);
           const updatePayload = { 
             messages: finalMessagesWithAssistantResponse, 
             title: localChatTitle,
             last_model_used: currentLlmModel,
           };
-          const updateRes = await fetch(`http://localhost:3000/api/chats/${finalChatIdForSummary}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatePayload),
-          });
           
-          if (!updateRes.ok) {
+          try {
+            await updateChat(finalChatIdForSummary, updatePayload);
+          } catch (updateError) {
             // If update fails with 404, the chat doesn't exist in backend - try to persist it as new
-            if (updateRes.status === 404) {
-              console.log(`Chat ${finalChatIdForSummary} not found in backend, attempting to persist as new chat.`);
+            if (updateError.message.includes('404')) {
+              console.log(`[ChatInterface] Chat ${finalChatIdForSummary} not found in backend, attempting to persist as new chat.`);
               
               const newChatPayloadIf404 = {
                 chat_id: finalChatIdForSummary,
@@ -589,19 +614,10 @@ function ChatInterface({
                 last_model_used: currentLlmModel,
               };
               
-              const postRes = await fetch('http://localhost:3000/api/chats', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newChatPayloadIf404),
-              });
-              
-              if (!postRes.ok) {
-                throw new Error(`Failed to persist chat after 404: ${postRes.status}`);
-              }
-              
-              console.log(`Successfully persisted chat ${finalChatIdForSummary} after 404 not found.`);
+              await createChat(newChatPayloadIf404);
+              console.log(`[ChatInterface] Successfully persisted chat ${finalChatIdForSummary} after 404 not found.`);
             } else {
-              throw new Error(`Update failed with status: ${updateRes.status}`);
+              throw updateError;
             }
           }
           
@@ -610,10 +626,15 @@ function ChatInterface({
               getChatId(chat) === finalChatIdForSummary ? { ...chat, messages: finalMessagesWithAssistantResponse, title: localChatTitle } : chat
             )
           );
-          console.log(`Messages for chat ${finalChatIdForSummary} updated on backend.`);
+          console.log(`[ChatInterface] Messages for chat ${finalChatIdForSummary} updated on backend.`);
           chatSuccessfullyPersistedOrUpdated = true;
         } catch (error) {
-          console.error(`Error updating chat ${finalChatIdForSummary}:`, error);
+          console.error(`[ChatInterface] Error updating chat ${finalChatIdForSummary}:`, error);
+          // If authentication failed, handle logout
+          if (error.message.includes('Authentication required')) {
+            onLogout();
+            return;
+          }
           // Update local state but mark as unsuccessful for backend
           setChatHistory(prevHistory =>
             prevHistory.map(chat =>
@@ -734,7 +755,7 @@ function ChatInterface({
         onDeleteChat={async (chatIdToDelete) => {
           // Backend call to delete the chat
           try {
-            await fetch(`http://localhost:3000/api/chats/${chatIdToDelete}`, { method: 'DELETE' }); // Assuming DELETE endpoint exists
+            await deleteChat(chatIdToDelete);
             setChatHistory(prevHistory => prevHistory.filter(chat => getChatId(chat) !== chatIdToDelete));
             if (currentChatId === chatIdToDelete) {
               // If current chat is deleted, start a new one
@@ -742,26 +763,30 @@ function ChatInterface({
             }
             console.log(`Chat ${chatIdToDelete} deleted from backend and locally.`);
           } catch (error) {
-             console.error(`Error deleting chat ${chatIdToDelete} from backend:`, error);
+            console.error(`Error deleting chat ${chatIdToDelete} from backend:`, error);
+            // If authentication failed, handle logout
+            if (error.message.includes('Authentication required')) {
+              onLogout();
+            }
           }
         }}
         onRenameChat={async (chatIdToRename, newTitle) => {
           // Backend call to update title
           try {
-            await fetch(`http://localhost:3000/api/chats/${chatIdToRename}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ title: newTitle })
-            });
+            await updateChat(chatIdToRename, { title: newTitle });
             setChatHistory(prevHistory =>
               prevHistory.map(chat => (getChatId(chat) === chatIdToRename ? { ...chat, title: newTitle } : chat))
             );
             if (currentChatId === chatIdToRename) {
               setChatTitle(newTitle); // Update current view if it's the renamed chat
             }
-             console.log(`Chat ${chatIdToRename} renamed on backend and locally.`);
+            console.log(`Chat ${chatIdToRename} renamed on backend and locally.`);
           } catch (error) {
-             console.error(`Error renaming chat ${chatIdToRename} on backend:`, error);
+            console.error(`Error renaming chat ${chatIdToRename} on backend:`, error);
+            // If authentication failed, handle logout
+            if (error.message.includes('Authentication required')) {
+              onLogout();
+            }
           }
         }}
         setCurrentView={setCurrentView}

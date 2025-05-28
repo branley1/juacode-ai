@@ -73,7 +73,11 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
         setIsSubmitting(false);
         
         if (onLoginSuccess) {
-          onLoginSuccess(result.user);
+          // Store the access token if available
+          if (result.access_token) {
+            localStorage.setItem('access_token', result.access_token);
+          }
+          onLoginSuccess(result.user, result.access_token);
         }
       } catch (fetchError) {
         clearTimeout(timeoutId);
