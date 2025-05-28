@@ -61,7 +61,7 @@ export async function authenticateRequest(req: NextRequest): Promise<AuthResult>
  * Authenticates the request. This is now a direct pass-through to `authenticateRequest`.
  * The fallback logic for development has been removed.
  */
-export async function authenticateRequestFallback(req: NextRequest, _requestBody?: unknown): Promise<AuthResult> {
+export async function authenticateRequestFallback(req: NextRequest): Promise<AuthResult> {
   // Fallback logic has been removed. Directly use authenticateRequest.
   console.log('[AUTH] authenticateRequestFallback called, redirecting to authenticateRequest.');
   return await authenticateRequest(req);
