@@ -81,15 +81,12 @@ function ChatInterface({
   // Load user chats from backend
   const loadUserChats = useCallback(async () => {
     if (!isUserAuthenticated) {
-      console.log('[ChatInterface] User not authenticated, clearing chat history');
       setChatHistory([]);
       return;
     }
 
     try {
-      console.log('[ChatInterface] Loading user chats from backend...');
       const userChats = await fetchUserChats();
-      console.log(`[ChatInterface] Loaded ${userChats.length} chats from backend:`, userChats);
       setChatHistory(userChats);
       
       // Also update localStorage for offline access
@@ -99,7 +96,6 @@ function ChatInterface({
       
       // If authentication failed, handle logout
       if (error.message.includes('Authentication required')) {
-        console.log('[ChatInterface] Authentication failed, logging out...');
         onLogout();
         return;
       }
@@ -117,7 +113,6 @@ function ChatInterface({
             }
             return chat;
           });
-          console.log('[ChatInterface] Using fallback localStorage chat history:', parsedHistory);
           setChatHistory(parsedHistory);
         } catch (err) {
           console.error("[ChatInterface] Error parsing chat history from localStorage:", err);
@@ -211,7 +206,6 @@ function ChatInterface({
         }
       }
     } else {
-      console.log("Title changed for a new (non-persisted) chat. Will be saved with first message.");
     }
   };
   
@@ -240,7 +234,6 @@ function ChatInterface({
   }, [chatTitle, isEditingTitle, currentChatId, isChatPersisted, onLogout]);
 
   const handleNewChat = async () => {
-    console.log('\n------handleNewChat called ------');
     const outgoingChatId = currentChatId;
     const outgoingMessages = messages;
     const outgoingTitle = chatTitle;
@@ -256,7 +249,6 @@ function ChatInterface({
       try {
         await createChat(newChatToPersist);
         setChatHistory(prevHistory => [...prevHistory, newChatToPersist]);
-        console.log(`Persisted new chat ${outgoingChatId} on backend before creating another new chat.`);
       } catch (error) {
         console.error(`Error persisting new chat ${outgoingChatId} before creating another new chat:`, error);
         // If authentication failed, handle logout
@@ -284,9 +276,6 @@ function ChatInterface({
     if (!isUserAuthenticated) {
       if (onNavigateToLogin) onNavigateToLogin(); else setCurrentView('login');
     }
-
-    console.log('New empty chat initialized with ID:', newChatId, 'and title:', newTitle);
-    console.log('------handleNewChat finished -------\n');
   };
 
   useEffect(() => {
@@ -299,7 +288,6 @@ function ChatInterface({
 
   // STEP 3: Modify handleChatSelect
   const handleChatSelect = (selectedChat) => {
-    console.log('handleChatSelect called with chat:', selectedChat);
     const chatId = getChatId(selectedChat);
     if (!chatId) {
         console.error("Selected chat has no ID!", selectedChat);
@@ -365,17 +353,14 @@ function ChatInterface({
   // New function to handle title summarization
   const summarizeAndSetChatTitle = async (chatIdToSummarize, messagesForSummary) => {
     if (!chatIdToSummarize || !messagesForSummary || messagesForSummary.length < 2) {
-      console.log("Not enough information to summarize title for chat:", chatIdToSummarize);
       return;
     }
 
-    console.log(`Requesting title summarization for chat ${chatIdToSummarize}`);
     try {
       const data = await summarizeChatTitle(chatIdToSummarize);
       const newTitle = data.title;
 
       if (newTitle) {
-        console.log(`Chat ${chatIdToSummarize} title summarized to: "${newTitle}"`);
         // If the summarized chat is currently active, update its title in the main view
         if (currentChatId === chatIdToSummarize) {
           setChatTitle(newTitle);
@@ -386,8 +371,6 @@ function ChatInterface({
             getChatId(chat) === chatIdToSummarize ? { ...chat, title: newTitle } : chat
           )
         );
-
-        console.log(`Title successfully updated for chat ${chatIdToSummarize} via POST endpoint.`);
       }
     } catch (error) {
       console.error(`Exception during title summarization for chat ${chatIdToSummarize}:`, error);
@@ -401,10 +384,6 @@ function ChatInterface({
   // Handle first user message
   const handleFirstMessage = () => {
     setChatStarted(true);
-    // Ensure we keep same chat ID when changing models
-    if (messages.length === 0) {
-      console.log('Starting a new chat with ID:', currentChatId); // We're starting a truly new chat
-    }
   };
 
   // Main message handling function
@@ -437,7 +416,6 @@ function ChatInterface({
         selected_model: selectedModelFromInputArea
       };
 
-      console.log(`Sending request to /api/generate for chat ${localChatId} with body:`, requestBody);
       const res = await fetch('http://localhost:3000/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -544,7 +522,6 @@ function ChatInterface({
           messages: finalMessagesWithAssistantResponse,
           last_model_used: currentLlmModel, // Ensure this is set from the stream
         };
-        console.log("[ChatInterface] Persisting new chat to backend:", newChatPayload);
         try {
           const postedChatResponse = await createChat(newChatPayload);
           
@@ -552,9 +529,6 @@ function ChatInterface({
           if (postedChatResponse && postedChatResponse.chat && postedChatResponse.chat.chat_id) {
             const authoritativeChatData = postedChatResponse.chat;
             const backendChatId = getChatId(authoritativeChatData);
-
-            console.log(`[ChatInterface] New chat successfully created on backend. Client ID: ${localChatId}, Backend ID: ${backendChatId}`);
-
             finalChatIdForSummary = backendChatId; // Use the ID from the backend
 
             setChatHistory(prevHistory => {
@@ -593,7 +567,6 @@ function ChatInterface({
       } else if (localIsChatPersisted && finalChatIdForSummary) { 
         // This is an existing chat that needs to be updated
         try {
-          console.log(`[ChatInterface] Updating messages for persisted chat ${finalChatIdForSummary} on backend.`);
           const updatePayload = { 
             messages: finalMessagesWithAssistantResponse, 
             title: localChatTitle,
@@ -605,8 +578,6 @@ function ChatInterface({
           } catch (updateError) {
             // If update fails with 404, the chat doesn't exist in backend - try to persist it as new
             if (updateError.message.includes('404')) {
-              console.log(`[ChatInterface] Chat ${finalChatIdForSummary} not found in backend, attempting to persist as new chat.`);
-              
               const newChatPayloadIf404 = {
                 chat_id: finalChatIdForSummary,
                 title: localChatTitle,
@@ -615,7 +586,6 @@ function ChatInterface({
               };
               
               await createChat(newChatPayloadIf404);
-              console.log(`[ChatInterface] Successfully persisted chat ${finalChatIdForSummary} after 404 not found.`);
             } else {
               throw updateError;
             }
@@ -626,7 +596,6 @@ function ChatInterface({
               getChatId(chat) === finalChatIdForSummary ? { ...chat, messages: finalMessagesWithAssistantResponse, title: localChatTitle } : chat
             )
           );
-          console.log(`[ChatInterface] Messages for chat ${finalChatIdForSummary} updated on backend.`);
           chatSuccessfullyPersistedOrUpdated = true;
         } catch (error) {
           console.error(`[ChatInterface] Error updating chat ${finalChatIdForSummary}:`, error);
@@ -673,7 +642,6 @@ function ChatInterface({
         }
 
         if (requiresSummarization && messagesForSummary) {
-          console.log(`Attempting title summarization for chat ${finalChatIdForSummary}: ${reasonForSummary} (${messagesForSummary.length} messages).`);
           setTimeout(async () => {
             await summarizeAndSetChatTitle(finalChatIdForSummary, messagesForSummary);
           }, 250);
@@ -761,7 +729,6 @@ function ChatInterface({
               // If current chat is deleted, start a new one
               handleNewChat(); // This will set up a new, non-persisted chat
             }
-            console.log(`Chat ${chatIdToDelete} deleted from backend and locally.`);
           } catch (error) {
             console.error(`Error deleting chat ${chatIdToDelete} from backend:`, error);
             // If authentication failed, handle logout
@@ -780,7 +747,6 @@ function ChatInterface({
             if (currentChatId === chatIdToRename) {
               setChatTitle(newTitle); // Update current view if it's the renamed chat
             }
-            console.log(`Chat ${chatIdToRename} renamed on backend and locally.`);
           } catch (error) {
             console.error(`Error renaming chat ${chatIdToRename} on backend:`, error);
             // If authentication failed, handle logout
