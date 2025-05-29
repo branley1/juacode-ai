@@ -109,7 +109,8 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
               waitTime = 5000;
               setMessage('Rate limit hit. Waiting longer before retrying...');
             }
-            await new Promise(resolve => setTimeout(resolve, waitTime * retries));
+            const currentRetryCount = retries;
+            await new Promise(resolve => setTimeout(resolve, waitTime * currentRetryCount));
             continue;
           }
         }
@@ -197,7 +198,8 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
         } else if (retries < maxRetries) {
           retries++;
           // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, baseDelay * retries));
+          const currentRetryCount = retries;
+          await new Promise(resolve => setTimeout(resolve, baseDelay * currentRetryCount));
         } else {
           setMessage('Failed to complete registration after several attempts. Please try again later. If the problem persists, please contact support.');
           setErrorType('api');
