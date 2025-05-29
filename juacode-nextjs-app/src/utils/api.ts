@@ -127,9 +127,7 @@ export const fetchUserChats = async (): Promise<ChatData[]> => {
   }
 };
 
-/**
- * Create a new chat
- */
+/* Create a new chat */
 export const createChat = async (chatData: ChatData): Promise<any> => { // Return type can be more specific
   try {
     console.log('Creating chat at: /api/chats', chatData);
@@ -204,8 +202,8 @@ export const deleteChat = async (chatId: string): Promise<boolean> => {
  */
 export const summarizeChatTitle = async (chatId: string): Promise<{ title: string }> => {
   try {
-    console.log(`Summarizing chat at: /api/chats/${chatId}/summarize`);
-    const response = await makeAuthenticatedRequest(`/api/chats/${chatId}/summarize`, {
+    console.log(`Summarizing chat at: /api/chats/${chatId}`);
+    const response = await makeAuthenticatedRequest(`/api/chats/${chatId}`, {
       method: 'POST',
     });
     

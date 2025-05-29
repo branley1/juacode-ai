@@ -78,7 +78,7 @@ function ChatMessage({ role, content, chatMessagesRef, index, streamingIndex }) 
       id={`message-${index}`}
     >
       {role === 'assistant' && (
-        <img src={JuaCodeIcon} alt="JuaCode Icon" className="profile-icon" />
+        <img src={JuaCodeIcon.src} alt="JuaCode Icon" className="profile-icon" />
       )}
       <div className="message-area">
         {parsedContent.thoughtContent && (
