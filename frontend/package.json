@@ -17,7 +17,7 @@
     "styled-components": "^6.1.14",
     "styled-system": "^5.1.5",
     "web-vitals": "^2.1.0",
-    "date-fns": "^2.31.0"
+    "date-fns": "^2.30.0"
   },
   "scripts": {
     "start": "craco start",
@@ -61,6 +61,6 @@
   },
   "proxy": "https://juacode.netlify.app",
   "overrides": {
-    "date-fns": "^2.31.0"
+    "date-fns": "^2.30.0"
   }
 }
