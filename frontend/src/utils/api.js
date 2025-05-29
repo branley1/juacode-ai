@@ -63,7 +63,7 @@ export const makeAuthenticatedRequest = async (url, options = {}) => {
  */
 export const fetchUserChats = async () => {
   try {
-    const response = await makeAuthenticatedRequest('http://localhost:3000/api/chats', {
+    const response = await makeAuthenticatedRequest('https://juacode-ai.vercel.app/api/chats', {
       method: 'GET',
     });
     
@@ -84,7 +84,7 @@ export const fetchUserChats = async () => {
  */
 export const createChat = async (chatData) => {
   try {
-    const response = await makeAuthenticatedRequest('http://localhost:3000/api/chats', {
+    const response = await makeAuthenticatedRequest('https://juacode-ai.vercel.app/api/chats', {
       method: 'POST',
       body: JSON.stringify(chatData),
     });
@@ -105,7 +105,7 @@ export const createChat = async (chatData) => {
  */
 export const updateChat = async (chatId, updateData) => {
   try {
-    const response = await makeAuthenticatedRequest(`http://localhost:3000/api/chats/${chatId}`, {
+    const response = await makeAuthenticatedRequest(`https://juacode-ai.vercel.app/api/chats/${chatId}`, {
       method: 'PUT',
       body: JSON.stringify(updateData),
     });
@@ -126,7 +126,7 @@ export const updateChat = async (chatId, updateData) => {
  */
 export const deleteChat = async (chatId) => {
   try {
-    const response = await makeAuthenticatedRequest(`http://localhost:3000/api/chats/${chatId}`, {
+    const response = await makeAuthenticatedRequest(`https://juacode-ai.vercel.app/api/chats/${chatId}`, {
       method: 'DELETE',
     });
     
@@ -146,7 +146,7 @@ export const deleteChat = async (chatId) => {
  */
 export const summarizeChatTitle = async (chatId) => {
   try {
-    const response = await makeAuthenticatedRequest(`http://localhost:3000/api/chats/${chatId}`, {
+    const response = await makeAuthenticatedRequest(`https://juacode-ai.vercel.app/api/chats/${chatId}`, {
       method: 'POST',
     });
     

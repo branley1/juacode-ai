@@ -6,7 +6,7 @@ import { authenticateRequest } from '@/lib/auth';
 
 // Helper to set CORS headers
 function setCorsHeaders<T>(response: NextResponse<T>): NextResponse<T> {
-  response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3001');
+  response.headers.set('Access-Control-Allow-Origin', 'https://juacode-ai.vercel.app');
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   return response;
@@ -16,7 +16,7 @@ function setCorsHeaders<T>(response: NextResponse<T>): NextResponse<T> {
 export async function OPTIONS() {
   // Use NextResponse with null body and 204 status for OPTIONS preflight
   const response = new NextResponse(null, { status: 204 });
-  response.headers.set('Access-Control-Allow-Origin', 'http://localhost:3001');
+  response.headers.set('Access-Control-Allow-Origin', 'https://juacode-ai.vercel.app');
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   response.headers.set('Access-Control-Max-Age', '86400'); // Optional: Cache preflight for 1 day

@@ -86,7 +86,7 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
     
     while (retries <= maxRetries && !success) {
       try {
-        const res = await fetch('http://localhost:3000/api/users/register', {
+        const res = await fetch('https://juacode-ai.vercel.app/api/users/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password }),

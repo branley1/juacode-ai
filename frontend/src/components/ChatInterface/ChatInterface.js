@@ -416,7 +416,7 @@ function ChatInterface({
         selected_model: selectedModelFromInputArea
       };
 
-      const res = await fetch('http://localhost:3000/api/generate', {
+      const res = await fetch('https://juacode-ai.vercel.app/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(requestBody),
