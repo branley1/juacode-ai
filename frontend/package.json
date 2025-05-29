@@ -59,7 +59,7 @@
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.0"
   },
-  "proxy": "https://juacode.netlify.app",
+  "proxy": "http://localhost:3000",
   "overrides": {
     "date-fns": "^2.30.0"
   }

@@ -63,8 +63,8 @@ export const makeAuthenticatedRequest = async (url, options = {}) => {
  */
 export const fetchUserChats = async () => {
   try {
-    console.log('Fetching user chats from: /.netlify/functions/chats');
-    const response = await makeAuthenticatedRequest('/.netlify/functions/chats', {
+    console.log('Fetching user chats from: /api/chats');
+    const response = await makeAuthenticatedRequest('/api/chats', {
       method: 'GET',
     });
     
@@ -85,8 +85,8 @@ export const fetchUserChats = async () => {
  */
 export const createChat = async (chatData) => {
   try {
-    console.log('Creating chat at: /.netlify/functions/chats');
-    const response = await makeAuthenticatedRequest('/.netlify/functions/chats', {
+    console.log('Creating chat at: /api/chats');
+    const response = await makeAuthenticatedRequest('/api/chats', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(chatData),
@@ -109,8 +109,8 @@ export const createChat = async (chatData) => {
  */
 export const updateChat = async (chatId, updateData) => {
   try {
-    console.log(`Updating chat at: /.netlify/functions/chats/${chatId}`);
-    const response = await makeAuthenticatedRequest(`/.netlify/functions/chats/${chatId}`, {
+    console.log(`Updating chat at: /api/chats/${chatId}`);
+    const response = await makeAuthenticatedRequest(`/api/chats/${chatId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData),
@@ -133,8 +133,8 @@ export const updateChat = async (chatId, updateData) => {
  */
 export const deleteChat = async (chatId) => {
   try {
-    console.log(`Deleting chat at: /.netlify/functions/chats/${chatId}`);
-    const response = await makeAuthenticatedRequest(`/.netlify/functions/chats/${chatId}`, {
+    console.log(`Deleting chat at: /api/chats/${chatId}`);
+    const response = await makeAuthenticatedRequest(`/api/chats/${chatId}`, {
       method: 'DELETE',
     });
     
@@ -154,8 +154,8 @@ export const deleteChat = async (chatId) => {
  */
 export const summarizeChatTitle = async (chatId) => {
   try {
-    console.log(`Summarizing chat at: /.netlify/functions/chats/${chatId}/summarize`);
-    const response = await makeAuthenticatedRequest(`/.netlify/functions/chats/${chatId}/summarize`, {
+    console.log(`Summarizing chat at: /api/chats/${chatId}/summarize`);
+    const response = await makeAuthenticatedRequest(`/api/chats/${chatId}/summarize`, {
       method: 'POST',
     });
     

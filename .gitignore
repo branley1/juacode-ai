@@ -24,3 +24,6 @@ package-lock.json
 
 # old backend
 old_backend/
+
+# Local Netlify folder
+.netlify

@@ -416,8 +416,8 @@ function ChatInterface({
         selected_model: selectedModelFromInputArea
       };
 
-      console.log('Sending generate request to: /.netlify/functions/generate');
-      const res = await fetch('/.netlify/functions/generate', {
+      console.log('Sending generate request to: /api/generate');
+      const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(requestBody),

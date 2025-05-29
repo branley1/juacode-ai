@@ -30,8 +30,8 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
       const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
 
       try {
-        console.log('Sending login request to: /.netlify/functions/users/login');
-        const response = await fetch('/.netlify/functions/users/login', {
+        console.log('Sending login request to: /api/users/login');
+        const response = await fetch('/api/users/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

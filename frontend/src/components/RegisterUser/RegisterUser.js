@@ -40,8 +40,8 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
 
   // Helper function for the fetch call
   const performRegistrationAttempt = async (attemptNumber, signal) => {
-    console.log('Sending request to:', '/.netlify/functions/users/register');
-    const res = await fetch('/.netlify/functions/users/register', {
+    console.log('Sending request to:', '/api/users/register');
+    const res = await fetch('/api/users/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password }),
