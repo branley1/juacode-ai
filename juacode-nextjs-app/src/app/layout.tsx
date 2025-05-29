@@ -39,7 +39,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           <AuthProvider>
-            {children}
+        {children}
           </AuthProvider>
         </ThemeProvider>
         <noscript>You need to enable JavaScript to run JuaCode.</noscript>

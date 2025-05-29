@@ -92,7 +92,7 @@ function ChatInterface({
       
       // Also update localStorage for offline access
       if (Array.isArray(userChats)) {
-        localStorage.setItem('juaCodeChatHistory', JSON.stringify(userChats));
+      localStorage.setItem('juaCodeChatHistory', JSON.stringify(userChats));
       } else {
         localStorage.removeItem('juaCodeChatHistory');
       }
@@ -130,7 +130,7 @@ function ChatInterface({
   // Load user chats when authentication status changes
   useEffect(() => {
     loadUserChats();
-  }, [loadUserChats]);
+  }, [loadUserChats, isUserAuthenticated]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -423,7 +423,7 @@ function ChatInterface({
 
       // Use the new generateChatResponse function from api.ts
       const res = await generateChatResponse(requestBody);
-
+      
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let done = false;

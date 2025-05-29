@@ -110,8 +110,17 @@ export const fetchUserChats = async (): Promise<ChatData[]> => {
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
     
-    const data = await response.json();
-    return data as ChatData[]; // Type assertion
+    const responseBody = await response.json();
+    // The API returns an object like { message: '...', chats: [], count: 0 }
+    // We need to return the 'chats' property.
+    if (responseBody && Array.isArray(responseBody.chats)) {
+      return responseBody.chats as ChatData[];
+    } else {
+      // This case should ideally not happen if the API is consistent.
+      // Log an error and return an empty array or throw a more specific error.
+      console.error('Error fetching chats: API response did not contain a "chats" array.', responseBody);
+      return []; // Or throw new Error('Invalid chat data format from API');
+    }
   } catch (error) {
     console.error('Error fetching chats:', error);
     throw error;
