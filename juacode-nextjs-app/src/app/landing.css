@@ -1,0 +1,584 @@
+/* juacode-nextjs-app/src/app/landing.css */
+.landing-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 2rem;
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,Oxygen,Open Sans,sans-serif;
+  /* background-color will be inherited from body or html via globals.css based on theme */
+  /* color will be inherited from body or html via globals.css based on theme */
+  text-align: center;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.landing-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  gap: 2rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.landing-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0rem;
+}
+
+.landing-logo-img {
+  width: 80px;
+  height: 80px;
+}
+
+.landing-title-text {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.landing-description-text {
+  font-size: 1.125rem;
+  line-height: 1.75;
+  max-width: 520px;
+  color: var(--color-text-secondary);
+}
+
+.landing-cta-container {
+  margin-top: 1.5rem;
+}
+
+.landing-cta-button {
+  background-color: var(--color-text-primary);
+  color: var(--color-background-body);
+  border: 1px solid transparent;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  text-decoration: none;
+}
+
+.landing-cta-button:hover {
+  background-color: var(--color-button-send-hover-background);
+  /* Ensure this var exists or use a specific color */
+  /* color: var(--color-background-body); */ /* Or ensure this is what you want */
+  border-color: var(--color-button-send-hover-background);
+}
+
+.landing-footer {
+  width: 100%;
+  padding: 1.5rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border-chat-container);
+  margin-top: 2rem;
+}
+
+.landing-profile-menu-container {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 1100;
+}
+
+.profile-menu-button.landing-profile-menu-button {
+  background: none;
+  border: 1px solid var(--color-border-chat-container);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 1em;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.profile-menu-button.landing-profile-menu-button:hover {
+  background-color: var(--color-background-message-user);
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background-color: var(--color-input-container-background);
+  border: 1px solid var(--color-border-chat-container);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1050;
+  min-width: 180px;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu .profile-dropdown-item {
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  padding: 10px 16px;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  font-size: 0.95em;
+  transition: background-color 0.15s ease;
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu .profile-dropdown-item:hover {
+  background-color: var(--color-background-message-user);
+}
+
+/* Removed .theme-toggle-button.page-theme-toggle.landing-theme-toggle as theme toggle is part of profile menu now */
+
+.landing-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 2rem;
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,Oxygen,Open Sans,sans-serif;
+  /* background-color will be inherited from body or html via globals.css based on theme */
+  /* color will be inherited from body or html via globals.css based on theme */
+  text-align: center;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.landing-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  gap: 2rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.landing-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0rem;
+}
+
+.landing-logo-img {
+  width: 80px;
+  height: 80px;
+}
+
+.landing-title-text {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.landing-description-text {
+  font-size: 1.125rem;
+  line-height: 1.75;
+  max-width: 520px;
+  color: var(--color-text-secondary);
+}
+
+.landing-cta-container {
+  margin-top: 1.5rem;
+}
+
+.landing-cta-button {
+  background-color: var(--color-text-primary);
+  color: var(--color-background-body);
+  border: 1px solid transparent;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  text-decoration: none;
+}
+
+.landing-cta-button:hover {
+  background-color: var(--color-button-send-hover-background);
+  /* Ensure this var exists or use a specific color */
+  /* color: var(--color-background-body); */ /* Or ensure this is what you want */
+  border-color: var(--color-button-send-hover-background);
+}
+
+.landing-footer {
+  width: 100%;
+  padding: 1.5rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border-chat-container);
+  margin-top: 2rem;
+}
+
+.landing-profile-menu-container {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 1100;
+}
+
+.profile-menu-button.landing-profile-menu-button {
+  background: none;
+  border: 1px solid var(--color-border-chat-container);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 1em;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.profile-menu-button.landing-profile-menu-button:hover {
+  background-color: var(--color-background-message-user);
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background-color: var(--color-input-container-background);
+  border: 1px solid var(--color-border-chat-container);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1050;
+  min-width: 180px;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu .profile-dropdown-item {
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  padding: 10px 16px;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  font-size: 0.95em;
+  transition: background-color 0.15s ease;
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu .profile-dropdown-item:hover {
+  background-color: var(--color-background-message-user);
+}
+
+/* Removed .theme-toggle-button.page-theme-toggle.landing-theme-toggle as theme toggle is part of profile menu now */
+
+.landing-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 2rem;
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,Oxygen,Open Sans,sans-serif;
+  /* background-color will be inherited from body or html via globals.css based on theme */
+  /* color will be inherited from body or html via globals.css based on theme */
+  text-align: center;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.landing-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  gap: 2rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.landing-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0rem;
+}
+
+.landing-logo-img {
+  width: 80px;
+  height: 80px;
+}
+
+.landing-title-text {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.landing-description-text {
+  font-size: 1.125rem;
+  line-height: 1.75;
+  max-width: 520px;
+  color: var(--color-text-secondary);
+}
+
+.landing-cta-container {
+  margin-top: 1.5rem;
+}
+
+.landing-cta-button {
+  background-color: var(--color-text-primary);
+  color: var(--color-background-body);
+  border: 1px solid transparent;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  text-decoration: none;
+}
+
+.landing-cta-button:hover {
+  background-color: var(--color-button-send-hover-background);
+  /* Ensure this var exists or use a specific color */
+  /* color: var(--color-background-body); */ /* Or ensure this is what you want */
+  border-color: var(--color-button-send-hover-background);
+}
+
+.landing-footer {
+  width: 100%;
+  padding: 1.5rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border-chat-container);
+  margin-top: 2rem;
+}
+
+.landing-profile-menu-container {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 1100;
+}
+
+.profile-menu-button.landing-profile-menu-button {
+  background: none;
+  border: 1px solid var(--color-border-chat-container);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 1em;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.profile-menu-button.landing-profile-menu-button:hover {
+  background-color: var(--color-background-message-user);
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background-color: var(--color-input-container-background);
+  border: 1px solid var(--color-border-chat-container);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1050;
+  min-width: 180px;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu .profile-dropdown-item {
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  padding: 10px 16px;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  font-size: 0.95em;
+  transition: background-color 0.15s ease;
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu .profile-dropdown-item:hover {
+  background-color: var(--color-background-message-user);
+}
+
+/* Removed .theme-toggle-button.page-theme-toggle.landing-theme-toggle as theme toggle is part of profile menu now */
+
+.landing-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100vh;
+  padding: 2rem;
+  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,Oxygen,Open Sans,sans-serif;
+  /* background-color will be inherited from body or html via globals.css based on theme */
+  /* color will be inherited from body or html via globals.css based on theme */
+  text-align: center;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.landing-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  gap: 2rem;
+  width: 100%;
+  max-width: 600px;
+}
+
+.landing-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0rem;
+}
+
+.landing-logo-img {
+  width: 80px;
+  height: 80px;
+}
+
+.landing-title-text {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.landing-description-text {
+  font-size: 1.125rem;
+  line-height: 1.75;
+  max-width: 520px;
+  color: var(--color-text-secondary);
+}
+
+.landing-cta-container {
+  margin-top: 1.5rem;
+}
+
+.landing-cta-button {
+  background-color: var(--color-text-primary);
+  color: var(--color-background-body);
+  border: 1px solid transparent;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  text-decoration: none;
+}
+
+.landing-cta-button:hover {
+  background-color: var(--color-button-send-hover-background);
+  /* Ensure this var exists or use a specific color */
+  /* color: var(--color-background-body); */ /* Or ensure this is what you want */
+  border-color: var(--color-button-send-hover-background);
+}
+
+.landing-footer {
+  width: 100%;
+  padding: 1.5rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border-chat-container);
+  margin-top: 2rem;
+}
+
+.landing-profile-menu-container {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 1100;
+}
+
+.profile-menu-button.landing-profile-menu-button {
+  background: none;
+  border: 1px solid var(--color-border-chat-container);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 1em;
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.profile-menu-button.landing-profile-menu-button:hover {
+  background-color: var(--color-background-message-user);
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background-color: var(--color-input-container-background);
+  border: 1px solid var(--color-border-chat-container);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1050;
+  min-width: 180px;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu .profile-dropdown-item {
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  padding: 10px 16px;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  font-size: 0.95em;
+  transition: background-color 0.15s ease;
+}
+
+.profile-dropdown-menu.landing-profile-dropdown-menu .profile-dropdown-item:hover {
+  background-color: var(--color-background-message-user);
+}
+
+/* Removed .theme-toggle-button.page-theme-toggle.landing-theme-toggle as theme toggle is part of profile menu now */ 

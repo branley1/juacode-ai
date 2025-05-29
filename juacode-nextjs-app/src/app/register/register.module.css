@@ -1,0 +1,293 @@
+/* juacode-nextjs-app/src/app/register/register.module.css */
+
+/* Reusing authPageContainer, authFormContainer, authButton, etc. from login.module.css or globals if they are made global */
+/* For now, let's assume they are available or we can duplicate/import them if needed */
+
+/* Styles specific to RegisterUser or that augment the auth styles */
+.authPageContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+    background-color: var(--color-background-body);
+    color: var(--color-text-primary);
+    position: relative;
+}
+  
+.authFormContainer {
+    padding: 2rem 2.5rem;
+    border: 1px solid var(--color-input-container-border);
+    border-radius: 12px;
+    background-color: var(--color-input-container-background);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 480px; /* Wider for password requirements */
+    text-align: left;
+}
+
+.authFormContainer h2 {
+    text-align: center;
+    margin-bottom: 1.5rem; /* Slightly less for register */
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.authFormContainer form div {
+    margin-bottom: 1rem; /* Slightly less for register */
+}
+  
+.authFormContainer form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+  
+.authFormContainer form input[type="email"],
+.authFormContainer form input[type="password"],
+.authFormContainer form input[type="text"] {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.95rem;
+    border: 1px solid var(--color-border-chat-container);
+    border-radius: 8px;
+    background-color: var(--color-background-body);
+    color: var(--color-text-input);
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.authFormContainer form input[type="email"]:focus,
+.authFormContainer form input[type="password"]:focus,
+.authFormContainer form input[type="text"]:focus {
+    outline: none;
+    border-color: var(--color-text-primary);
+    box-shadow: 0 0 0 3px rgba(var(--color-text-primary-rgb, 33, 33, 33), 0.2); 
+}
+
+.inputError {
+    border-color: var(--color-border-error, #dc3545) !important; /* Ensure override */
+    background-color: var(--color-background-error-input, rgba(220, 53, 69, 0.05));
+}
+  
+.inputError:focus {
+    box-shadow: 0 0 0 3px var(--color-shadow-error-input, rgba(220, 53, 69, 0.25)) !important;
+}
+
+.authButton {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--color-text-primary);
+    color: var(--color-background-body);
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+    margin-top: 1rem; /* Added margin for button */
+}
+  
+.authButton:hover:not(:disabled) {
+    opacity: 0.85;
+}
+  
+.authButton:disabled {
+    background-color: #6c757d; 
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.authMessage {
+    text-align: center;
+    margin-top: 1.25rem;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    border-radius: 8px;
+}
+  
+.authMessage.error, /* Generic error */
+.authMessage.form, 
+.authMessage.password, 
+.authMessage.confirmation, 
+.authMessage.supabase, 
+.authMessage.api, 
+.authMessage.unexpected,
+.authMessage.api_rate_limit,
+.authMessage.error_form /* from old CSS */
+{
+    color: var(--color-text-error, #721c24);
+    background-color: var(--color-background-error, #f8d7da);
+    border: 1px solid var(--color-border-error, #f5c6cb);
+}
+
+.authMessage.success {
+    color: var(--color-text-success, #155724);
+    background-color: var(--color-background-success, #d4edda);
+    border: 1px solid var(--color-border-success, #c3e6cb);
+}
+  
+.authMessage.warning, /* Generic warning */
+.authMessage.timeout {
+    color: var(--color-text-warning, #856404);
+    background-color: var(--color-background-warning, #fff3cd);
+    border: 1px solid var(--color-border-warning, #ffeeba);
+}
+
+.authNavigationLink {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+}
+  
+.authNavigationLink .linkButton {
+    background: none;
+    border: none;
+    color: var(--color-text-primary); 
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: inherit;
+    padding: 0;
+    font-weight: 500;
+}
+  
+.authNavigationLink .linkButton:hover {
+    opacity: 0.8;
+}
+  
+.authLogoOutside {
+    width: 60px; 
+    height: 60px;
+    margin-bottom: 1.5rem; /* Adjusted margin */
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+  
+.authLogoOutside:hover {
+    transform: scale(1.05);
+}
+
+/* Password requirements styling */
+.passwordRequirements {
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  background-color: var(--color-background-offset, rgba(0, 0, 0, 0.03)); /* Use a theme variable */
+  border: 1px solid var(--color-border-offset, rgba(0, 0, 0, 0.05)); /* Use a theme variable */
+}
+
+.passwordRequirements h3 {
+  font-size: 0.95rem;
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.passwordValidationList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.passwordValidationItem {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.validationIcon {
+  margin-right: 0.6rem;
+  width: 1em;
+  font-size: 0.9em;
+}
+
+.passwordValidationItem.valid .validationIcon {
+  color: var(--color-text-success, #28a745);
+}
+
+.passwordValidationItem.invalid .validationIcon {
+  color: var(--color-text-error, #dc3545);
+}
+
+.passwordMatchIndicator {
+  margin-top: 0.5rem; /* Increased spacing */
+  font-size: 0.875rem;
+  height: 1.2em; /* Reserve space to prevent layout shift */
+}
+
+.passwordsMatch {
+  color: var(--color-text-success, #28a745);
+}
+
+.passwordsDontMatch {
+  color: var(--color-text-error, #dc3545);
+}
+
+/* Confirmation screen styling */
+.confirmationContainer {
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 450px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Styles from .authFormContainer are implicitly applied if it's a child or shares classes */
+  /* Explicitly add if it's standalone and needs the border/bg/shadow: */
+  border: 1px solid var(--color-input-container-border);
+  border-radius: 12px;
+  background-color: var(--color-input-container-background);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.robotIcon {
+  margin-bottom: 1.5rem;
+  color: var(--color-text-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background-color: var(--color-background-offset, rgba(0, 0, 0, 0.03));
+}
+
+.confirmationContainer h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--color-text-primary);
+}
+
+.confirmationMessage {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.emailHighlight {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.confirmationNote {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 2rem;
+}
+
+/* Ensure .authButton inside .confirmationContainer looks right */
+.confirmationContainer .authButton {
+  margin-top: 0; /* Reset margin if inherited */
+}
+
+/* Add theme variables for --color-background-offset, --color-border-offset, etc., to globals.css */ 

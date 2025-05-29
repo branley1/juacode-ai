@@ -1,0 +1,193 @@
+/* juacode-nextjs-app/src/app/login/login.module.css */
+
+.authPageContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: var(--color-background-body);
+  color: var(--color-text-primary);
+  position: relative;
+}
+
+.authFormContainer {
+  padding: 2rem 2.5rem;
+  border: 1px solid var(--color-input-container-border);
+  border-radius: 12px;
+  background-color: var(--color-input-container-background);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 420px; /* Slightly wider for better spacing */
+  text-align: left;
+}
+
+/* Ensure dark theme form container background uses a distinct variable if needed, or inherits */
+/* body.dark-theme .authFormContainer { 
+    background-color: var(--color-background-body); 
+   } 
+   This might not be needed if --color-input-container-background handles it correctly for themes 
+*/
+
+.authFormContainer h2 {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.authFormContainer form div {
+  margin-bottom: 1.25rem;
+}
+
+.authFormContainer form label {
+  display: block;
+  margin-bottom: 0.6rem;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+}
+
+.authFormContainer form input[type="email"],
+.authFormContainer form input[type="password"],
+.authFormContainer form input[type="text"] {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--color-border-chat-container);
+  border-radius: 8px;
+  background-color: var(--color-background-body); /* Or var(--color-input-container-background) if inputs should differ from page bg */
+  color: var(--color-text-input);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.authFormContainer form input[type="email"]:focus,
+.authFormContainer form input[type="password"]:focus,
+.authFormContainer form input[type="text"]:focus {
+  outline: none;
+  border-color: var(--color-text-primary); /* Or a specific focus color variable */
+  box-shadow: 0 0 0 3px rgba(var(--color-text-primary-rgb, 33, 33, 33), 0.2); /* Example shadow, ensure you have --color-text-primary-rgb or use a static color */
+}
+
+.authButton {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--color-text-primary);
+  color: var(--color-background-body);
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.authButton:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.authButton:disabled {
+  background-color: #6c757d; /* Consider a theme variable for disabled state */
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.authMessage {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  /* Base color/background can be set by type-specific classes */
+}
+
+.authMessage.error {
+  color: var(--color-text-error, #721c24);
+  background-color: var(--color-background-error, #f8d7da);
+  border: 1px solid var(--color-border-error, #f5c6cb);
+}
+
+.authMessage.success {
+  color: var(--color-text-success, #155724);
+  background-color: var(--color-background-success, #d4edda);
+  border: 1px solid var(--color-border-success, #c3e6cb);
+}
+
+.authMessage.warning {
+  color: var(--color-text-warning, #856404);
+  background-color: var(--color-background-warning, #fff3cd);
+  border: 1px solid var(--color-border-warning, #ffeeba);
+}
+
+.authMessage.timeout { /* Same as warning for now, can be different */
+  color: var(--color-text-warning, #856404);
+  background-color: var(--color-background-warning, #fff3cd);
+  border: 1px solid var(--color-border-warning, #ffeeba);
+}
+
+/* Add theme variables for error/success/warning text, background, border to your :root/html.dark-theme if you want them to adapt */
+
+.authNavigationLink {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.authNavigationLink .linkButton {
+  background: none;
+  border: none;
+  color: var(--color-text-primary); /* Or a specific link color like var(--color-link) */
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  font-weight: 500;
+}
+
+.authNavigationLink .linkButton:hover {
+  /* text-decoration: none; */ /* Optional: remove underline on hover if desired */
+  opacity: 0.8;
+}
+
+.authLogoOutside {
+  width: 60px; /* Adjust as needed */
+  height: 60px;
+  margin-bottom: 2rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.authLogoOutside:hover {
+  transform: scale(1.05);
+}
+
+/* Example theme variables for error/success/warning (add to globals.css if you adopt this) */
+/* 
+html.light-theme {
+  --color-text-error: #721c24;
+  --color-background-error: #f8d7da;
+  --color-border-error: #f5c6cb;
+  --color-text-success: #155724;
+  --color-background-success: #d4edda;
+  --color-border-success: #c3e6cb;
+  --color-text-warning: #856404;
+  --color-background-warning: #fff3cd;
+  --color-border-warning: #ffeeba;
+}
+
+html.dark-theme {
+  --color-text-error: #f8d7da;
+  --color-background-error: rgba(220, 53, 69, 0.2);
+  --color-border-error: rgba(220, 53, 69, 0.3);
+  --color-text-success: #d4edda;
+  --color-background-success: rgba(40, 167, 69, 0.2);
+  --color-border-success: rgba(40, 167, 69, 0.3);
+  --color-text-warning: #fff3cd;
+  --color-background-warning: rgba(255, 193, 7, 0.2);
+  --color-border-warning: rgba(255, 193, 7, 0.3);
+} 
+*/ 

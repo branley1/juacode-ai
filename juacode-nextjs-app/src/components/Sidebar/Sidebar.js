@@ -1,6 +1,6 @@
 import React, { useState, forwardRef, useEffect } from 'react';
 import './Sidebar.css';
-import JuaCodeLogo from '../../assets/jua-code-logo.png';
+import JuaCodeLogo from '@/assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faEllipsisV, faTimes } from '@fortawesome/free-solid-svg-icons';
 
@@ -8,7 +8,7 @@ import { faTrash, faEllipsisV, faTimes } from '@fortawesome/free-solid-svg-icons
 const getChatId = (chat) => chat.chat_id || chat.id || "";
 
 // Wrap Sidebar with forwardRef
-const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDeleteAllChats, onDeleteChat, onRenameChat, setCurrentView, isUserAuthenticated, onNavigateToProfile }, ref) => {
+const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDeleteAllChats, onDeleteChat, onRenameChat, /*setCurrentView,*/ isUserAuthenticated, onNavigateToProfile, onNavigateToLogin /* Added */ }, ref) => {
   const [editingChatId, setEditingChatId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [openMenuChatId, setOpenMenuChatId] = useState(null);
@@ -47,7 +47,7 @@ const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatS
       {/* Pass the ref to the main div of the Sidebar */}
       <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`} ref={ref}>
         <div className="sidebar-header">
-          <img src={JuaCodeLogo} alt="JuaCode Logo" className="sidebar-logo" />
+          <img src={JuaCodeLogo.src} alt="JuaCode Logo" className="sidebar-logo" />
           <h3 className="sidebar-title">JuaCode</h3>
           <h4 className="sidebar-subtitle">AI Coding Assistant</h4>
           <button onClick={toggleSidebar} className="sidebar-close-button" title="Close Sidebar">
@@ -126,7 +126,14 @@ const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatS
             ))}
           </ul>
         </div>
-        <div className="sidebar-account" onClick={onNavigateToProfile}>
+        <div className="sidebar-account" onClick={() => {
+          if (isUserAuthenticated && onNavigateToProfile) {
+            onNavigateToProfile();
+          } else if (!isUserAuthenticated && onNavigateToLogin) {
+            onNavigateToLogin();
+          }
+          toggleSidebar();
+        }}>
           <div className="account-preview">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>

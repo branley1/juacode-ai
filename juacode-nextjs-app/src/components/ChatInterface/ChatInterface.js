@@ -1,12 +1,14 @@
+"use client";
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import ChatMessage from '../ChatMessage/ChatMessage';
-import InputArea from '../InputArea/InputArea';
-import Sidebar from '../Sidebar/Sidebar';
+import ChatMessage from '@/components/ChatMessage/ChatMessage';
+import InputArea from '@/components/InputArea/InputArea';
+import Sidebar from '@/components/Sidebar/Sidebar';
 import './ChatInterface.css';
-import JuaCodeLogo from '../../assets/jua-code-logo.png';
+import JuaCodeLogo from '@/assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPen, faBars, faPlus, faShare, faUser, faCog, faUserCircle, faSun, faMoon, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
-import { fetchUserChats, createChat, updateChat, deleteChat, summarizeChatTitle } from '../../utils/api';
+import { fetchUserChats, createChat, updateChat, deleteChat, summarizeChatTitle, generateChatResponse } from '@/utils/api';
 
 // Generate a unique string for the chat id.
 const generateUniqueChatId = () => {
@@ -44,7 +46,6 @@ const AVAILABLE_MODELS = [
 ];
 
 function ChatInterface({ 
-  setCurrentView, 
   onNavigateToLogin, 
   isUserAuthenticated, 
   userData, 
@@ -87,10 +88,14 @@ function ChatInterface({
 
     try {
       const userChats = await fetchUserChats();
-      setChatHistory(userChats);
+      setChatHistory(Array.isArray(userChats) ? userChats : []);
       
       // Also update localStorage for offline access
-      localStorage.setItem('juaCodeChatHistory', JSON.stringify(userChats));
+      if (Array.isArray(userChats)) {
+        localStorage.setItem('juaCodeChatHistory', JSON.stringify(userChats));
+      } else {
+        localStorage.removeItem('juaCodeChatHistory');
+      }
     } catch (error) {
       console.error('[ChatInterface] Error loading user chats:', error);
       
@@ -274,7 +279,7 @@ function ChatInterface({
 
     // If not authenticated, redirect to login
     if (!isUserAuthenticated) {
-      if (onNavigateToLogin) onNavigateToLogin(); else setCurrentView('login');
+      if (onNavigateToLogin) onNavigateToLogin();
     }
   };
 
@@ -416,18 +421,9 @@ function ChatInterface({
         selected_model: selectedModelFromInputArea
       };
 
-      console.log('Sending generate request to: /api/generate');
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
+      // Use the new generateChatResponse function from api.ts
+      const res = await generateChatResponse(requestBody);
 
-      if (!res.ok) {
-        console.error('Response status:', res.status, 'Text:', res.statusText);
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let done = false;
@@ -705,7 +701,7 @@ function ChatInterface({
         ref={sidebarRef}
         isSidebarOpen={isSidebarOpen}
         toggleSidebar={toggleSidebar}
-        chatHistory={[...chatHistory].sort((a, b) => extractTimestamp(b) - extractTimestamp(a))}
+        chatHistory={Array.isArray(chatHistory) ? [...chatHistory].sort((a, b) => extractTimestamp(b) - extractTimestamp(a)) : []}
         onChatSelect={handleChatSelect}
         onDeleteAllChats={() => {
           // Note: Backend deletion for all chats would be a separate API call
@@ -752,10 +748,10 @@ function ChatInterface({
             }
           }
         }}
-        setCurrentView={setCurrentView}
         isUserAuthenticated={isUserAuthenticated}
         userData={userData}
         onNavigateToProfile={onNavigateToProfile}
+        onNavigateToLogin={onNavigateToLogin}
       />
       {isSidebarOpen && (
         <div className="sidebar-overlay active" onClick={toggleSidebar}></div>
@@ -776,9 +772,9 @@ function ChatInterface({
                         <div className="profile-dropdown-menu">
                             <button onClick={() => {
                                 if (isUserAuthenticated) {
-                                    setCurrentView('profile');
+                                    if (onNavigateToProfile) onNavigateToProfile();
                                 } else {
-                                    if (onNavigateToLogin) onNavigateToLogin(); else setCurrentView('login');
+                                    if (onNavigateToLogin) onNavigateToLogin();
                                 }
                                 setIsProfileMenuOpen(false);
                             }} className="profile-dropdown-item">
@@ -795,7 +791,7 @@ function ChatInterface({
                             
                             {isUserAuthenticated && (
                               <button onClick={() => { 
-                                onLogout(); 
+                                if (onLogout) onLogout(); 
                                 setIsProfileMenuOpen(false);
                               }} className="profile-dropdown-item">
                                 <FontAwesomeIcon icon={faSignOutAlt} /> Logout
@@ -806,7 +802,7 @@ function ChatInterface({
                 </div>
               </div>
               <img 
-                src={JuaCodeLogo} 
+                src={JuaCodeLogo.src}
                 alt="JuaCode Logo" 
                 className="landing-logo" 
                 style={{ display: 'block', margin: '20px auto', width: '100px', height: '100px' }} 
@@ -877,9 +873,9 @@ function ChatInterface({
                       <div className="profile-dropdown-menu">
                         <button onClick={() => {
                             if (isUserAuthenticated) {
-                                setCurrentView('profile');
+                                if (onNavigateToProfile) onNavigateToProfile();
                             } else {
-                                if (onNavigateToLogin) onNavigateToLogin(); else setCurrentView('login');
+                                if (onNavigateToLogin) onNavigateToLogin();
                             }
                             setIsProfileMenuOpen(false);
                         }} className="profile-dropdown-item">
@@ -896,7 +892,7 @@ function ChatInterface({
                         
                         {isUserAuthenticated && (
                           <button onClick={() => { 
-                            onLogout(); 
+                            if (onLogout) onLogout(); 
                             setIsProfileMenuOpen(false);
                           }} className="profile-dropdown-item">
                             <FontAwesomeIcon icon={faSignOutAlt} /> Logout
@@ -920,7 +916,7 @@ function ChatInterface({
                 ))}
                 {isTyping && (
                   <div className="chat-message assistant assistant-typing">
-                    <img src={JuaCodeLogo} alt="JuaCode Icon" className="profile-icon" />
+                    <img src={JuaCodeLogo.src} alt="JuaCode Icon" className="profile-icon" />
                     <div className="message-area">
                       <div className="message-content">
                         <div className="typing-dot"></div>

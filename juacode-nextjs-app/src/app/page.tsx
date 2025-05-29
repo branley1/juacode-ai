@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-// import Link from 'next/link'; // Unused import
 import { useRouter } from 'next/navigation';
 import './landing.css';
 import JuaCodeLogo from '@/assets/jua-code-logo.png';

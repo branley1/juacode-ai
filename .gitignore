@@ -27,3 +27,6 @@ old_backend/
 
 # Local Netlify folder
 .netlify
+
+# old frontend
+old_frontend/

@@ -1,6 +1,95 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+  max-width: 100vw;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Noto Sans, Ubuntu, Cantarell, "Helvetica Neue", Oxygen, Open Sans, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+  overflow: hidden;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+html.light-theme {
+  --color-background-body: #f9f9f9; 
+  --color-background-chat-container: #f9f9f9; 
+  --color-border-chat-container: #ddd;
+  --color-background-message-user: #e2e2e2;
+  --color-text-message-user: #212121;
+  --color-background-message-assistant: transparent;
+  --color-text-message-assistant: #212121;
+  --color-profile-icon-border: #dddcdc; 
+  --color-input-container-background: white;
+  --color-input-container-border: #ccc;
+  --color-text-input: #212121;
+  --color-button-send-background: #555;
+  --color-text-primary: #212121;
+  --color-text-secondary: #555;
+  --color-button-send-hover-background: #747474;
+  --color-background-code-block: #f0f0f0;
+  --color-text-code-block: #333; 
+  --font-family-code: Menlo, Monaco, Consolas, "Courier New", monospace; /* Moved from .code-block rule */
+
+  background-color: var(--color-background-body);
+  color: var(--color-text-primary);
+}
+
+html.dark-theme {
+  --color-background-body: #0a0a0a; 
+  --color-background-chat-container: #0a0a0a;
+  --color-border-chat-container: #2c2c2c;
+  --color-background-message-user: #444;
+  --color-text-message-user: #ededed;
+  --color-background-message-assistant: transparent; 
+  --color-text-message-assistant: #ededed;
+  --color-profile-icon-border: #444;
+  --color-input-container-background: #171717;
+  --color-input-container-border: #333;
+  --color-text-input: #ededed; 
+  --color-button-send-background: #747474;
+  --color-button-send-hover-background: #747474;
+  --color-text-primary: #ededed; 
+  --color-text-secondary: #bbbbbb;
+  --color-background-code-block: #1e1e1e;
+  --color-text-code-block: #d4d4d4;
+  --font-family-code: Menlo, Monaco, Consolas, "Courier New", monospace; /* Moved from .code-block rule */
+
+  background-color: var(--color-background-body);
+  color: var(--color-text-primary);
+  color-scheme: dark;
+}
+
+
+.chat-container, .chat-message, .input-area, textarea {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Oxygen, Open Sans, sans-serif;
+}
+
+.code-block, code {
+  font-family: var(--font-family-code);
+  font-size: 0.9em;
+  background-color: var(--color-background-code-block);
+  color: var(--color-text-code-block);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -10,40 +99,13 @@
   }
 }
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;
   }
 }
 
-/* frontend/src/App.css */
 :root {
-  /* Light Theme Variables */
   --color-background-body: #f9f9f9; 
   --color-background-chat-container: #f9f9f9; 
   --color-border-chat-container: #ddd;
@@ -61,14 +123,12 @@ a {
   --color-text-secondary: #555;
   --color-button-send-hover-background: #747474;
 
-  /* Code Block Variables (Placeholders for later) */
   --color-background-code-block: #f0f0f0;
   --color-text-code-block: #333; 
   --font-family-code: monospace; 
 }
 
 body.dark-theme {
-  /* Dark Theme Variables */
   --color-background-body: #0a0a0a; 
   --color-background-chat-container: #0a0a0a;
   --color-border-chat-container: #2c2c2c;
@@ -87,38 +147,5 @@ body.dark-theme {
   --color-text-secondary: #bbbbbb;
   --color-background-code-block: #1e1e1e;
   --color-text-code-block: #d4d4d4;
-}
-
-
-body {
-  margin: 0;
-  padding: 0;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-  background-color: var(--color-background-body);
-  color: var(--color-text-primary);
-  height: 100%;
-  overflow: hidden;
-}
-
-html {
-  height: 100%;
-  overflow: hidden;
-}
-
-/* Fonts */
-.chat-container, .chat-message, .input-area, textarea { /* Apply to chat container and relevant elements */
-  /*font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;*/
-  font-family: Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Noto Sans,Ubuntu,Cantarell,Helvetica Neue,Oxygen,Open Sans,sans-serif;
-}
-
-/* Monospace Font for Code Blocks (Markdown) */
-.code-block, code {
-  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
-  font-size: 0.9em;
-  background-color: var(--color-background-code-block);
-  padding: 0.2em 0.4em;
-  border-radius: 3px;
-  word-wrap: break-word;
-  white-space: pre-wrap;
 }
 

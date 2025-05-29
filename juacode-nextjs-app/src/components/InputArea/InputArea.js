@@ -136,7 +136,7 @@ function InputArea({ onFirstMessageSent, isLandingPage, chatMessagesRef, simulat
           disabled={isTyping}
           className="send-button"
         >
-            <img src={SendIconWhite} alt="Send" className="send-icon-img" />
+            <img src={typeof SendIconWhite === 'string' ? SendIconWhite : SendIconWhite.src} alt="Send" className="send-icon-img" />
         </button>
         </div>
       </div>
