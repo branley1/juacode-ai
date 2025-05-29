@@ -63,18 +63,19 @@ export const makeAuthenticatedRequest = async (url, options = {}) => {
  */
 export const fetchUserChats = async () => {
   try {
-    const response = await makeAuthenticatedRequest('/api/chats', {
+    console.log('Fetching user chats from: /.netlify/functions/chats');
+    const response = await makeAuthenticatedRequest('/.netlify/functions/chats', {
       method: 'GET',
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch chats: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
     const data = await response.json();
-    return data.chats || [];
+    return data;
   } catch (error) {
-    console.error('Error fetching user chats:', error);
+    console.error('Error fetching chats:', error);
     throw error;
   }
 };
@@ -84,16 +85,19 @@ export const fetchUserChats = async () => {
  */
 export const createChat = async (chatData) => {
   try {
-    const response = await makeAuthenticatedRequest('/api/chats', {
+    console.log('Creating chat at: /.netlify/functions/chats');
+    const response = await makeAuthenticatedRequest('/.netlify/functions/chats', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(chatData),
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to create chat: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error creating chat:', error);
     throw error;
@@ -105,16 +109,19 @@ export const createChat = async (chatData) => {
  */
 export const updateChat = async (chatId, updateData) => {
   try {
-    const response = await makeAuthenticatedRequest(`/api/chats/${chatId}`, {
+    console.log(`Updating chat at: /.netlify/functions/chats/${chatId}`);
+    const response = await makeAuthenticatedRequest(`/.netlify/functions/chats/${chatId}`, {
       method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData),
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to update chat: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error updating chat:', error);
     throw error;
@@ -126,15 +133,16 @@ export const updateChat = async (chatId, updateData) => {
  */
 export const deleteChat = async (chatId) => {
   try {
-    const response = await makeAuthenticatedRequest(`/api/chats/${chatId}`, {
+    console.log(`Deleting chat at: /.netlify/functions/chats/${chatId}`);
+    const response = await makeAuthenticatedRequest(`/.netlify/functions/chats/${chatId}`, {
       method: 'DELETE',
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to delete chat: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return await response.json();
+    return true;
   } catch (error) {
     console.error('Error deleting chat:', error);
     throw error;
@@ -146,15 +154,17 @@ export const deleteChat = async (chatId) => {
  */
 export const summarizeChatTitle = async (chatId) => {
   try {
-    const response = await makeAuthenticatedRequest(`/api/chats/${chatId}/summarize`, {
+    console.log(`Summarizing chat at: /.netlify/functions/chats/${chatId}/summarize`);
+    const response = await makeAuthenticatedRequest(`/.netlify/functions/chats/${chatId}/summarize`, {
       method: 'POST',
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to summarize chat title: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error summarizing chat title:', error);
     throw error;
