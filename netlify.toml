@@ -6,9 +6,3 @@
 [build.environment]
   NODE_VERSION = "18.18.0"
   NPM_CONFIG_LEGACY_PEER_DEPS = "true" 
-
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/next_juacode-nextjs-app/:splat"
-  status = 200
-  force = true
