@@ -618,25 +618,21 @@ function ChatInterface({
       if (chatSuccessfullyPersistedOrUpdated) {
         const currentMessages = finalMessagesWithAssistantResponse;
         let messagesForSummary = null;
-        let reasonForSummary = "";
         let requiresSummarization = false;
 
         if (currentMessages.length > 10) {
           // For chats longer than 10 messages, always try to refine the title with the latest 6 messages.
           messagesForSummary = currentMessages.slice(-6);
-          reasonForSummary = "Refining title with latest 6 messages.";
           requiresSummarization = true;
         } else if (localChatTitle === 'New Chat' && currentMessages.length >= 2) {
           // Initial title summarization for new chats with at least 2 messages
           messagesForSummary = currentMessages; 
-          reasonForSummary = "Initial title summarization for 'New Chat'.";
           requiresSummarization = true;
         } else if (localChatTitle !== 'New Chat' && currentMessages.length >= 6 && currentMessages.length <= 10) {
           // For chats with 6-10 messages that already have a title, refine it periodically
           // Only refine every 6 messages to avoid too frequent updates
           if (currentMessages.length % 6 === 0) {
             messagesForSummary = currentMessages;
-            reasonForSummary = `Refining existing title with ${currentMessages.length} messages.`;
             requiresSummarization = true;
           }
         }

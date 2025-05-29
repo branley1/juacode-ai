@@ -38,6 +38,18 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
   // Check if passwords match
   const passwordsMatch = password === confirmPassword && confirmPassword !== '';
 
+  // Helper function for the fetch call
+  const performRegistrationAttempt = async (attemptNumber, signal) => {
+    const res = await fetch('/api/users/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
+      signal: signal,
+      timeout: 30000 // 30 second timeout for the fetch
+    });
+    return res;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
@@ -86,14 +98,8 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
     
     while (retries <= maxRetries && !success) {
       try {
-        const res = await fetch('/api/users/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password }),
-          signal: controller.signal,
-          // Use a slightly shorter timeout for the fetch itself to give retry mechanism time
-          timeout: 30000 // 30 second timeout for the fetch
-        });
+        // Call the helper function
+        const res = await performRegistrationAttempt(retries + 1, controller.signal);
 
         if (res.status === 504 || res.status === 429) {
           retries++;
