@@ -1,9 +1,9 @@
 import React, { useState, forwardRef } from 'react';
 import Image from 'next/image';
 import './Sidebar.css';
-import JuaCodeLogo from '@/assets/jua-code-logo.png';
+import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { icons } from '@/utils/icons';
+import { icons } from '../../utils/icons';
 import { faEllipsisV, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 // Safely retrieve the chat id from the chat object.
