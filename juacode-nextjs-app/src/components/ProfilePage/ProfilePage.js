@@ -2,18 +2,20 @@ import React, { useState, useEffect } from 'react';
 import './ProfilePage.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEnvelope, faIdCard, faArrowLeft, faSignOutAlt, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
+import { useAuth } from '@/context/AuthContext';
 
-function ProfilePage({ setCurrentView, isUserAuthenticated, onNavigateToLogin, onLogout, userData }) {
+function ProfilePage({ setCurrentView, onLogout }) {
+  const { userData, fetchUserData } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if the user is authenticated
-    if (!isUserAuthenticated) {
-      onNavigateToLogin();
-      return;
-    }
-    setIsLoading(false);
-  }, [isUserAuthenticated, onNavigateToLogin]);
+    const loadData = async () => {
+      await fetchUserData();
+      setIsLoading(false);
+    };
+    
+    loadData();
+  }, [fetchUserData]);
 
   const handleBack = () => {
     setCurrentView('chat');
@@ -25,14 +27,25 @@ function ProfilePage({ setCurrentView, isUserAuthenticated, onNavigateToLogin, o
   };
 
   if (isLoading) {
-    return <div className="profile-page-container">Loading profile...</div>;
+    return <div className="profile-page-container">
+      <div className="loading-spinner"></div>
+      Loading profile details...
+    </div>;
+  }
+
+  // Log the created_at value
+  if (userData) {
+    console.log('Raw userData.created_at:', userData.created_at);
   }
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      const month = date.toLocaleDateString('en-US', { month: 'long' });
+      const day = date.getDate();
+      const year = date.getFullYear();
+      return `${month} ${day}, ${year}`;
     } catch (e) {
       console.error("Error formatting date:", e);
       return 'Invalid Date';

@@ -15,20 +15,13 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!isUserAuthenticated) {
-      // If not authenticated and no userData yet, try to fetch it (in case of direct navigation or refresh)
-      // AuthContext's checkAuthOnMount should handle initial load from localStorage
-      // If still not authenticated after that, redirect to login.
-      const timeoutId = setTimeout(() => {
-        if (!isUserAuthenticated && !localStorage.getItem('access_token')) {
-          router.push('/login');
-        }
-      }, 100); // Short delay to allow AuthContext to initialize
-      return () => clearTimeout(timeoutId);
-    } else if (!userData && fetchUserData) {
-        // If authenticated but userData is somehow null, try fetching it.
-        fetchUserData();
+      // Redirect to login if not authenticated
+      router.push('/login');
+    } else if (fetchUserData) {
+      // Always fetch latest user profile when authenticated
+      fetchUserData();
     }
-  }, [isUserAuthenticated, userData, router, fetchUserData]);
+  }, [isUserAuthenticated, router, fetchUserData]);
 
   const handleBack = () => {
     router.push('/chat');
@@ -83,7 +76,9 @@ export default function ProfilePage() {
          <div className={styles.profileDetailItem}>
           <FontAwesomeIcon icon={faCalendarAlt} className={styles.profileDetailIcon} />
           <div className={styles.profileFieldLabel}>Joined:</div>
-          <div className={styles.profileFieldValue}>{userData?.created_at ? new Date(userData.created_at).toLocaleDateString() : 'N/A'}</div>
+          <div className={styles.profileFieldValue}>{
+            userData?.created_at ? new Date(userData.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A'
+          }</div>
         </div>
 
       </div>
