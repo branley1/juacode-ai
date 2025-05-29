@@ -1,8 +1,10 @@
 [build]
   base    = "juacode-nextjs-app"
   command = "npm run build"
-  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "18.18.0"
-  NPM_CONFIG_LEGACY_PEER_DEPS = "true" 
+  NPM_CONFIG_LEGACY_PEER_DEPS = "true"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs" 
