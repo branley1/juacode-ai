@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import styles from './profile.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faEnvelope, faIdCard, faArrowLeft, faSignOutAlt, faSun, faMoon } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faEnvelope, faIdCard, faArrowLeft, faSignOutAlt, faSun, faMoon, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -81,6 +81,7 @@ export default function ProfilePage() {
         </div>
 
          <div className={styles.profileDetailItem}>
+          <FontAwesomeIcon icon={faCalendarAlt} className={styles.profileDetailIcon} />
           <div className={styles.profileFieldLabel}>Joined:</div>
           <div className={styles.profileFieldValue}>{userData?.created_at ? new Date(userData.created_at).toLocaleDateString() : 'N/A'}</div>
         </div>

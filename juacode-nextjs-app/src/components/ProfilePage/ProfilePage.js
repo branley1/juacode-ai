@@ -52,7 +52,7 @@ function ProfilePage({ setCurrentView, isUserAuthenticated, onNavigateToLogin, o
         <div className="profile-detail-item">
           <FontAwesomeIcon icon={faUser} className="profile-detail-icon" />
           <div className="profile-field-label">Name:</div>
-          <div className="profile-field-value">{userData?.name || 'N/A'}</div>
+          <div className="profile-field-value">{userData?.username || 'Guest User'}</div>
         </div>
         
         <div className="profile-detail-item">

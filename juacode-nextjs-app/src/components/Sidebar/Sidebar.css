@@ -53,13 +53,14 @@
   font-weight: 600;
   margin-top: 10px;
   margin-bottom: 10px;
+  color: var(--color-text-primary);
 }
 
 .sidebar-subtitle {
   font-size: 0.9em;
   margin-top: -5px;
   font-weight: lighter;
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
 }
 
 .sidebar-content {
@@ -87,6 +88,8 @@
   margin: 0;
   font-size: 1.2em;
   font-weight: bold;
+  color: var(--color-text-primary);
+  text-align: center;
 }
 
 .chat-history-header {
@@ -109,7 +112,7 @@
   transition: background-color 0.2s ease, color 0.2s ease;
   position: relative;
   overflow: visible;
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   font-size: 0.9em;
   line-height: 1.3;
 }

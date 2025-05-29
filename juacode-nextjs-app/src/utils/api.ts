@@ -221,6 +221,29 @@ export const summarizeChatTitle = async (chatId: string): Promise<{ title: strin
 };
 
 /**
+ * Fetch the current authenticated user's data
+ */
+export const fetchCurrentUser = async (): Promise<any> => { // Replace 'any' with a more specific User type if available
+  try {
+    console.log('Fetching current user data from: /api/users/me');
+    const response = await makeAuthenticatedRequest('/api/users/me', {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: `HTTP error! status: ${response.status}` }));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
+    const userData = await response.json();
+    return userData;
+  } catch (error) {
+    console.error('Error fetching current user data:', error);
+    throw error; // Rethrow to be handled by the caller
+  }
+};
+
+/**
  * Generate AI response for chat messages
  */
 interface GeneratePayload {

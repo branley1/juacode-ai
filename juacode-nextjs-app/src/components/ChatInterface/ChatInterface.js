@@ -9,7 +9,7 @@ import './ChatInterface.css';
 import JuaCodeLogo from '@/assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPen, faBars, faPlus, faShare, faUser, faCog, faUserCircle, faSun, faMoon, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
-import { fetchUserChats, createChat, updateChat, deleteChat, summarizeChatTitle, generateChatResponse } from '@/utils/api';
+import { fetchUserChats, createChat, updateChat, deleteChat, summarizeChatTitle, generateChatResponse, fetchCurrentUser } from '@/utils/api';
 
 // Generate a unique string for the chat id.
 const generateUniqueChatId = () => {
@@ -49,7 +49,6 @@ const AVAILABLE_MODELS = [
 function ChatInterface({ 
   onNavigateToLogin, 
   isUserAuthenticated, 
-  userData, 
   onNavigateToProfile,
   onLogout
 }) {
@@ -68,6 +67,7 @@ function ChatInterface({
   const [streamingIndex, setStreamingIndex] = useState(null);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   const [currentLlmModel, setCurrentLlmModel] = useState(null);
+  const [localUserData, setLocalUserData] = useState(null);
   // State for theme
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('juaCodeTheme');
@@ -79,6 +79,54 @@ function ChatInterface({
   const profileMenuRef = useRef(null);
 
   const [chatHistory, setChatHistory] = useState([]);
+
+  // Effect to load user data from API or localStorage
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (isUserAuthenticated) {
+        try {
+          console.log('[ChatInterface] User authenticated, fetching user data from API...');
+          const apiUserData = await fetchCurrentUser();
+          if (apiUserData) {
+            console.log('[ChatInterface] User data fetched from API:', apiUserData);
+            setLocalUserData(apiUserData);
+            localStorage.setItem('userData', JSON.stringify(apiUserData)); // Update localStorage
+          } else {
+            console.warn('[ChatInterface] API returned no user data, attempting to load from localStorage.');
+            // Fallback to localStorage if API returns nothing or fails silently (though fetchCurrentUser should throw)
+            const storedUserData = localStorage.getItem('userData');
+            if (storedUserData) {
+              setLocalUserData(JSON.parse(storedUserData));
+            } else {
+              console.warn('[ChatInterface] No user data in localStorage, setting to guest.');
+              setLocalUserData({ name: 'Guest User', email: 'guest@example.com' });
+            }
+          }
+        } catch (error) {
+          console.error('[ChatInterface] Error fetching user data from API:', error);
+          // If auth error (e.g., token expired), onLogout should be called by makeAuthenticatedRequest
+          // For other errors, try localStorage
+          const storedUserData = localStorage.getItem('userData');
+          if (storedUserData) {
+            console.log('[ChatInterface] API fetch failed, loading user data from localStorage:', storedUserData);
+            setLocalUserData(JSON.parse(storedUserData));
+          } else {
+            console.warn('[ChatInterface] API fetch failed and no user data in localStorage, setting to guest.');
+            // Potentially call onLogout() here if API fetch fails due to auth,
+            // but makeAuthenticatedRequest should handle it.
+             setLocalUserData({ name: 'Guest User', email: 'guest@example.com' });
+          }
+        }
+      } else {
+        console.log('[ChatInterface] User not authenticated, setting guest user data.');
+        setLocalUserData({ name: 'Guest User', email: 'guest@example.com' });
+        // Optionally clear local storage for user data if not authenticated
+        localStorage.removeItem('userData');
+      }
+    };
+
+    loadUserData();
+  }, [isUserAuthenticated, onLogout]);
 
   // Load user chats from backend
   const loadUserChats = useCallback(async () => {
@@ -763,7 +811,7 @@ function ChatInterface({
           }
         }}
         isUserAuthenticated={isUserAuthenticated}
-        userData={userData}
+        userData={localUserData}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToLogin={onNavigateToLogin}
       />

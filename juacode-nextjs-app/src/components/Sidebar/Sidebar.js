@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, useEffect } from 'react';
+import React, { useState, forwardRef } from 'react';
 import Image from 'next/image';
 import './Sidebar.css';
 import JuaCodeLogo from '@/assets/jua-code-logo.png';
@@ -9,27 +9,22 @@ import { faTrash, faEllipsisV, faTimes } from '@fortawesome/free-solid-svg-icons
 const getChatId = (chat) => chat.chat_id || chat.id || "";
 
 // Wrap Sidebar with forwardRef
-const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatSelect, onDeleteAllChats, onDeleteChat, onRenameChat, /*setCurrentView,*/ isUserAuthenticated, onNavigateToProfile, onNavigateToLogin /* Added */ }, ref) => {
+const Sidebar = forwardRef(({
+  isSidebarOpen, 
+  toggleSidebar, 
+  chatHistory, 
+  onChatSelect, 
+  onDeleteAllChats, 
+  onDeleteChat, 
+  onRenameChat, 
+  isUserAuthenticated, 
+  onNavigateToProfile, 
+  onNavigateToLogin, 
+  userData
+}, ref) => {
   const [editingChatId, setEditingChatId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [openMenuChatId, setOpenMenuChatId] = useState(null);
-  const [userData, setUserData] = useState(null);
-
-  useEffect(() => {
-    if (isUserAuthenticated) {
-      const storedUserData = localStorage.getItem('userData');
-      if (storedUserData) {
-        try {
-          setUserData(JSON.parse(storedUserData));
-        } catch (e) {
-          console.error('Error parsing user data:', e);
-          setUserData({ name: 'Guest User', email: 'guest@example.com' });
-        }
-      }
-    } else {
-      setUserData({ name: 'Guest User', email: 'guest@example.com' });
-    }
-  }, [isUserAuthenticated]);
 
   const handleRenameInitiate = (chat, e) => {
     e.stopPropagation();
@@ -141,7 +136,7 @@ const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatS
               <circle cx="12" cy="7" r="4"></circle>
             </svg>
             <div className="account-details">
-              <p>{userData?.name || 'Guest User'}</p>
+              <p>{userData?.username || 'Guest User'}</p>
               <small>{userData?.email || 'guest@example.com'}</small>
             </div>
           </div>

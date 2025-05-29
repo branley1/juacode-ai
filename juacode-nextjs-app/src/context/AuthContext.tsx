@@ -10,7 +10,6 @@ interface User {
   username?: string;
   created_at: string;
   updated_at: string;
-  is_admin: boolean;
 }
 
 interface AuthContextType {

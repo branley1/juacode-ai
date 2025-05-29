@@ -191,7 +191,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
         return setCorsHeaders(R);
     }
     
-    const systemPromptText = "Create a short, concise chat title of 3-4 words that summarizes the core topic or purpose of this conversation. Focus on the specific subject matter. Do not include phrases like 'I am' or self-references. Only output the title with no quotes or other formatting.";
+    const systemPromptText = "Create a short, concise chat title of 3-4 words that summarizes the core topic or purpose of this conversation. Focus on the specific subject matter. Do not include any other phrases. Only output the title with no quotes or other formatting.";
     const systemPrompt: LLMMessage = {
       role: 'system',
       content: systemPromptText
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
 
     const titleGenerationPayload: LLMMessage[] = [systemPrompt, ...llmMessages];
 
-    const llmProvider: LLMProvider = (process.env.TITLE_GENERATION_LLM_PROVIDER as LLMProvider) || 'deepseek';
+    const llmProvider: LLMProvider = (process.env.TITLE_GENERATION_LLM_PROVIDER as LLMProvider) || 'gemini';
     const llmConfig: LLMConfig = {
       stream: false, 
       max_tokens: 20, 

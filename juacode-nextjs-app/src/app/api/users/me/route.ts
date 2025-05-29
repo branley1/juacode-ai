@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     // Fetch user profile from your 'users' table using the Supabase user ID
     // The Supabase user ID should be the one stored in your 'users' table 'id' column.
-    const profileQuery = 'SELECT id, email, name, created_at, updated_at, is_admin FROM users WHERE id = $1';
+    const profileQuery = 'SELECT id, email, name, created_at, updated_at FROM users WHERE id = $1';
     const { rows } = await db.query(profileQuery, [supabaseUser.id]);
 
     if (rows.length === 0) {
@@ -42,10 +42,9 @@ export async function GET(req: NextRequest) {
     const responseUser = {
         id: userProfile.id,
         email: userProfile.email,
-        username: userProfile.name, // Assuming 'name' in db maps to 'username' in User interface
+        username: userProfile.name,
         created_at: userProfile.created_at,
         updated_at: userProfile.updated_at,
-        is_admin: userProfile.is_admin !== undefined ? userProfile.is_admin : false, // Default is_admin if not present
     };
 
     return NextResponse.json(responseUser, { status: 200 });

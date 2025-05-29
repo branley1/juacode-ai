@@ -9,7 +9,8 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
+    min-height: auto;
+    overflow-y: auto; 
     padding: 20px;
     box-sizing: border-box;
     background-color: var(--color-background-body);
