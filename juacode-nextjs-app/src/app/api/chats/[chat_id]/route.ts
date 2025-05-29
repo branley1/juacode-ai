@@ -191,7 +191,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
         return setCorsHeaders(R);
     }
     
-    const systemPromptText = "Create a short, concise chat title of 2-5 words that summarizes the core topic or purpose of this conversation. Focus on the specific subject matter. Do not include phrases like 'I am' or self-references. Only output the title with no quotes or other formatting.";
+    const systemPromptText = "Create a short, concise chat title of 3-4 words that summarizes the core topic or purpose of this conversation. Focus on the specific subject matter. Do not include phrases like 'I am' or self-references. Only output the title with no quotes or other formatting.";
     const systemPrompt: LLMMessage = {
       role: 'system',
       content: systemPromptText
@@ -224,10 +224,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
       newTitleRaw = "Chat Summary"; 
     }
 
-    let newTitle = newTitleRaw.replace(/["'*`~#""]/g, '').trim();
+    let newTitle = newTitleRaw.replace(/[\"\'*`~#\"\']/g, '').trim();
     const words = newTitle.split(/\s+/);
-    if (words.length > 5) {
-      newTitle = words.slice(0, 5).join(' ');
+    if (words.length > 4) {
+      newTitle = words.slice(0, 4).join(' ');
     } else if (words.length === 0 || newTitle.length === 0) {
       newTitle = "Chat Summary"; 
     }
