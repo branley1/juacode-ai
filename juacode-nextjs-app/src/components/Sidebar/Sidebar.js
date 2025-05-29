@@ -3,7 +3,8 @@ import Image from 'next/image';
 import './Sidebar.css';
 import JuaCodeLogo from '@/assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faEllipsisV, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { icons } from '@/utils/icons';
+import { faEllipsisV, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 // Safely retrieve the chat id from the chat object.
 const getChatId = (chat) => chat.chat_id || chat.id || "";
@@ -47,7 +48,7 @@ const Sidebar = forwardRef(({
           <h3 className="sidebar-title">JuaCode</h3>
           <h4 className="sidebar-subtitle">AI Coding Assistant</h4>
           <button onClick={toggleSidebar} className="sidebar-close-button" title="Close Sidebar">
-            <FontAwesomeIcon icon={faTimes} />
+            <FontAwesomeIcon icon={icons.faTimes} />
           </button>
         </div>
         <div className="sidebar-content">
@@ -58,7 +59,7 @@ const Sidebar = forwardRef(({
               onClick={onDeleteAllChats}
               title="Delete All Chats"
             >
-              <FontAwesomeIcon icon={faTrash} />
+              <FontAwesomeIcon icon={icons.faTrash} />
             </button>
           </div>
           <ul className='chat-history-list'>
