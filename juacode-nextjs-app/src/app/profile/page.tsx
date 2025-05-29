@@ -80,11 +80,6 @@ export default function ProfilePage() {
           <div className={styles.profileFieldValue}>{userData?.id || 'N/A'}</div>
         </div>
 
-        <div className={styles.profileDetailItem}>
-          <div className={styles.profileFieldLabel}>Admin:</div>
-          <div className={styles.profileFieldValue}>{userData?.is_admin ? 'Yes' : 'No'}</div>
-        </div>
-
          <div className={styles.profileDetailItem}>
           <div className={styles.profileFieldLabel}>Joined:</div>
           <div className={styles.profileFieldValue}>{userData?.created_at ? new Date(userData.created_at).toLocaleDateString() : 'N/A'}</div>

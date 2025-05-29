@@ -90,7 +90,7 @@ export default function LoginPage() {
       }
       // No need to setIsSubmitting(false) here if redirecting or relying on AuthContext effect
 
-    } catch (fetchError: Error | any) {
+    } catch (fetchError: any) {
       clearTimeout(timeoutId);
       if (fetchError.name === 'AbortError') {
         setMessage('Login request timed out. Please try again later.');

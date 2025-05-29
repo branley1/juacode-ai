@@ -478,7 +478,6 @@ function ChatInterface({
                 }
                 assistantContentAccumulator += parsedEvent.text;
                 if (currentChatId === localChatId && assistantMessagePlaceholderAdded) {
-                  // eslint-disable-next-line no-loop-func
                   setMessages(prev => {
                     const newMsgs = [...prev];
                     if (newMsgs.length > 0 && newMsgs[newMsgs.length - 1].role === 'assistant') {
@@ -488,8 +487,8 @@ function ChatInterface({
                   });
                 }
               }
-            } catch (e) {
-              console.warn("[ChatInterface] Error parsing SSE JSON or non-JSON data chunk:", jsonStr, e);
+            } catch (parseError) {
+              console.warn("[ChatInterface] Error parsing SSE JSON or non-JSON data chunk:", jsonStr, parseError);
               // If it's not JSON, it might be an older format or an error. 
               // For backward compatibility or simple text streams, you might append directly:
               // assistantContentAccumulator += jsonStr; 

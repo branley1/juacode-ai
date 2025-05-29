@@ -220,7 +220,7 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
   const renderValidationItem = (condition, text) => (
     <div className={`password-validation-item ${condition ? 'valid' : 'invalid'}`}>
       <FontAwesomeIcon icon={condition ? faCheck : faTimes} className="validation-icon" />
-      <span>{text}</span>
+      <span>{text.replace(/'/g, "&apos;")}</span>
     </div>
   );
 

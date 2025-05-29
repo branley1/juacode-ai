@@ -46,6 +46,7 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
           let errorData = { error: 'Login failed' };
           try {
             errorData = await response.json();
+            // @ts-ignore
           } catch (parseError) {
             // If the response can't be parsed as JSON, use status text
             errorData = { error: `Server error: ${response.status} ${response.statusText}` };
@@ -95,6 +96,7 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
         setIsSubmitting(false);
       }
     } catch (submitError) {
+      // @ts-ignore
       setMessage('An unexpected error occurred. Please try again.');
       setMessageType('error');
       setIsSubmitting(false);

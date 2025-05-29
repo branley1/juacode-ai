@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './ProfilePage.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faEnvelope, faIdCard, faArrowLeft, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faEnvelope, faIdCard, faArrowLeft, faSignOutAlt, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 
 function ProfilePage({ setCurrentView, isUserAuthenticated, onNavigateToLogin, onLogout, userData }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +28,17 @@ function ProfilePage({ setCurrentView, isUserAuthenticated, onNavigateToLogin, o
     return <div className="profile-page-container">Loading profile...</div>;
   }
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return 'Invalid Date';
+    }
+  };
+
   return (
     <div className="profile-page-container">
       <div className="profile-page-header">
@@ -41,7 +52,7 @@ function ProfilePage({ setCurrentView, isUserAuthenticated, onNavigateToLogin, o
         <div className="profile-detail-item">
           <FontAwesomeIcon icon={faUser} className="profile-detail-icon" />
           <div className="profile-field-label">Name:</div>
-          <div className="profile-field-value">{userData?.name || 'Guest User'}</div>
+          <div className="profile-field-value">{userData?.name || 'N/A'}</div>
         </div>
         
         <div className="profile-detail-item">
@@ -54,6 +65,12 @@ function ProfilePage({ setCurrentView, isUserAuthenticated, onNavigateToLogin, o
           <FontAwesomeIcon icon={faIdCard} className="profile-detail-icon" />
           <div className="profile-field-label">User ID:</div>
           <div className="profile-field-value">{userData?.id || 'Not available'}</div>
+        </div>
+
+        <div className="profile-detail-item">
+          <FontAwesomeIcon icon={faCalendarAlt} className="profile-detail-icon" />
+          <div className="profile-field-label">Joined:</div>
+          <div className="profile-field-value">{formatDate(userData?.created_at)}</div>
         </div>
       </div>
 

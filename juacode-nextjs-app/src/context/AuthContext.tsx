@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation'; // For navigation after login/logout
 
 // Define the shape of your user data
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const router = useRouter();
 
-  const checkAuthOnMount = () => {
+  const checkAuthOnMount = useCallback(() => {
     if (typeof window !== 'undefined') {
       const storedToken = localStorage.getItem('access_token');
       const storedUserData = localStorage.getItem('userData');
@@ -53,11 +53,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         clearAuthData(); // Ensure a clean state if data is partial/missing
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
     checkAuthOnMount();
-  }, []);
+  }, [checkAuthOnMount]);
 
   const clearAuthData = () => {
     setIsUserAuthenticated(false);
@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // fetchUserData
-  const fetchUserDataImpl = async () => {
+  const fetchUserDataImpl = useCallback(async () => {
     if (!accessToken) {
       console.log("[AuthContext] fetchUserData called, but no access token found. Clearing auth data.");
       clearAuthData(); // Ensure logged out state if no token
@@ -129,7 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       clearAuthData();
       // Optionally, redirect or show error
     }
-  };
+  }, [accessToken, router]);
 
   return (
     <AuthContext.Provider value={{ isUserAuthenticated, userData, accessToken, login, logout, checkAuthOnMount, fetchUserData: fetchUserDataImpl }}>
