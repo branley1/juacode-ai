@@ -3,7 +3,7 @@ import './ProfilePage.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEnvelope, faIdCard, faArrowLeft, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 
-function ProfilePage({ setCurrentView, isDarkMode, isUserAuthenticated, onNavigateToLogin, onLogout, userData }) {
+function ProfilePage({ setCurrentView, isUserAuthenticated, onNavigateToLogin, onLogout, userData }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

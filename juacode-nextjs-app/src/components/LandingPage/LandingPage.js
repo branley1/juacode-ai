@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import './LandingPage.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -66,11 +67,11 @@ function LandingPage({ onStartChatting, isDarkMode, toggleTheme, onNavigateToPro
       </div>
       <main className="landing-main">
         <header className="landing-header">
-          <img src={JuaCodeLogo} alt="JuaCode Logo" className="landing-logo-img" />
+          <Image src={JuaCodeLogo} alt="JuaCode Logo" className="landing-logo-img" width={80} height={80} />
           <h1 className="landing-title-text">JuaCode AI</h1>
         </header>
         <p className="landing-description-text">
-          Your intelligent coding assistant. Let's build something amazing together.
+          Your intelligent coding assistant. Let&apos;s build something amazing together.
         </p>
         <div className="landing-cta-container">
           <button

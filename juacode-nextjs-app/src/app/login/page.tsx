@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const router = useRouter();
-  const { login, isUserAuthenticated, fetchUserData } = useAuth();
+  const { login, isUserAuthenticated } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -90,7 +90,7 @@ export default function LoginPage() {
       }
       // No need to setIsSubmitting(false) here if redirecting or relying on AuthContext effect
 
-    } catch (fetchError: any) {
+    } catch (fetchError: Error | any) {
       clearTimeout(timeoutId);
       if (fetchError.name === 'AbortError') {
         setMessage('Login request timed out. Please try again later.');

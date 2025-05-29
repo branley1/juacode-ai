@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import JuaCodeIcon from '../../assets/jua-code-logo.png';
 import ThoughtBlock from '../ThoughtBlock/ThoughtBlock';
 import './ChatMessage.css';
@@ -24,7 +25,7 @@ function extractThoughtAndMain(content) {
   }
 }
 
-function ChatMessage({ role, content, chatMessagesRef, index, streamingIndex }) {
+function ChatMessage({ role, content, index, streamingIndex }) {
   const [displayText, setDisplayText] = useState('');
   const [charIndex, setCharIndex] = useState(0);
   const [parsedContent, setParsedContent] = useState({ mainContent: '', thoughtContent: null });
@@ -78,7 +79,7 @@ function ChatMessage({ role, content, chatMessagesRef, index, streamingIndex }) 
       id={`message-${index}`}
     >
       {role === 'assistant' && (
-        <img src={JuaCodeIcon.src} alt="JuaCode Icon" className="profile-icon" />
+        <Image src={JuaCodeIcon} alt="JuaCode Icon" className="profile-icon" width={40} height={40} />
       )}
       <div className="message-area">
         {parsedContent.thoughtContent && (

@@ -99,7 +99,7 @@ export default function LandingPage() {
           <h1 className="landing-title-text">JuaCode AI</h1>
         </header>
         <p className="landing-description-text">
-          Your intelligent coding assistant. Let's build something amazing together.
+          Your intelligent coding assistant. Let&apos;s build something amazing together.
         </p>
         <div className="landing-cta-container">
           <button

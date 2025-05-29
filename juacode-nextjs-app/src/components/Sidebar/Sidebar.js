@@ -1,4 +1,5 @@
 import React, { useState, forwardRef, useEffect } from 'react';
+import Image from 'next/image';
 import './Sidebar.css';
 import JuaCodeLogo from '@/assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -47,7 +48,7 @@ const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatS
       {/* Pass the ref to the main div of the Sidebar */}
       <div className={`sidebar ${isSidebarOpen ? 'open' : ''}`} ref={ref}>
         <div className="sidebar-header">
-          <img src={JuaCodeLogo.src} alt="JuaCode Logo" className="sidebar-logo" />
+          <Image src={JuaCodeLogo} alt="JuaCode Logo" className="sidebar-logo" width={40} height={40} />
           <h3 className="sidebar-title">JuaCode</h3>
           <h4 className="sidebar-subtitle">AI Coding Assistant</h4>
           <button onClick={toggleSidebar} className="sidebar-close-button" title="Close Sidebar">
@@ -149,5 +150,7 @@ const Sidebar = forwardRef(({ isSidebarOpen, toggleSidebar, chatHistory, onChatS
     </React.Fragment>
   );
 });
+
+Sidebar.displayName = 'Sidebar';
 
 export default Sidebar;

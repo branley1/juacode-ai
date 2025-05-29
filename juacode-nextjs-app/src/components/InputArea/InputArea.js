@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faToggleOn, faToggleOff, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import SendIconWhite from '../../assets/send-white.svg';
 import './InputArea.css';
 
-function InputArea({ onFirstMessageSent, isLandingPage, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping, currentModel, setCurrentModel, availableModels, isDarkMode }) {
+function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping, currentModel, setCurrentModel, availableModels }) {
   const [input, setInput] = useState('');
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
@@ -136,7 +137,7 @@ function InputArea({ onFirstMessageSent, isLandingPage, chatMessagesRef, simulat
           disabled={isTyping}
           className="send-button"
         >
-            <img src={typeof SendIconWhite === 'string' ? SendIconWhite : SendIconWhite.src} alt="Send" className="send-icon-img" />
+            <Image src={SendIconWhite} alt="Send" className="send-icon-img" width={24} height={24} />
         </button>
         </div>
       </div>

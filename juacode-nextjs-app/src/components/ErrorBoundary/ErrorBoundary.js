@@ -21,7 +21,7 @@ export default class ErrorBoundary extends Component {
       return (
         <div className="error-fallback">
           <h3>Chat Connection Lost</h3>
-          <p>We're having trouble connecting to the chat service. Error details:</p>
+          <p>We&apos;re having trouble connecting to the chat service. Error details:</p>
           <pre className="error-details">{this.state.error.message}</pre>
           <button onClick={() => window.location.reload()}>
             <FontAwesomeIcon icon={faSyncAlt} />

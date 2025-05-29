@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import './RegisterUser.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -121,7 +122,7 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
           let errorData = { error: 'Server error' };
           try {
             errorData = await res.json();
-          } catch (e) {
+          } catch (parseError) {
             // If we can't parse the JSON, use status text
             errorData = { 
               error: `Server error: ${res.status} ${res.statusText || 'No response'}`,
@@ -240,10 +241,10 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
           </div>
           <h2>Confirm Your Email</h2>
           <p className="confirmation-message">
-            We've sent a confirmation link to <span className="email-highlight">{registeredEmail}</span>.
+            We&apos;ve sent a confirmation link to <span className="email-highlight">{registeredEmail}</span>.
             <br />Please check your inbox and click the link to activate your account.
           </p>
-          <p className="confirmation-note">If you don't see the email, please check your spam folder.</p>
+          <p className="confirmation-note">If you don&apos;t see the email, please check your spam folder.</p>
           <button onClick={onNavigateToLogin} className="auth-button">
             Go to Login
           </button>
@@ -257,11 +258,13 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
       <button onClick={toggleTheme} className="page-theme-toggle" title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
         <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} />
       </button>
-      <img 
+      <Image 
         src={JuaCodeLogo} 
         alt="JuaCode Logo" 
         className="auth-logo-outside"
-        onClick={() => setCurrentView('landing')} 
+        onClick={() => setCurrentView('landing')}
+        width={80}
+        height={80}
       />
       <div className="auth-form-container">
         <h2>Register</h2>
@@ -347,7 +350,7 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
             {isSubmitting ? 'Registering...' : 'Register'}
           </button>
         </form>
-        {message && <p className={`auth-message error-${errorType}`}>{message}</p>}
+        {message && <p className={`auth-message ${errorType}`}>{message}</p>}
         <p className="auth-navigation-link">
           Already have an account?{" "}
           <button onClick={onNavigateToLogin} className="link-button">

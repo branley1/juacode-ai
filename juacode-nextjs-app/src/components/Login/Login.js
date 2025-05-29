@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Image from 'next/image';
 import './Login.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -45,7 +46,7 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
           let errorData = { error: 'Login failed' };
           try {
             errorData = await response.json();
-          } catch (e) {
+          } catch (parseError) {
             // If the response can't be parsed as JSON, use status text
             errorData = { error: `Server error: ${response.status} ${response.statusText}` };
           }
@@ -93,7 +94,7 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
         }
         setIsSubmitting(false);
       }
-    } catch (error) {
+    } catch (submitError) {
       setMessage('An unexpected error occurred. Please try again.');
       setMessageType('error');
       setIsSubmitting(false);
@@ -105,11 +106,13 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
       <button onClick={toggleTheme} className="page-theme-toggle" title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}>
         <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} />
       </button>
-      <img 
+      <Image 
         src={JuaCodeLogo} 
         alt="JuaCode Logo" 
         className="auth-logo-outside"
         onClick={() => setCurrentView('landing')}
+        width={80}
+        height={80}
       />
       <div className="auth-form-container">
         <h2>Login</h2>
@@ -146,7 +149,7 @@ function Login({ onLoginSuccess, onNavigateToRegister, isDarkMode, toggleTheme, 
         </form>
         {message && <p className={`auth-message ${messageType}`}>{message}</p>}
         <p className="auth-navigation-link">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <button onClick={onNavigateToRegister} className="link-button">
             Register here
           </button>

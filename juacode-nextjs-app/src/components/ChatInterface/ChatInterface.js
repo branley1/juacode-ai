@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import ChatMessage from '@/components/ChatMessage/ChatMessage';
 import InputArea from '@/components/InputArea/InputArea';
 import Sidebar from '@/components/Sidebar/Sidebar';
@@ -342,12 +343,27 @@ function ChatInterface({
     };
   }, [messages, chatStarted, streamingIndex, userHasScrolledUp, isTyping]);
 
+  // Keyboard navigation for messages
   useEffect(() => {
-    const handleKeyNavigation = (e) => {
-      if (e.key === 'ArrowUp' && messages.length > 0) {
-        e.preventDefault();
-      }
-      if (e.ctrlKey && e.key === '/') {
+    const handleKeyNavigation = (event) => {
+      if (!chatMessagesRef.current) return;
+
+      const focusableElements = Array.from(
+        chatMessagesRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+      );
+      const currentFocusIndex = focusableElements.indexOf(document.activeElement);
+
+      if (event.key === 'ArrowUp' && messages.length > 0) {
+        event.preventDefault();
+        if (currentFocusIndex > 0) {
+          focusableElements[currentFocusIndex - 1].focus();
+        }
+      } else if (event.key === 'ArrowDown' && messages.length > 0) {
+        event.preventDefault();
+        if (currentFocusIndex < focusableElements.length - 1) {
+          focusableElements[currentFocusIndex + 1].focus();
+        }
+      } else if (event.ctrlKey && event.key === '/') {
         document.querySelector('.textarea')?.focus();
       }
     };
@@ -386,7 +402,6 @@ function ChatInterface({
     }
   };
 
-  // Handle first user message
   const handleFirstMessage = () => {
     setChatStarted(true);
   };
@@ -801,8 +816,8 @@ function ChatInterface({
                     )}
                 </div>
               </div>
-              <img 
-                src={JuaCodeLogo.src}
+              <Image 
+                src={JuaCodeLogo}
                 alt="JuaCode Logo" 
                 className="landing-logo" 
                 style={{ display: 'block', margin: '20px auto', width: '100px', height: '100px' }} 
@@ -916,7 +931,7 @@ function ChatInterface({
                 ))}
                 {isTyping && (
                   <div className="chat-message assistant assistant-typing">
-                    <img src={JuaCodeLogo.src} alt="JuaCode Icon" className="profile-icon" />
+                    <Image src={JuaCodeLogo} alt="JuaCode Icon" className="profile-icon" width={40} height={40} />
                     <div className="message-area">
                       <div className="message-content">
                         <div className="typing-dot"></div>

@@ -136,7 +136,7 @@ export default function RegisterPage() {
         success = true; // Mark as success to exit loop
         break; // Exit retry loop
 
-      } catch (fetchError: any) {
+      } catch (fetchError: Error | any) {
         if (fetchError.name === 'AbortError') {
           // This will be handled by the overallTimeoutId's message or if aborted earlier
           if (!success) { // Only set message if not already successful

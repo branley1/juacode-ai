@@ -13,7 +13,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   return (
         <div className={styles.errorFallback}>
           <h3>Something went wrong!</h3>
-          <p>We've encountered an issue. Error details:</p>
+          <p>We&apos;ve encountered an issue. Error details:</p>
           <pre className={styles.errorDetails}>{error.message || 'No error message provided.'}</pre>
           <p>Digest: {error.digest}</p>
           <button
