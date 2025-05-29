@@ -199,7 +199,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
 
     const titleGenerationPayload: LLMMessage[] = [systemPrompt, ...llmMessages];
 
-    const llmProvider: LLMProvider = (process.env.TITLE_GENERATION_LLM_PROVIDER as LLMProvider) || 'gemini';
+    const llmProvider: LLMProvider = 'deepseek';  // Always use DeepSeek for title generation
     const llmConfig: LLMConfig = {
       stream: false, 
       max_tokens: 20, 
