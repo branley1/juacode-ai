@@ -11,6 +11,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPen, faBars, faPlus, faShare, faUser, faCog, faUserCircle, faSun, faMoon, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { fetchUserChats, createChat, updateChat, deleteChat, summarizeChatTitle, generateChatResponse, fetchCurrentUser } from '@/utils/api';
 import { useTheme } from '@/context/ThemeContext';
+import AvatarPlaceholder from '@/components/AvatarPlaceholder/AvatarPlaceholder';
 
 // Generate a unique string for the chat id.
 const generateUniqueChatId = () => {
@@ -810,7 +811,7 @@ function ChatInterface({
                 </button>
                 <div className="profile-menu-container-initial" ref={profileMenuRef}>
                     <button className="profile-menu-button" onClick={toggleProfileMenu} title="Profile and Settings">
-                        <FontAwesomeIcon icon={faUser} />
+                        <AvatarPlaceholder username={localUserData?.username ?? null} size={36} />
                     </button>
                     {isProfileMenuOpen && (
                         <div className="profile-dropdown-menu">
@@ -911,7 +912,7 @@ function ChatInterface({
                   </button>
                   <div style={{ position: 'relative' }} ref={profileMenuRef}>
                     <button className="profile-menu-button" onClick={toggleProfileMenu} title="Profile and Settings">
-                      <FontAwesomeIcon icon={faUser} />
+                      <AvatarPlaceholder username={localUserData?.username ?? null} size={36} />
                     </button>
                     {isProfileMenuOpen && (
                       <div className="profile-dropdown-menu">

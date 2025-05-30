@@ -3,9 +3,12 @@ import styles from './AvatarPlaceholder.module.css';
 
 interface AvatarPlaceholderProps {
   username?: string | null;
+  size?: number;
 }
 
-const AvatarPlaceholder: React.FC<AvatarPlaceholderProps> = ({ username }) => {
+const AvatarPlaceholder: React.FC<AvatarPlaceholderProps> = ({ username, size }) => {
+  const defaultSize = 150;
+  const computedSize = size ?? defaultSize;
   const [color, setColor] = useState<string>('#888');
 
   useEffect(() => {
@@ -30,12 +33,27 @@ const AvatarPlaceholder: React.FC<AvatarPlaceholderProps> = ({ username }) => {
         .toUpperCase()
     : '';
 
+  // Inline styles to allow custom sizing and override margin when size prop used
+  const style: React.CSSProperties = {
+    backgroundColor: color,
+    width: `${computedSize}px`,
+    height: `${computedSize}px`,
+    fontSize: `${computedSize * 0.6}px`,
+  };
+  if (size !== undefined) {
+    style.marginBottom = '0';
+  }
   return (
     <div
       className={styles.avatarPlaceholder}
-      style={{ backgroundColor: color }}
+      style={style}
     >
-      {initials || <span className={styles.avatarIcon}>👤</span>}
+      {initials || (
+        <span
+          className={styles.avatarIcon}
+          style={{ fontSize: `${computedSize * 0.4}px` }}
+        >👤</span>
+      )}
     </div>
   );
 };

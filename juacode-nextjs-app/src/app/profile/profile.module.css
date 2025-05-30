@@ -18,8 +18,8 @@
   position: relative;
 }
 
-.profilePageHeader h1 {
-  font-size: 2rem;
+.profilePageHeader h2 {
+  font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
 }
@@ -27,8 +27,7 @@
 .profileBackButton {
   position: absolute;
   left: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0;
   background: transparent;
   border: 1px solid var(--color-border-chat-container);
   display: flex;

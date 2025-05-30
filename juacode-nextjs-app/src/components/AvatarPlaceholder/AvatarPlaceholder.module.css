@@ -9,7 +9,6 @@
   color: white;
   margin-bottom: 2rem;
   animation: pulse 2s ease-out infinite;
-  cursor: default;
 }
 
 .avatarPlaceholder:hover {
@@ -24,7 +23,7 @@
 
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-3px); }
 }
 
 .avatarIcon {
