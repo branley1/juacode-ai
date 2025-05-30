@@ -49,9 +49,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Determine origin dynamically for redirect link
+    const { origin } = new URL(req.url);
+    const resetUrl = `${origin}/reset-password`;
     // Send password reset email using Supabase
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/reset-password`,
+      redirectTo: resetUrl,
     });
 
     if (error) {

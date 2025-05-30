@@ -212,14 +212,14 @@ export default function RegisterPage() {
        <button onClick={toggleTheme} className={styles.pageThemeToggle} title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: '1px solid var(--color-border-chat-container)', color: 'var(--color-text-primary)', cursor: 'pointer', fontSize: '1em', padding: '0.5rem', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
         <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} />
       </button>
-      <Image 
-        src={JuaCodeLogo} 
-        alt="JuaCode Logo" 
-        className={styles.authLogoOutside}
-        onClick={() => router.push('/')} // Navigate to landing page
-        priority
-      />
       <div className={styles.authFormContainer}>
+        <Image 
+          src={JuaCodeLogo}
+          alt="JuaCode Logo" 
+          className={styles.authLogoOutside}
+          onClick={() => router.push('/')} // Navigate to landing page
+          priority
+        />
         <h2>Register</h2>
         <form onSubmit={handleSubmit}>
           <div>
@@ -285,7 +285,7 @@ export default function RegisterPage() {
           </div>
 
           <div className={styles.passwordRequirements}>
-            <h3>Password Requirements:</h3>
+            <h4>Password Requirements:</h4>
             <div className={styles.passwordValidationList}>
               {renderValidationItem(passwordValidation.length, 'At least 8 characters')}
               {renderValidationItem(passwordValidation.uppercase, 'At least one uppercase letter')}

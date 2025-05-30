@@ -27,7 +27,7 @@ export async function OPTIONS() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { password, access_token } = body;
+    const { password, access_token, refresh_token } = body;
 
     if (!password) {
       return NextResponse.json({ 
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     // Set the session with the access token from the reset link
     const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
       access_token,
-      refresh_token: '', // Not needed for password reset
+      refresh_token
     });
 
     if (sessionError) {

@@ -29,6 +29,7 @@
     text-align: left;
     box-sizing: border-box;
     margin: auto 0; /* Center vertically within available space */
+    margin-top: 4rem; /* Ensure form sits below the top-right theme toggle */
 }
 
 .authFormContainer h2 {
@@ -164,11 +165,18 @@
 }
   
 .authLogoOutside {
-    width: 60px; 
+    width: 60px;
     height: 60px;
-    margin-bottom: 1.5rem; /* Adjusted margin */
+    margin-bottom: 1.5rem;
     cursor: pointer;
     transition: transform 0.2s ease;
+}
+
+.authFormContainer .authLogoOutside {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 1.5rem;
 }
   
 .authLogoOutside:hover {
@@ -178,17 +186,17 @@
 /* Password requirements styling */
 .passwordRequirements {
   margin-top: 0.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.4rem;
   padding: 0.85rem 1rem;
   border-radius: 8px;
-  background-color: var(--color-background-offset, rgba(0, 0, 0, 0.03)); /* Use a theme variable */
-  border: 1px solid var(--color-border-offset, rgba(0, 0, 0, 0.05)); /* Use a theme variable */
+  background-color: var(--color-background-offset, rgba(0, 0, 0, 0.03));
+  border: 1px solid var(--color-border-offset, rgba(0, 0, 0, 0.05));
 }
 
-.passwordRequirements h3 {
-  font-size: 0.95rem;
+.passwordRequirements h4 {
+  font-size: 0.9rem;
   margin-top: 0;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.4rem;
   font-weight: 500;
   color: var(--color-text-secondary);
 }
@@ -196,20 +204,20 @@
 .passwordValidationList {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.1rem; /* Further reduced from 0.15rem */
 }
 
 .passwordValidationItem {
   display: flex;
   align-items: center;
-  font-size: 0.875rem;
+  font-size: 0.825rem;
   color: var(--color-text-secondary);
 }
 
 .validationIcon {
-  margin-right: 0.6rem;
+  margin-right: 0.5rem;
   width: 1em;
-  font-size: 0.9em;
+  font-size: 0.85em;
 }
 
 .passwordValidationItem.valid .validationIcon {

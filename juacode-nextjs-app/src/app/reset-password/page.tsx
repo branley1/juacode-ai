@@ -17,19 +17,22 @@ export default function ResetPasswordPage() {
   const [messageType, setMessageType] = useState(''); // 'error', 'success', 'warning'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [accessToken, setAccessToken] = useState('');
+  const [refreshToken, setRefreshToken] = useState('');
   
   const router = useRouter();
   const { isUserAuthenticated } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
 
   useEffect(() => {
-    // Get access token from URL fragments (Supabase sends it this way)
-    const hash = window.location.hash;
-    const urlParams = new URLSearchParams(hash.substring(1));
-    const token = urlParams.get('access_token');
-    
+    // Get access and refresh tokens from URL search or hash parameters
+    const { search, hash } = window.location;
+    const searchParams = new URLSearchParams(search);
+    const fragmentParams = new URLSearchParams(hash.substring(1));
+    const token = searchParams.get('access_token') || fragmentParams.get('access_token');
+    const refresh = searchParams.get('refresh_token') || fragmentParams.get('refresh_token');
     if (token) {
       setAccessToken(token);
+      if (refresh) setRefreshToken(refresh);
     } else {
       setMessage('Invalid or missing reset token. Please request a new password reset.');
       setMessageType('error');
@@ -93,7 +96,8 @@ export default function ResetPasswordPage() {
         },
         body: JSON.stringify({ 
           password, 
-          access_token: accessToken 
+          access_token: accessToken,
+          refresh_token: refreshToken
         }),
         signal: controller.signal
       });

@@ -164,6 +164,13 @@
   transition: transform 0.2s ease;
 }
 
+.authFormContainer .authLogoOutside {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 1.5rem;
+}
+
 .authLogoOutside:hover {
   transform: scale(1.05);
 }

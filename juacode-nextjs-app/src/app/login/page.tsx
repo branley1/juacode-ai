@@ -114,14 +114,14 @@ export default function LoginPage() {
       >
         <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} />
       </button>
-      <Image 
-        src={JuaCodeLogo}
-        alt="JuaCode Logo" 
-        className={styles.authLogoOutside}
-        onClick={() => router.push('/')} // Navigate to landing page
-        priority
-      />
       <div className={styles.authFormContainer}>
+        <Image 
+          src={JuaCodeLogo}
+          alt="JuaCode Logo" 
+          className={styles.authLogoOutside}
+          onClick={() => router.push('/')} // Navigate to landing page
+          priority
+        />
         <h2>Login</h2>
         <form onSubmit={handleSubmit}>
           <div>
