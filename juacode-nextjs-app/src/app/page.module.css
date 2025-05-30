@@ -61,7 +61,7 @@
 
 @media (prefers-color-scheme: dark) {
   .ctaButton:hover {
-    background-color: #ccc;
+    background-color: #555;
   }
 }
 

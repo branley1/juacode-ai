@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import styles from '../register/register.module.css'; // Reusing register styles for password validation
@@ -19,7 +19,6 @@ export default function ResetPasswordPage() {
   const [accessToken, setAccessToken] = useState('');
   
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { isUserAuthenticated } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
 
