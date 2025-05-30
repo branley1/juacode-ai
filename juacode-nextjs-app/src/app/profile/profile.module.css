@@ -39,12 +39,12 @@
   padding: 0.5rem 0.75rem;
   border-radius: 0.375rem; /* Tailwind md */
   cursor: pointer;
-  transition: all 0.2s ease;
+  animation: pulse 2s ease-out infinite;
 }
 
 .profileBackButton:hover {
-  opacity: 0.8;
   background-color: var(--color-background-offset, rgba(0,0,0,0.05));
+  animation: pulse 2s ease-out infinite, bounce 0.6s ease-out 1;
 }
 
 .profileDetails {
@@ -147,8 +147,23 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    animation: pulse 2s ease-out infinite;
 }
 
 .themeToggleButton:hover {
     background-color: var(--color-background-offset, rgba(0,0,0,0.05));
+    animation: pulse 2s ease-out infinite, bounce 0.6s ease-out 1;
+}
+
+/* Pulsing animation for theme toggle */
+@keyframes pulse {
+  0% { transform: scale(0.98); }
+  50% { transform: scale(1); }
+  100% { transform: scale(0.98); }
+}
+
+/* Bouncing animation for theme toggle hover */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 } 

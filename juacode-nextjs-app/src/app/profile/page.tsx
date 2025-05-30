@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import styles from './profile.module.css';
+import AvatarPlaceholder from '@/components/AvatarPlaceholder/AvatarPlaceholder';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEnvelope, faIdCard, faArrowLeft, faSignOutAlt, faSun, faMoon, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 
@@ -31,6 +32,11 @@ export default function ProfilePage() {
     logout(); // AuthContext logout will handle clearing data and redirecting
   };
 
+  // Dynamic greeting for profile header
+  const greeting = userData?.username
+    ? `Hi ${userData.username.split(' ')[0]}!`
+    : 'Hi there!';
+
   if (!isUserAuthenticated || !userData) {
     // Show loading or a redirecting message while AuthContext initializes or redirects
     return <div className={styles.loadingMessage}>Loading profile...</div>;
@@ -39,10 +45,10 @@ export default function ProfilePage() {
   return (
     <div className={styles.profilePageContainer}>
       <div className={styles.profilePageHeader}>
-        <button onClick={handleBack} className={styles.profileBackButton}>
+        <button aria-label="Back to Chat" onClick={handleBack} className={styles.profileBackButton}>
           <FontAwesomeIcon icon={faArrowLeft} />
         </button>
-        <h1>Profile</h1>
+        <h2>{greeting}</h2>
         <div className={styles.themeToggleButtonContainer}>
           <button
             onClick={toggleTheme}
@@ -53,7 +59,7 @@ export default function ProfilePage() {
           </button>
         </div>
       </div>
-
+      <AvatarPlaceholder username={userData?.username ?? null} />
       <div className={styles.profileDetails}>
         <div className={styles.profileDetailItem}>
           <FontAwesomeIcon icon={faUser} className={styles.profileDetailIcon} />
