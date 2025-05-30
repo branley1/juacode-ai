@@ -17,7 +17,7 @@ export default function ResetPasswordPage() {
   const [messageType, setMessageType] = useState(''); // 'error', 'success', 'warning'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [accessToken, setAccessToken] = useState('');
-  const [refreshToken, setRefreshToken] = useState('');
+  const [refreshToken, setRefreshToken] = useState<string | undefined>(undefined);
   const [email, setEmail] = useState('');
   
   const router = useRouter();
@@ -25,22 +25,36 @@ export default function ResetPasswordPage() {
   const { isDarkMode, toggleTheme } = useTheme();
 
   useEffect(() => {
-    // Get access and refresh tokens from URL search or hash parameters
+    // Get access, refresh tokens from URL search or hash
     const { search, hash } = window.location;
     const searchParams = new URLSearchParams(search);
-    const emailParam = searchParams.get('email');
-    if (emailParam) setEmail(emailParam);
     const fragmentParams = new URLSearchParams(hash.substring(1));
-    const token = searchParams.get('access_token') || fragmentParams.get('access_token');
-    const refresh = searchParams.get('refresh_token') || fragmentParams.get('refresh_token');
+
+    // Email via query param
+    const emailFromQuery = searchParams.get('email');
+    if (emailFromQuery) {
+      setEmail(emailFromQuery);
+    }
+
+    // Access & refresh tokens from fragment or query
+    const accessTokenFromHash = fragmentParams.get('access_token');
+    const refreshTokenFromHash = fragmentParams.get('refresh_token');
+    const accessTokenFromSearch = searchParams.get('access_token');
+    const refreshTokenFromSearch = searchParams.get('refresh_token');
+
+    const token = accessTokenFromHash || accessTokenFromSearch;
+    const refresh = refreshTokenFromHash || refreshTokenFromSearch;
+
     if (token) {
       setAccessToken(token);
-      if (refresh) setRefreshToken(refresh);
+      setRefreshToken(refresh || undefined);
     } else {
-      setMessage('Invalid or missing reset token. Please request a new password reset.');
+      setMessage('Password reset token not found in URL. Please use the link from your email.');
       setMessageType('error');
+      setAccessToken('');
+      setRefreshToken(undefined);
     }
-  }, []);
+  }, []); // useEffect runs once on mount
 
   // Password validation
   const passwordValidation = {
@@ -197,11 +211,14 @@ export default function ResetPasswordPage() {
         </p>
         
         <form onSubmit={handleSubmit}>
+          {/* For accessibility and password managers, include the username (email) */}
+          {email && <input type="hidden" autoComplete="username" id="username" name="username" value={email} readOnly />}
           <div>
             <label htmlFor="new-password">New Password:</label>
             <input 
               id="new-password"
               type="password" 
+              name="new-password"
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               required 
@@ -260,6 +277,7 @@ export default function ResetPasswordPage() {
             <input 
               id="confirm-password"
               type="password" 
+              name="confirm-password"
               value={confirmPassword} 
               onChange={(e) => setConfirmPassword(e.target.value)} 
               required 
