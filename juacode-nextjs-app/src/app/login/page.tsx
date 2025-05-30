@@ -146,6 +146,28 @@ export default function LoginPage() {
               autoComplete="current-password"
             />
           </div>
+          
+          {/* Forgot Password Link */}
+          <p style={{ textAlign: 'right', margin: '0.5rem 0 1rem 0' }}>
+            <button 
+              type="button"
+              onClick={() => router.push('/forgot-password')} 
+              className={styles.linkButton}
+              style={{ 
+                fontSize: '0.9rem',
+                textDecoration: 'underline',
+                color: 'var(--color-text-secondary)',
+                background: 'none',
+                border: 'none',
+                padding: '0',
+                margin: '0',
+                cursor: 'pointer'
+              }}
+            >
+              Forgot your password?
+            </button>
+          </p>
+          
           <button 
             type="submit" 
             className={styles.authButton}
