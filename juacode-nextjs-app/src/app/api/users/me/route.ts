@@ -53,4 +53,57 @@ export async function GET(req: NextRequest) {
     console.error('[API /users/me] Error fetching user data:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Authorization header missing or invalid' }, { status: 401 });
+    }
+    const token = authHeader.substring(7);
+
+    // Validate token with Supabase
+    const { data: { user: supabaseUser }, error: supabaseError } = await supabase.auth.getUser(token);
+    if (supabaseError || !supabaseUser) {
+      console.error('[API /users/me] Supabase token validation failed:', supabaseError);
+      return NextResponse.json({ error: supabaseError?.message || 'Invalid or expired token' }, { status: 401 });
+    }
+
+    // Parse request body
+    const body = await req.json();
+    const { name } = body;
+    if (!name || typeof name !== 'string') {
+      return NextResponse.json({ error: 'Name is required and must be a string' }, { status: 400 });
+    }
+
+    // Update user name in database
+    const updateQuery = `
+      UPDATE users
+      SET name = $1,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+      RETURNING id, email, name, created_at, updated_at;
+    `;
+    const values = [name, supabaseUser.id];
+    const { rows } = await db.query(updateQuery, values);
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    const updated = rows[0];
+
+    // Map to the User interface
+    const responseUser = {
+      id: updated.id,
+      email: updated.email,
+      username: updated.name,
+      created_at: updated.created_at,
+      updated_at: updated.updated_at,
+    };
+
+    return NextResponse.json(responseUser, { status: 200 });
+  } catch (error) {
+    console.error('[API /users/me] Error updating user data:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 } 

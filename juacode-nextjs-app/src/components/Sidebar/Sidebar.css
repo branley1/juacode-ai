@@ -145,11 +145,14 @@
   border-top: 1px solid var(--color-border-chat-container);
   margin-top: auto;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, border 0.2s ease;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
 }
 
 .sidebar-account:hover {
   background-color: var(--color-background-message-user);
+  border: 1px solid var(--color-border-chat-container);
 }
 
 .account-preview {

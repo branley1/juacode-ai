@@ -1,18 +1,22 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import styles from './profile.module.css';
 import AvatarPlaceholder from '@/components/AvatarPlaceholder/AvatarPlaceholder';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faEnvelope, faIdCard, faArrowLeft, faSignOutAlt, faSun, faMoon, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faEnvelope, faIdCard, faArrowLeft, faSignOutAlt, faSun, faMoon, faCalendarAlt, faEdit } from '@fortawesome/free-solid-svg-icons';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { isUserAuthenticated, userData, logout, fetchUserData } = useAuth();
+  const { isUserAuthenticated, userData, logout, fetchUserData, accessToken } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
+
+  // State for inline name editing
+  const [editing, setEditing] = useState(false);
+  const [editedName, setEditedName] = useState<string>(userData?.username || '');
 
   useEffect(() => {
     if (!isUserAuthenticated) {
@@ -23,6 +27,37 @@ export default function ProfilePage() {
       fetchUserData();
     }
   }, [isUserAuthenticated, router, fetchUserData]);
+
+  useEffect(() => {
+    if (userData?.username) {
+      setEditedName(userData.username);
+    }
+  }, [userData]);
+
+  const handleNameSave = async () => {
+    if (!editedName.trim() || editedName.trim() === userData?.username) {
+      setEditing(false);
+      return;
+    }
+    try {
+      const res = await fetch('/api/users/me', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ name: editedName.trim() }),
+      });
+      if (res.ok && fetchUserData) {
+        await fetchUserData();
+      } else {
+        console.error('Failed to update name:', await res.text());
+      }
+    } catch (error) {
+      console.error('Error updating name:', error);
+    }
+    setEditing(false);
+  };
 
   const handleBack = () => {
     router.push('/chat');
@@ -64,7 +99,30 @@ export default function ProfilePage() {
         <div className={styles.profileDetailItem}>
           <FontAwesomeIcon icon={faUser} className={styles.profileDetailIcon} />
           <div className={styles.profileFieldLabel}>Name:</div>
-          <div className={styles.profileFieldValue}>{userData?.username || 'N/A'}</div>
+          {editing ? (
+            <input
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onBlur={handleNameSave}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleNameSave(); }}
+              className={styles.profileNameInput}
+              autoFocus
+            />
+          ) : (
+            <>
+              <div className={styles.profileFieldValue}>
+                {userData?.username || 'N/A'}
+              </div>
+              <button
+                aria-label="Edit Name"
+                onClick={() => setEditing(true)}
+                className="edit-title-button"
+              >
+                <FontAwesomeIcon icon={faEdit} />
+              </button>
+            </>
+          )}
         </div>
         
         <div className={styles.profileDetailItem}>

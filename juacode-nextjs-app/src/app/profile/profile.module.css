@@ -19,7 +19,7 @@
 }
 
 .profilePageHeader h2 {
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 600;
   margin: 0;
 }
@@ -165,4 +165,39 @@
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
+}
+
+.profileNameInput {
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  flex: 1;
+  background-color: var(--color-input-container-background);
+  color: var(--color-text-input);
+}
+
+.profileNameInput:focus {
+  outline: none;
+  border-color: var(--color-border-chat-container);
+  box-shadow: 0 0 0 2px var(--color-border-chat-container);
+}
+
+.profileEditButton {
+  background: transparent;
+  border: 1px solid var(--color-border-chat-container);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  margin-left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  animation: pulse 2s ease-out infinite;
+}
+
+.profileEditButton:hover {
+  background-color: var(--color-background-offset, rgba(0,0,0,0.05));
+  animation: pulse 2s ease-out infinite, bounce 0.6s ease-out 1;
 } 

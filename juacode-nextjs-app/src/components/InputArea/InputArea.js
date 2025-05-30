@@ -3,9 +3,12 @@ import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faToggleOn, faToggleOff, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import SendIconWhite from '../../assets/send-white.svg';
+import SendIconBlack from '../../assets/send-black.svg';
+import { useTheme } from '@/context/ThemeContext';
 import './InputArea.css';
 
 function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping, currentModel, setCurrentModel, availableModels }) {
+  const { isDarkMode } = useTheme();
   const [input, setInput] = useState('');
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
@@ -13,6 +16,7 @@ function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, mode
   const textareaRef = useRef(null);
   const areaRef = useRef(null);
   const defaultAreaHeightRef = useRef(null);
+  const sendIconSrc = isDarkMode ? SendIconWhite : SendIconBlack;
 
   useLayoutEffect(() => {
     if (!textareaRef.current || !areaRef.current) return;
@@ -137,7 +141,7 @@ function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, mode
           disabled={isTyping}
           className="send-button"
         >
-            <Image src={SendIconWhite} alt="Send" className="send-icon-img" width={24} height={24} />
+          <Image src={sendIconSrc} alt="Send" className="send-icon-img" width={24} height={24} />
         </button>
         </div>
       </div>
