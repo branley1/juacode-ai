@@ -8,6 +8,7 @@ import styles from './profile.module.css';
 import AvatarPlaceholder from '@/components/AvatarPlaceholder/AvatarPlaceholder';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEnvelope, faIdCard, faArrowLeft, faSignOutAlt, faSun, faMoon, faCalendarAlt, faEdit } from '@fortawesome/free-solid-svg-icons';
+import { getRandomUsername } from '@/utils/randomName';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -133,8 +134,10 @@ export default function ProfilePage() {
         
         <div className={styles.profileDetailItem}>
           <FontAwesomeIcon icon={faIdCard} className={styles.profileDetailIcon} />
-          <div className={styles.profileFieldLabel}>User ID:</div>
-          <div className={styles.profileFieldValue}>{userData?.id || 'N/A'}</div>
+          <div className={styles.profileFieldLabel}>Username:</div>
+          <div className={styles.profileFieldValue}>
+            {getRandomUsername(userData.id)}
+          </div>
         </div>
 
          <div className={styles.profileDetailItem}>
