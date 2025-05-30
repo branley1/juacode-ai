@@ -4,6 +4,7 @@ import './Sidebar.css';
 import JuaCodeLogo from '../../assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { icons } from '../../utils/icons';
+import AvatarPlaceholder from '@/components/AvatarPlaceholder/AvatarPlaceholder';
 import { faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 
 // Safely retrieve the chat id from the chat object.
@@ -132,10 +133,7 @@ const Sidebar = forwardRef(({
           toggleSidebar();
         }}>
           <div className="account-preview">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
+            <AvatarPlaceholder username={userData?.username ?? null} size={36} />
             <div className="account-details">
               <p>{userData?.username || 'Guest User'}</p>
               <small>{userData?.email || 'guest@example.com'}</small>
