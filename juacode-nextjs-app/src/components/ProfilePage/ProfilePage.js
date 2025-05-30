@@ -22,7 +22,6 @@ function ProfilePage({ setCurrentView, onLogout }) {
   };
 
   const handleLogout = () => {
-    // Use the onLogout prop which handles clearing localStorage and redirecting
     onLogout();
   };
 

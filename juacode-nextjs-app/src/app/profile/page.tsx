@@ -40,18 +40,18 @@ export default function ProfilePage() {
     <div className={styles.profilePageContainer}>
       <div className={styles.profilePageHeader}>
         <button onClick={handleBack} className={styles.profileBackButton}>
-          <FontAwesomeIcon icon={faArrowLeft} /> Back to Chat
+          <FontAwesomeIcon icon={faArrowLeft} />
         </button>
+        <h1>Profile</h1>
         <div className={styles.themeToggleButtonContainer}>
-            <button 
-                onClick={toggleTheme} 
-                className={styles.themeToggleButton}
-                title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-                <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} />
-            </button>
+          <button
+            onClick={toggleTheme}
+            className={styles.themeToggleButton}
+            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} />
+          </button>
         </div>
-        <h1>Account Details</h1>
       </div>
 
       <div className={styles.profileDetails}>

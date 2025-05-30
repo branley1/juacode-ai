@@ -10,6 +10,7 @@ import JuaCodeLogo from '@/assets/jua-code-logo.png';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPen, faBars, faPlus, faShare, faUser, faCog, faUserCircle, faSun, faMoon, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { fetchUserChats, createChat, updateChat, deleteChat, summarizeChatTitle, generateChatResponse, fetchCurrentUser } from '@/utils/api';
+import { useTheme } from '@/context/ThemeContext';
 
 // Generate a unique string for the chat id.
 const generateUniqueChatId = () => {
@@ -68,12 +69,9 @@ function ChatInterface({
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
   const [currentLlmModel, setCurrentLlmModel] = useState(null);
   const [localUserData, setLocalUserData] = useState(null);
-  // State for theme
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('juaCodeTheme');
-    if (savedTheme) return savedTheme === 'dark';
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  
+  // Use global theme context
+  const { isDarkMode, toggleTheme } = useTheme();
 
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
@@ -180,45 +178,6 @@ function ChatInterface({
   useEffect(() => {
     loadUserChats();
   }, [loadUserChats, isUserAuthenticated]);
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.body.classList.add('dark-theme');
-      localStorage.setItem('juaCodeTheme', 'dark');
-    } else {
-      document.body.classList.remove('dark-theme');
-      localStorage.setItem('juaCodeTheme', 'light');
-    }
-  }, [isDarkMode]);
-
-  // Light/Dark mode toggle
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-    setIsProfileMenuOpen(false);
-  };
-
-  const toggleProfileMenu = () => {
-    setIsProfileMenuOpen(!isProfileMenuOpen);
-  };
-
-  // Effect to handle clicks outside the profile menu to close it
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
-        const profileButton = document.querySelector('.profile-menu-button');
-        if (profileButton && profileButton.contains(event.target)) {
-          return;
-        }
-        setIsProfileMenuOpen(false);
-      }
-    }
-    // Bind the event listener
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      // Unbind the event listener on clean up
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [profileMenuRef]);
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(prev => !prev);
@@ -756,6 +715,29 @@ function ChatInterface({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isSidebarOpen, sidebarRef, toggleSidebar]);
+
+  const toggleProfileMenu = () => {
+    setIsProfileMenuOpen(!isProfileMenuOpen);
+  };
+
+  // Effect to handle clicks outside the profile menu to close it
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        const profileButton = document.querySelector('.profile-menu-button');
+        if (profileButton && profileButton.contains(event.target)) {
+          return;
+        }
+        setIsProfileMenuOpen(false);
+      }
+    }
+    // Bind the event listener
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Unbind the event listener on clean up
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [profileMenuRef]);
 
   return (
     <div className="chat-container">
