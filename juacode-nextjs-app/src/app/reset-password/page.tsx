@@ -18,6 +18,7 @@ export default function ResetPasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [accessToken, setAccessToken] = useState('');
   const [refreshToken, setRefreshToken] = useState('');
+  const [email, setEmail] = useState('');
   
   const router = useRouter();
   const { isUserAuthenticated } = useAuth();
@@ -27,6 +28,8 @@ export default function ResetPasswordPage() {
     // Get access and refresh tokens from URL search or hash parameters
     const { search, hash } = window.location;
     const searchParams = new URLSearchParams(search);
+    const emailParam = searchParams.get('email');
+    if (emailParam) setEmail(emailParam);
     const fragmentParams = new URLSearchParams(hash.substring(1));
     const token = searchParams.get('access_token') || fragmentParams.get('access_token');
     const refresh = searchParams.get('refresh_token') || fragmentParams.get('refresh_token');
@@ -173,6 +176,16 @@ export default function ResetPasswordPage() {
       
       <div className={styles.authFormContainer}>
         <h2>Set New Password</h2>
+        {email && (
+          <p style={{
+            textAlign: 'center',
+            marginBottom: '1rem',
+            color: 'var(--color-text-secondary)',
+            fontSize: '0.95rem'
+          }}>
+            Resetting password for <strong>{email}</strong>
+          </p>
+        )}
         <p style={{ 
           textAlign: 'center', 
           marginBottom: '1.5rem', 

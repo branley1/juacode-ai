@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     if (!siteUrl) {
       throw new Error('Missing env.NEXT_PUBLIC_SITE_URL');
     }
-    const resetUrl = `${siteUrl}/reset-password`;
+    const resetUrl = `${siteUrl}/reset-password?email=${encodeURIComponent(email)}`;
     // Send password reset email using Supabase
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: resetUrl,
