@@ -56,6 +56,8 @@ function ChatInterface({
   onLogout
 }) {
   const [messages, setMessages] = useState([]);
+  const [messageResponses, setMessageResponses] = useState({}); // Track multiple responses per message
+  const [currentResponseIndices, setCurrentResponseIndices] = useState({}); // Track which response is being shown
   const [chatStarted, setChatStarted] = useState(false);
   const [chatTitle, setChatTitle] = useState('New Chat');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -69,7 +71,7 @@ function ChatInterface({
   const [isChatPersisted, setIsChatPersisted] = useState(false);
   const [streamingIndex, setStreamingIndex] = useState(null);
   const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
-  const [currentLlmModel, setCurrentLlmModel] = useState(null);
+  const [currentLlmModel, setCurrentLlmModel] = useState('deepseek-chat');
   const [localUserData, setLocalUserData] = useState(null);
   
   // Use global theme context
@@ -734,6 +736,74 @@ function ChatInterface({
     setIsSettingsOpen(true);
   };
 
+  const handleRateMessage = async (messageId, rating) => {
+    try {
+      await fetch(`/api/chats/${currentChatId}/messages/${messageId}/rate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({ rating })
+      });
+    } catch (error) {
+      // Handle error silently
+    }
+  };
+
+  const handleRerunWithModel = async (messageId, newModel) => {
+    try {
+      const response = await fetch(`/api/chats/${currentChatId}/messages/${messageId}/rerun`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({ model: newModel })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to rerun message');
+      }
+
+      const data = await response.json();
+      
+      // Update the message responses
+      setMessageResponses(prev => {
+        const currentResponses = prev[messageId] || [];
+        return {
+          ...prev,
+          [messageId]: [...currentResponses, { content: data.content, model: newModel }]
+        };
+      });
+
+      // Set the current response index to the new response
+      setCurrentResponseIndices(prev => ({
+        ...prev,
+        [messageId]: (prev[messageId] || 0) + 1
+      }));
+
+      // Update the last model used
+      setCurrentLlmModel(newModel);
+    } catch (error) {
+      // Handle error silently
+    }
+  };
+
+  const handleResponseChange = (messageId, direction) => {
+    setCurrentResponseIndices(prev => {
+      const currentIndex = prev[messageId] || 0;
+      const totalResponses = messageResponses[messageId]?.length || 1;
+      
+      if (direction === 'prev' && currentIndex > 0) {
+        return { ...prev, [messageId]: currentIndex - 1 };
+      } else if (direction === 'next' && currentIndex < totalResponses - 1) {
+        return { ...prev, [messageId]: currentIndex + 1 };
+      }
+      return prev;
+    });
+  };
+
   return (
     <div className="chat-container">
       <Sidebar
@@ -944,16 +1014,29 @@ function ChatInterface({
                 </div>
               </div>
               <div className="chat-messages" ref={chatMessagesRef}>
-                {messages.map((message, index) => (
-                  <ChatMessage
-                    key={index}
-                    index={index}
-                    role={message.role}
-                    content={message.content}
-                    streamingIndex={streamingIndex}
-                    chatMessagesRef={chatMessagesRef}
-                  />
-                ))}
+                {messages.map((message, index) => {
+                  const messageId = message.id || index;
+                  const responses = messageResponses[messageId] || [];
+                  const currentResponseIndex = currentResponseIndices[messageId] || 0;
+                  const totalResponses = responses.length + 1; // +1 for original response
+                  
+                  return (
+                    <ChatMessage
+                      key={messageId}
+                      role={message.role}
+                      content={currentResponseIndex === 0 ? message.content : responses[currentResponseIndex - 1].content}
+                      index={index}
+                      streamingIndex={streamingIndex}
+                      lastModelUsed={currentResponseIndex === 0 ? currentLlmModel : responses[currentResponseIndex - 1].model}
+                      onRate={(rating) => handleRateMessage(messageId, rating)}
+                      onRerun={(model) => handleRerunWithModel(messageId, model)}
+                      availableModels={AVAILABLE_MODELS}
+                      responseIndex={currentResponseIndex}
+                      totalResponses={totalResponses}
+                      onResponseChange={(direction) => handleResponseChange(messageId, direction)}
+                    />
+                  );
+                })}
                 {isTyping && (
                   <div className="chat-message assistant assistant-typing">
                     <Image src={JuaCodeLogo} alt="JuaCode Icon" className="profile-icon" width={40} height={40} />

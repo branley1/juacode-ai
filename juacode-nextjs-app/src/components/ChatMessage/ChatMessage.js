@@ -8,23 +8,23 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useTheme } from '@/context/ThemeContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faCopy, faCheck, faThumbsUp, faThumbsDown, faSync, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import remarkGfm from 'remark-gfm';
+import PropTypes from 'prop-types';
 
 function extractThoughtAndMain(content) {
+  if (!content) return { mainContent: '', thoughtContent: null };
+  
   const startIndex = content.indexOf('<think>');
   if (startIndex === -1) {
-    // No thought block present.
     return { mainContent: content, thoughtContent: null };
   }
   const endIndex = content.indexOf('</think>');
   if (endIndex !== -1 && endIndex > startIndex) {
-    // Both opening and closing tags are present.
     const thoughtContent = content.substring(startIndex + 7, endIndex).trim();
     const mainContent = (content.substring(0, startIndex) + content.substring(endIndex + 8)).trim();
     return { mainContent, thoughtContent };
   } else {
-    // The closing tag hasn't arrived yet, so stream what we have.
     const thoughtContent = content.substring(startIndex + 7).trim();
     const mainContent = content.substring(0, startIndex).trim();
     return { mainContent, thoughtContent };
@@ -208,11 +208,27 @@ const MarkdownComponents = {
   )
 };
 
-function ChatMessage({ role, content, index, streamingIndex }) {
+function ChatMessage({ 
+  role, 
+  content = '', 
+  index, 
+  streamingIndex, 
+  lastModelUsed, 
+  onRate, 
+  onRerun, 
+  availableModels = [],
+  responseIndex = 0,
+  totalResponses = 1,
+  onResponseChange
+}) {
   const [displayText, setDisplayText] = useState('');
   const [charIndex, setCharIndex] = useState(0);
   const [parsedContent, setParsedContent] = useState({ mainContent: '', thoughtContent: null });
+  const [isCopied, setIsCopied] = useState(false);
+  const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const isInitialStreamForThisMessageRef = useRef(true);
+  const { isDarkMode } = useTheme();
+  const modelSelectorRef = useRef(null);
 
   useEffect(() => {
     const newParsed = extractThoughtAndMain(content);
@@ -253,6 +269,48 @@ function ChatMessage({ role, content, index, streamingIndex }) {
     }
   }, [role, parsedContent.mainContent, charIndex, index, streamingIndex, displayText]);
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(parsedContent.mainContent);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
+
+  const handleRate = (rating) => {
+    if (onRate) {
+      onRate(index, rating);
+    }
+  };
+
+  const handleModelSelect = (model) => {
+    if (onRerun) {
+      onRerun(index, model);
+    }
+    setIsModelSelectorOpen(false);
+  };
+
+  const handleResponseChange = (direction) => {
+    if (onResponseChange) {
+      onResponseChange(direction);
+    }
+  };
+
+  // Effect to handle clicks outside the model selector
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (modelSelectorRef.current && !modelSelectorRef.current.contains(event.target)) {
+        setIsModelSelectorOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [modelSelectorRef]);
+
   return (
     <div
       className={`chat-message ${role}`}
@@ -282,9 +340,96 @@ function ChatMessage({ role, content, index, streamingIndex }) {
             <span className="blinking-caret">▍</span>
           )}
         </div>
+        {role === 'assistant' && (
+          <div className="message-actions">
+            <button 
+              className="message-action-button copy-button" 
+              onClick={handleCopy}
+              title="Copy message"
+            >
+              <FontAwesomeIcon icon={isCopied ? faCheck : faCopy} />
+            </button>
+            <button 
+              className="message-action-button rate-button" 
+              onClick={() => handleRate('good')}
+              title="Rate as good"
+            >
+              <FontAwesomeIcon icon={faThumbsUp} />
+            </button>
+            <button 
+              className="message-action-button rate-button" 
+              onClick={() => handleRate('bad')}
+              title="Rate as bad"
+            >
+              <FontAwesomeIcon icon={faThumbsDown} />
+            </button>
+            <div className="model-selector-container" ref={modelSelectorRef}>
+              <button 
+                className="message-action-button model-button" 
+                onClick={() => setIsModelSelectorOpen(!isModelSelectorOpen)}
+                title="Switch model"
+              >
+                <FontAwesomeIcon icon={faSync} />
+              </button>
+              {isModelSelectorOpen && (
+                <div className="model-selector-dropdown">
+                  {availableModels.map(model => (
+                    <button
+                      key={model.value}
+                      className={`model-option ${model.value === lastModelUsed ? 'selected' : ''}`}
+                      onClick={() => handleModelSelect(model.value)}
+                    >
+                      {model.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {totalResponses > 1 && (
+              <div className="response-navigation">
+                <button
+                  className="response-nav-button"
+                  onClick={() => handleResponseChange('prev')}
+                  disabled={responseIndex === 0}
+                  title="Previous response"
+                >
+                  ←
+                </button>
+                <span className="response-counter">
+                  {responseIndex + 1}/{totalResponses}
+                </span>
+                <button
+                  className="response-nav-button"
+                  onClick={() => handleResponseChange('next')}
+                  disabled={responseIndex === totalResponses - 1}
+                  title="Next response"
+                >
+                  →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+ChatMessage.propTypes = {
+  role: PropTypes.oneOf(['user', 'assistant', 'system']).isRequired,
+  content: PropTypes.string,
+  index: PropTypes.number.isRequired,
+  streamingIndex: PropTypes.number,
+  lastModelUsed: PropTypes.string,
+  onRate: PropTypes.func,
+  onRerun: PropTypes.func,
+  availableModels: PropTypes.arrayOf(PropTypes.shape({
+    value: PropTypes.string.isRequired,
+    label: PropTypes.string.isRequired
+  })),
+  responseIndex: PropTypes.number,
+  totalResponses: PropTypes.number,
+  onResponseChange: PropTypes.func
+};
 
 export default ChatMessage;
