@@ -164,3 +164,30 @@
   background: none !important;
   width: 100% !important;
 }
+
+/* Code block scrollbar styling */
+.code-block-wrapper pre,
+.code-block-wrapper .react-syntax-highlighter pre {
+  /* Webkit browsers */
+  &::-webkit-scrollbar {
+    width: 1px;
+    height: 1px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}

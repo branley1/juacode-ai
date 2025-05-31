@@ -5,7 +5,8 @@ import ThoughtBlock from '../ThoughtBlock/ThoughtBlock';
 import './ChatMessage.css';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { vscDarkPlus, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useTheme } from '@/context/ThemeContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
 
@@ -30,6 +31,7 @@ function extractThoughtAndMain(content) {
 }
 
 const CodeBlock = ({node, inline, className, children, ...props}) => {
+  const { isDarkMode } = useTheme();
   const match = /language-(\w+)/.exec(className || '');
   const codeString = String(children).replace(/\n$/, '');
   const [copied, setCopied] = useState(false);
@@ -50,10 +52,10 @@ const CodeBlock = ({node, inline, className, children, ...props}) => {
           </button>
         </div>
         <SyntaxHighlighter
-          style={dracula}
+          style={isDarkMode ? vscDarkPlus : oneLight}
           language={language}
           PreTag="div"
-          customStyle={{ margin: 0, padding: '1em', background: 'none', fontSize: '0.9em' }}
+          customStyle={{ margin: 0, padding: '1em', fontSize: '0.9em' }}
           {...props}
         >
           {codeString}
