@@ -226,3 +226,25 @@
   color: var(--color-text-secondary);
   font-size: 16px;
 }
+
+/* Stop button styling */
+.stop-button {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-error, #e00);
+}
+.stop-button:hover {
+  transform: translateY(-1px);
+  background-color: var(--color-error-background, rgba(224, 0, 0, 0.1));
+}

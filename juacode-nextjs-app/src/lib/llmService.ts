@@ -11,7 +11,6 @@ export interface LLMConfig {
   max_tokens?: number;
   temperature?: number;
   model?: string;
-  reasoning?: { effort?: string; summary?: string };
 }
 
 export type LLMProvider = 'openai' | 'deepseek' | 'gemini';
@@ -97,7 +96,7 @@ async function generateDeepSeekCompletion(
   const { 
     stream = true, 
     // max_tokens = 2000, 
-    temperature = 1, 
+    temperature = 0.7, 
     model = 'deepseek-chat'
   } = config;
 
@@ -184,80 +183,47 @@ async function generateOpenAICompletion(
     throw new Error('OpenAI API key not found or client not initialized. OpenAI provider will be unavailable.');
   }
 
-  const {
-    stream = true,
-    model = process.env.OPENAI_MODEL || 'o4-mini-2025-04-16',
-    reasoning
+  const { 
+    stream = true, 
+    temperature = process.env.OPENAI_TEMPERATURE ? parseFloat(process.env.OPENAI_TEMPERATURE) : 0.7, 
+    model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo' // Fallback model (o4-mini-2025-04-16)
   } = config;
-  // Determine temperature: use explicit config value or environment; leave undefined for API default
-  const temperature = config.temperature ?? (process.env.OPENAI_TEMPERATURE ? parseFloat(process.env.OPENAI_TEMPERATURE) : undefined);
   const maxTokens = config.max_tokens || (process.env.OPENAI_MAX_TOKENS ? parseInt(process.env.OPENAI_MAX_TOKENS) : 2000);
 
+  // Filter out system messages if the model doesn't support them directly in the main list, or handle as per API docs
+  // OpenAI generally supports system messages as the first message.
   const openAIMessages = messages.map(m => ({
-    role: m.role === 'model' ? 'assistant' : m.role,
+    role: m.role === 'model' ? 'assistant' : m.role, // Ensure role is compatible
     content: m.content
   })) as OpenAI.Chat.Completions.ChatCompletionMessageParam[];
 
   try {
     if (stream) {
-      const streamingParams: any = { model, messages: openAIMessages, max_completion_tokens: maxTokens, stream: true };
-      if (temperature !== undefined && !model.startsWith('o4-mini')) {
-        streamingParams.temperature = temperature;
-      }
-      if (reasoning) {
-        streamingParams.reasoning = reasoning;
-      }
-      const responseStream = await openaiClient.chat.completions.create(streamingParams) as unknown as AsyncIterable<any>;
+      const responseStream = await openaiClient.chat.completions.create({
+        model: model,
+        messages: openAIMessages,
+        temperature: temperature,
+        max_tokens: maxTokens,
+        stream: true,
+      });
 
       async function* contentStream(): AsyncGenerator<string, void, unknown> {
-        let thinkTagOpen = false;
         for await (const chunk of responseStream) {
-          let yieldBuffer = '';
-          const delta = chunk.choices[0]?.delta as any;
-
-          if (delta.reasoning_content) {
-            if (!thinkTagOpen) {
-              yieldBuffer += '<think>';
-              thinkTagOpen = true;
-            }
-            yieldBuffer += delta.reasoning_content;
+          if (chunk.choices && chunk.choices[0]?.delta?.content) {
+            yield chunk.choices[0].delta.content;
           }
-          if (delta.content) {
-            if (thinkTagOpen) {
-              yieldBuffer += '</think>';
-              thinkTagOpen = false;
-            }
-            yieldBuffer += delta.content;
-          }
-          if (yieldBuffer) {
-            yield yieldBuffer;
-          }
-        }
-        if (thinkTagOpen) {
-          yield '</think>';
         }
       }
       return contentStream();
     } else {
-      const nonStreamingParams: any = { model, messages: openAIMessages, max_completion_tokens: maxTokens, stream: false };
-      if (temperature !== undefined && !model.startsWith('o4-mini')) {
-        nonStreamingParams.temperature = temperature;
-      }
-      if (reasoning) {
-        nonStreamingParams.reasoning = reasoning;
-      }
-      const response = await openaiClient.chat.completions.create(nonStreamingParams);
-      const message = response.choices[0]?.message;
-      let fullContent = '';
-      if (message) {
-        if ('reasoning_content' in message && typeof message.reasoning_content === 'string') {
-          fullContent += `<think>${message.reasoning_content}</think>`;
-        }
-        if ('content' in message && typeof message.content === 'string') {
-          fullContent += (fullContent ? '\n\n' : '') + message.content.trim();
-        }
-      }
-      return fullContent;
+      const response = await openaiClient.chat.completions.create({
+        model: model,
+        messages: openAIMessages,
+        temperature: temperature,
+        max_tokens: maxTokens,
+        stream: false,
+      });
+      return response.choices[0]?.message?.content?.trim() || '';
     }
   } catch (error: unknown) {
     type PgError = { message?: string };
@@ -340,29 +306,30 @@ async function generateGeminiCompletion(
       return contentStream();
     } else {
       const result = await generativeModel.generateContent({ contents: geminiMessages, generationConfig, safetySettings });
+      // Debug logs for Gemini title generation
+      console.log('Gemini title gen - systemInstructionContent:', systemInstructionContent);
+      console.log('Gemini title gen - messages:', geminiMessages);
+      console.log('Gemini title gen - raw result:', result);
+      // Handle non-streaming response: prefer text() if available
       const response = result.response;
-      
-      if (response && response.candidates && response.candidates.length > 0) {
-        const candidate = response.candidates[0];
-        
-        if (candidate.finishReason && candidate.finishReason !== 'STOP' && candidate.finishReason !== 'MAX_TOKENS') {
-          if (candidate.safetyRatings) {
-          }
-          if (response.promptFeedback) {
-          }
-          return ''; 
+      let content = '';
+      if (response && typeof (response as any).text === 'function') {
+        try {
+          content = await (response as any).text();
+        } catch (e) {
+          console.error('Error calling response.text():', e);
+          content = '';
         }
-        // Consolidate parts for non-streaming response as well
+      } else if (response && (response as any).candidates && Array.isArray((response as any).candidates) && (response as any).candidates.length > 0) {
+        const candidate = (response as any).candidates[0];
         if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-          const text = candidate.content.parts.map(part => part.text).join('').trim();
-          return text;
+          content = candidate.content.parts
+            .map((part: { text: string }) => part.text)
+            .join('')
+            .trim();
         }
-        return ''; // Return empty if no parts even with normal finish
-      } else {
-        if (response?.promptFeedback) {
-        }
-        return '';
       }
+      return content.trim();
     }
   } catch (error: unknown) {
     type PgError = { message?: string };

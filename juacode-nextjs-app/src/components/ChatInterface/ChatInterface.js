@@ -82,6 +82,12 @@ function ChatInterface({
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // Abort controller for stopping streaming responses
+  const [abortController, setAbortController] = useState(null);
+  const handleStop = useCallback(() => {
+    if (abortController) abortController.abort();
+  }, [abortController]);
+
   // Effect to load user data from API or localStorage
   useEffect(() => {
     const loadUserData = async () => {
@@ -403,6 +409,9 @@ function ChatInterface({
 
   // Main message handling function
   const simulateResponse = async (input, selectedModelFromInputArea) => {
+    // Initialize abort controller for this request
+    const controller = new AbortController();
+    setAbortController(controller);
     const localChatId = currentChatId;
     let localIsChatPersisted = isChatPersisted;
     const localChatTitle = chatTitle;
@@ -431,8 +440,8 @@ function ChatInterface({
         selected_model: selectedModelFromInputArea
       };
 
-      // Use the new generateChatResponse function from api.ts
-      const res = await generateChatResponse(requestBody);
+      // Use the new generateChatResponse function from api.ts with abort signal
+      const res = await generateChatResponse(requestBody, { signal: controller.signal });
       
       const reader = res.body.getReader();
       const decoder = new TextDecoder('utf-8');
@@ -646,6 +655,12 @@ function ChatInterface({
       }
 
     } catch (error) {
+      // Handle user-initiated abort
+      if (error.name === 'AbortError') {
+        setIsTyping(false);
+        setStreamingIndex(null);
+        return;
+      }
       let userFacingErrorMessage;
       let detailedLogMessage;
 
@@ -669,6 +684,8 @@ function ChatInterface({
         setStreamingIndex(null);
       }
     } finally {
+      // Cleanup abort controller after request completes or errors
+      setAbortController(null);
       if (isTyping) setIsTyping(false);
     }
   };
@@ -832,6 +849,7 @@ function ChatInterface({
               </div>
               <Image 
                 src={JuaCodeLogo}
+                priority
                 alt="JuaCode Logo" 
                 className="landing-logo" 
                 style={{ display: 'block', margin: '20px auto', width: '100px', height: '100px' }} 
@@ -859,6 +877,7 @@ function ChatInterface({
                 setCurrentModel={setCurrentModel}
                 availableModels={AVAILABLE_MODELS}
                 isDarkMode={isDarkMode}
+                onStop={handleStop}
               />
             </div>
           ) : (
@@ -970,6 +989,7 @@ function ChatInterface({
                 setCurrentModel={setCurrentModel}
                 availableModels={AVAILABLE_MODELS}
                 isDarkMode={isDarkMode}
+                onStop={handleStop}
               />
             </div>
           )}

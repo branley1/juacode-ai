@@ -188,7 +188,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
         return setCorsHeaders(R);
     }
     
-    const systemPromptText = "You are a witty headline writer. Craft a quirky, context-dependent title of 3-5 words that playfully captures this conversation's essence—use puns or playful language tied to key topics. Output only the title.";
+    const systemPromptText = "Create a short, concise chat title of 3-4 words that summarizes the core topic or purpose of this conversation. Focus on the specific subject matter. Do not include any other phrases. Only output the title with no quotes or other formatting.";
     const systemPrompt: LLMMessage = {
       role: 'system',
       content: systemPromptText
@@ -196,11 +196,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
 
     const titleGenerationPayload: LLMMessage[] = [systemPrompt, ...llmMessages];
 
-    const llmProvider: LLMProvider = 'deepseek';
+    const llmProvider: LLMProvider = 'gemini';
     const llmConfig: LLMConfig = {
       stream: false, 
       max_tokens: 20, 
-      temperature: 1,
+      temperature: 0.5,
     };
     
 
@@ -208,6 +208,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
     try {
         newTitleRaw = await generateChatCompletion(llmProvider, titleGenerationPayload, llmConfig);
     } catch (llmError: unknown) {
+        // Log title generation errors for debugging
+        console.error('Title generation error with Gemini provider:', llmError);
         let message = 'LLM service error during title generation.';
         if (llmError instanceof Error) message = llmError.message;
         const R = NextResponse.json({ error: message }, { status: 502 });
@@ -218,7 +220,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
       newTitleRaw = "Chat Summary"; 
     }
 
-    let newTitle = newTitleRaw.replace(/[\"\'*`~#\"\']/g, '').trim();
+    let newTitle = newTitleRaw.replace(/[\"\'\*`~#\"\']/g, '').trim();
+    // Log the generated title for debugging
+    console.log(`Generated title for chat ${chat_id}:`, newTitle);
     const words = newTitle.split(/\s+/);
     if (words.length > 4) {
       newTitle = words.slice(0, 4).join(' ');

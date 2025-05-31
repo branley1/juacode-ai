@@ -233,25 +233,30 @@ interface GeneratePayload {
     selected_model: string; // e.g., 'deepseek-chat', 'gemini-2.5-pro-preview-05-06'
 }
 
-export const generateChatResponse = async (payload: GeneratePayload): Promise<Response> => {
+export const generateChatResponse = async (
+    payload: GeneratePayload,
+    init: RequestInit = {}
+): Promise<Response> => {
     // Use makeAuthenticatedRequest to ensure the call to /api/generate is authenticated.
     try {
-        const response = await makeAuthenticatedRequest('/api/generate', {
+        const requestOptions: RequestInit = {
             method: 'POST',
             headers: {
                 // 'Content-Type' is handled by makeAuthenticatedRequest
-                'Accept': 'application/json' // Or 'text/event-stream' if that's what it always returns
+                'Accept': 'application/json'
             },
             body: JSON.stringify(payload),
-        });
+            ...init
+        };
+        const response = await makeAuthenticatedRequest('/api/generate', requestOptions);
 
         // makeAuthenticatedRequest already checks for response.ok and handles 401.
         // If we are here, response should be ok.
         // However, the original function threw an error if !response.ok, 
         // makeAuthenticatedRequest does this too, but for 401 it has specific behavior.
         // We might want to ensure any non-2xx status is still an error here if not a 401 handled by logout.
-        if (!response.ok) { // This check might be redundant if makeAuthenticatedRequest handles all non-2xx as errors.
-            const errorBody = await response.text(); // Get raw error body
+        if (!response.ok) {
+            const errorBody = await response.text();
             throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
         }
         return response; // Return the raw response for the caller to handle streaming

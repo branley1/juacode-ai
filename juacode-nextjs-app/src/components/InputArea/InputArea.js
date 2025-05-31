@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faToggleOn, faToggleOff, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
+import { faToggleOn, faToggleOff, faChevronDown, faChevronUp, faStop } from '@fortawesome/free-solid-svg-icons';
 import SendIconWhite from '../../assets/send-white.svg';
 import SendIconBlack from '../../assets/send-black.svg';
 import { useTheme } from '@/context/ThemeContext';
 import './InputArea.css';
 
-function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping, currentModel, setCurrentModel, availableModels }) {
+function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping, currentModel, setCurrentModel, availableModels, onStop }) {
   const { isDarkMode } = useTheme();
   const [input, setInput] = useState('');
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
@@ -134,14 +134,22 @@ function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, mode
                 ))}
               </div>
             )}
-        </div>
-        <button
-          onClick={handleSend}
-          disabled={isTyping}
-          className="send-button"
-        >
-          <Image src={sendIconSrc} alt="Send" className="send-icon-img" width={24} height={24} />
-        </button>
+          </div>
+          {isTyping ? (
+            <button type="button" onClick={onStop} className="stop-button" aria-label="Stop">
+              <FontAwesomeIcon icon={faStop} size="lg" style={{ color: isDarkMode ? '#fff' : '#000' }} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={isTyping}
+              className="send-button"
+              aria-label="Send"
+            >
+              <Image src={sendIconSrc} alt="Send" className="send-icon-img" width={24} height={24} />
+            </button>
+          )}
         </div>
       </div>
     </div>
