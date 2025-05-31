@@ -4,7 +4,7 @@ JuaCode AI is a modern AI chat application built with Next.js that integrates mu
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/d72b0fd0-c106-49d8-aa94-9eea18ebacc6/deploy-status)](https://app.netlify.com/projects/juacode/deploys)
 
-## 🚀 Technology Stack
+## Tech Stack
 
 - **Frontend & Backend:** Next.js 15+ with TypeScript
 - **Database:** PostgreSQL with Prisma ORM
@@ -16,7 +16,7 @@ JuaCode AI is a modern AI chat application built with Next.js that integrates mu
 - **Deployment:** Netlify
 - **Styling:** CSS with responsive design
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 juacode-ai/
@@ -44,7 +44,7 @@ juacode-ai/
 └── README.md                    # This file
 ```
 
-## 🛠️ Setup Instructions
+## Setup
 
 ### Prerequisites
 - Node.js 18.18.0 or higher
@@ -106,7 +106,7 @@ JWT_SECRET="your_jwt_secret_key"
 
    The application will be available at `http://localhost:3000`
 
-## ✨ Features
+## Features
 
 - **Multi-Provider AI Chat:** Switch between OpenAI, Deepseek, and Gemini models
 - **Reasoning Mode:** Special reasoning models for complex problem-solving (Deepseek)
@@ -116,7 +116,7 @@ JWT_SECRET="your_jwt_secret_key"
 - **Chat History:** Persistent chat sessions with database storage
 - **Syntax Highlighting:** Code block rendering with copy functionality
 
-## 🚀 Deployment
+## Deployment
 
 The application is configured for deployment on Netlify:
 
@@ -128,7 +128,7 @@ npm run build
 npm start
 ```
 
-## 📱 Usage
+## Usage
 
 Users can:
 - Choose between different AI models (OpenAI, Deepseek, Gemini)
@@ -141,10 +141,10 @@ Here's JuaCode AI in action (users can choose between `regular` and `reasoning` 
 
 https://github.com/user-attachments/assets/9b466254-2d59-46a2-acec-e54d976b5d5e
 
-## 🤝 Contributing
+## Contributing
 
 Feel free to dive into the codebase for more detailed insights and potential contributions!
 
-## 📄 License
+## License
 
 [View License](LICENSE)
