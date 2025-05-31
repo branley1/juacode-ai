@@ -49,7 +49,6 @@ export async function authenticateRequest(req: NextRequest): Promise<AuthResult>
       }
     };
   } catch (error) {
-    console.error('Authentication error:', error);
     return {
       success: false,
       error: 'Authentication failed'
@@ -63,6 +62,5 @@ export async function authenticateRequest(req: NextRequest): Promise<AuthResult>
  */
 export async function authenticateRequestFallback(req: NextRequest): Promise<AuthResult> {
   // Fallback logic has been removed. Directly use authenticateRequest.
-  console.log('[AUTH] authenticateRequestFallback called, redirecting to authenticateRequest.');
   return await authenticateRequest(req);
 } 

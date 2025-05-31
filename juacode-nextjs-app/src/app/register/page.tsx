@@ -47,7 +47,6 @@ export default function RegisterPage() {
   const passwordsMatch = password === confirmPassword && confirmPassword !== '';
 
   const performRegistrationAttempt = async (attemptNumber: number, signal: AbortSignal) => {
-    console.log('Sending request to: /api/users/register');
     const res = await fetch('/api/users/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -130,7 +129,6 @@ export default function RegisterPage() {
         }
 
         // If res.ok is true
-        console.log('Registration successful:', responseBody);
         setRegisteredEmail(email);
         setIsRegistered(true);
         success = true; // Mark as success to exit loop

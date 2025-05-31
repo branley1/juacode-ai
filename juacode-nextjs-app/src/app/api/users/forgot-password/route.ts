@@ -60,7 +60,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      console.error('Supabase password reset error:', error);
       
       // Don't reveal whether the email exists or not for security
       // Return success message regardless
@@ -82,7 +81,6 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    console.error('Forgot password error:', error);
     const message = 'Failed to process password reset request.';
     let detail = '';
     if (error instanceof Error) detail = error.message;

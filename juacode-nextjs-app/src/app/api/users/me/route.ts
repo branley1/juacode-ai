@@ -15,7 +15,6 @@ export async function GET(req: NextRequest) {
     const { data: { user: supabaseUser }, error: supabaseError } = await supabase.auth.getUser(token);
 
     if (supabaseError || !supabaseUser) {
-      console.error('[API /users/me] Supabase token validation failed:', supabaseError);
       return NextResponse.json({ error: supabaseError?.message || 'Invalid or expired token' }, { status: 401 });
     }
 
@@ -28,7 +27,6 @@ export async function GET(req: NextRequest) {
       // This case might mean the user exists in Supabase auth but not in your public users table yet.
       // Depending on your app logic, you might create it here or consider it an error.
       // For now, we'll treat it as user not found in the profile table.
-      console.warn(`[API /users/me] User ${supabaseUser.id} found in Supabase auth but not in local profile table.`);
       // Optionally, you could return parts of supabaseUser if that's acceptable, 
       // or enforce profile existence more strictly.
       // For consistency with the AuthContext User type, we try to return a full profile.
@@ -50,7 +48,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(responseUser, { status: 200 });
 
   } catch (error) {
-    console.error('[API /users/me] Error fetching user data:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -66,7 +63,6 @@ export async function PUT(req: NextRequest) {
     // Validate token with Supabase
     const { data: { user: supabaseUser }, error: supabaseError } = await supabase.auth.getUser(token);
     if (supabaseError || !supabaseUser) {
-      console.error('[API /users/me] Supabase token validation failed:', supabaseError);
       return NextResponse.json({ error: supabaseError?.message || 'Invalid or expired token' }, { status: 401 });
     }
 
@@ -103,7 +99,6 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(responseUser, { status: 200 });
   } catch (error) {
-    console.error('[API /users/me] Error updating user data:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

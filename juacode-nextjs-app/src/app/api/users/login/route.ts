@@ -40,7 +40,6 @@ export async function POST(req: NextRequest) {
     // If bypass_confirmation is true and we're in a development environment, 
     // allow login without email confirmation (for testing only)
     if (bypass_confirmation && process.env.NODE_ENV === 'development') {
-      console.log('Bypassing email confirmation for testing in development environment');
       
       // First try to sign in - this might fail if email is not confirmed
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -58,14 +57,12 @@ export async function POST(req: NextRequest) {
             VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT (id) DO UPDATE
             SET email = EXCLUDED.email,
-                name = COALESCE(EXCLUDED.name, users.name),
                 updated_at = CURRENT_TIMESTAMP;
           `;
           const upsertValues = [data.user.id, data.user.user_metadata?.name || null, data.user.email];
           await db.query(upsertQuery, upsertValues);
         } catch (profileError) {
           // Log but do not fail the login if profile insert fails; chats may still fail separately and expose the error.
-          console.error('[Login] Failed to upsert user profile row:', profileError);
         }
 
         return NextResponse.json(
@@ -96,7 +93,6 @@ export async function POST(req: NextRequest) {
             const userData = rows[0];
             
             // Log it but don't auto-confirm in production
-            console.log('Test mode: Would confirm email for user:', userData.id);
             
             return NextResponse.json(
               {
@@ -111,7 +107,6 @@ export async function POST(req: NextRequest) {
             );
           }
         } catch (dbError) {
-          console.error('Error fetching user data:', dbError);
         }
       }
     }
@@ -123,7 +118,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      console.error('Supabase sign in error:', error);
       
       if (error.message.includes('Email not confirmed')) {
         return NextResponse.json({ 
@@ -163,14 +157,12 @@ export async function POST(req: NextRequest) {
         VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ON CONFLICT (id) DO UPDATE
         SET email = EXCLUDED.email,
-            name = COALESCE(EXCLUDED.name, users.name),
             updated_at = CURRENT_TIMESTAMP;
       `;
       const upsertValues = [data.user.id, data.user.user_metadata?.name || null, data.user.email];
       await db.query(upsertQuery, upsertValues);
     } catch (profileError) {
       // Log but do not fail the login if profile insert fails; chats may still fail separately and expose the error.
-      console.error('[Login] Failed to upsert user profile row:', profileError);
     }
 
     return NextResponse.json(
@@ -192,7 +184,6 @@ export async function POST(req: NextRequest) {
     );
 
   } catch (error: unknown) {
-    console.error('Login error:', error);
     const message = 'Login failed.';
     let detail = '';
     if (error instanceof Error) detail = error.message;

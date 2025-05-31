@@ -51,7 +51,6 @@ export async function PUT(req: NextRequest, context: { params: Promise<RoutePara
     // Authenticate the user
     const authResult = await authenticateRequest(req);
     if (!authResult.success || !authResult.user) {
-      console.error('[API Chats PUT] Authentication failed:', authResult.error);
       const R = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
       return setCorsHeaders(R);
     }
@@ -113,7 +112,6 @@ export async function PUT(req: NextRequest, context: { params: Promise<RoutePara
     return setCorsHeaders(Rfinal);
 
   } catch (error: unknown) {
-    console.error('Error updating chat:', error);
     let message = 'Error updating chat.';
     if (error instanceof Error) message = error.message;
     type PgError = { code?: string; message?: string };
@@ -146,7 +144,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
     // Authenticate the user
     const authResult = await authenticateRequest(req);
     if (!authResult.success || !authResult.user) {
-      console.error('[API Chats POST] Authentication failed:', authResult.error);
       const R = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
       return setCorsHeaders(R);
     }
@@ -206,13 +203,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
       temperature: 0.5,
     };
     
-    console.log(`[Chat Title Summary] Using provider: ${llmProvider} for chat_id: ${chat_id}`);
 
     let newTitleRaw: string | AsyncGenerator<string, void, unknown>;
     try {
         newTitleRaw = await generateChatCompletion(llmProvider, titleGenerationPayload, llmConfig);
     } catch (llmError: unknown) {
-        console.error(`[Chat Title Summary] LLM (${llmProvider}) error for chat ${chat_id}:`, llmError);
         let message = 'LLM service error during title generation.';
         if (llmError instanceof Error) message = llmError.message;
         const R = NextResponse.json({ error: message }, { status: 502 });
@@ -220,7 +215,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
     }
 
     if (typeof newTitleRaw !== 'string' || !newTitleRaw.trim()) {
-      console.warn(`[Chat Title Summary] LLM (${llmProvider}) returned empty or invalid title for chat ${chat_id}. Using default.`);
       newTitleRaw = "Chat Summary"; 
     }
 
@@ -258,7 +252,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
 
   } catch (error: unknown) {
     const resolvedParams = await params;
-    console.error(`[Chat Title Summary] Error for chat_id ${resolvedParams.chat_id}:`, error);
     let message = 'Error summarizing chat title.';
     if (error instanceof Error) message = error.message;
     type PgError = { code?: string; message?: string };
@@ -285,7 +278,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Rou
     // Authenticate the user
     const authResult = await authenticateRequest(req);
     if (!authResult.success || !authResult.user) {
-      console.error('[API Chats DELETE] Authentication failed:', authResult.error);
       const R = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
       return setCorsHeaders(R);
     }
@@ -304,7 +296,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<Rou
     const Rfinal = NextResponse.json({ message: 'Chat deleted successfully' }, { status: 200 });
     return setCorsHeaders(Rfinal);
   } catch (error) {
-    console.error('Error deleting chat:', error);
     let message = 'Error deleting chat.';
     if (error instanceof Error) message = error.message;
     const R = NextResponse.json({ error: message }, { status: 500 });

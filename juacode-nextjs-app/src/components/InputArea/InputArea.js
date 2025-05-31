@@ -48,7 +48,6 @@ function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, mode
     if (!input.trim() || isTyping) return;
 
     if (!hasSentFirstMessage && onFirstMessageSent) {
-      console.log("InputArea.js: handleSend - Calling onFirstMessageSent()");
       onFirstMessageSent();
       setHasSentFirstMessage(true);
     }

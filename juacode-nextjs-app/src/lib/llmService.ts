@@ -21,21 +21,16 @@ const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
-console.log('[LLMService] Environment Keys: OPENAI_API_KEY present:', !!OPENAI_API_KEY, ', DEEPSEEK_API_KEY present:', !!DEEPSEEK_API_KEY, ', GEMINI_API_KEY present:', !!GEMINI_API_KEY);
 let openaiClient: OpenAI | undefined;
 if (OPENAI_API_KEY) {
   openaiClient = new OpenAI({ apiKey: OPENAI_API_KEY });
-  console.log('[LLMService] OpenAI client INITIALIZED.');
 } else {
-  console.warn('[LLMService] OpenAI API key not found. OpenAI provider will be unavailable.');
 }
 
 let googleAIClient: GoogleGenerativeAI | undefined;
 if (GEMINI_API_KEY) {
   googleAIClient = new GoogleGenerativeAI(GEMINI_API_KEY);
-  console.log('[LLMService] Google AI client INITIALIZED.');
 } else {
-  console.warn('[LLMService] Gemini API key not found. Gemini provider will be unavailable.');
 }
 
 let deepseekOpenAIClient: OpenAI | undefined;
@@ -44,9 +39,7 @@ if (DEEPSEEK_API_KEY) {
     apiKey: DEEPSEEK_API_KEY,
     baseURL: DEEPSEEK_BASE_URL,
   });
-  console.log('[LLMService] DeepSeek client INITIALIZED.');
 } else {
-  console.warn('[LLMService] DeepSeek API key not found. DeepSeek provider may be unavailable or use a different auth method.');
 }
 
 /* Helper for Streaming HTTP Responses
@@ -65,7 +58,6 @@ async function* streamSSE(response: Response): AsyncGenerator<unknown, void, unk
         try {
           yield JSON.parse(buffer.trim());
         } catch (e) {
-          console.error('Error parsing remaining JSON from stream:', e, 'Buffer:', buffer);
         }
       }
       break;
@@ -85,7 +77,6 @@ async function* streamSSE(response: Response): AsyncGenerator<unknown, void, unk
         try {
           yield JSON.parse(jsonStr);
         } catch (e) {
-          console.error('Error parsing JSON from stream:', e, 'JSON String:', jsonStr);
         }
       }
     }
@@ -98,7 +89,6 @@ async function generateDeepSeekCompletion(
   messages: LLMMessage[], 
   config: LLMConfig = {}
 ): Promise<AsyncGenerator<string, void, unknown> | string> {
-  console.log('[LLMService] generateDeepSeekCompletion called.');
   if (!deepseekOpenAIClient) {
     throw new Error('DeepSeek client (OpenAI SDK) not initialized. API key might be missing.');
   }
@@ -178,7 +168,6 @@ async function generateDeepSeekCompletion(
       return fullContent;
     }
   } catch (error: unknown) {
-    console.error('DeepSeek API Error (via OpenAI SDK):', error);
     type PgError = { message?: string };
     const pgError = error as PgError;
     throw new Error(pgError.message || 'DeepSeek API request failed.');
@@ -190,7 +179,6 @@ async function generateOpenAICompletion(
   messages: LLMMessage[], 
   config: LLMConfig = {}
 ): Promise<AsyncGenerator<string, void, unknown> | string> {
-  console.log('[LLMService] generateOpenAICompletion called.');
   if (!openaiClient) {
     throw new Error('OpenAI API key not found or client not initialized. OpenAI provider will be unavailable.');
   }
@@ -238,7 +226,6 @@ async function generateOpenAICompletion(
       return response.choices[0]?.message?.content?.trim() || '';
     }
   } catch (error: unknown) {
-    console.error('OpenAI API Error:', error);
     type PgError = { message?: string };
     const pgError = error as PgError;
     throw new Error(`OpenAI API request failed: ${pgError.message}`);
@@ -249,7 +236,6 @@ async function generateGeminiCompletion(
   messages: LLMMessage[], 
   config: LLMConfig = {}
 ): Promise<AsyncGenerator<string, void, unknown> | string> {
-  console.log('[LLMService] generateGeminiCompletion called.');
   if (!googleAIClient) {
     throw new Error('Gemini API key not found or client not initialized. Gemini provider will be unavailable.');
   }
@@ -322,54 +308,48 @@ async function generateGeminiCompletion(
       const result = await generativeModel.generateContent({ contents: geminiMessages, generationConfig, safetySettings });
       const response = result.response;
       
-      console.log('Gemini non-stream response:', {
-        candidates: response?.candidates?.length || 0,
-        promptFeedback: response?.promptFeedback,
-        usageMetadata: response?.usageMetadata
-      });
-      
+      // Ensure logging or debugging objects are correctly formed or removed if not used
+      // console.log({ // Example: if it was intended for logging
+      //   candidates: response?.candidates?.length || 0,
+      //   promptFeedback: response?.promptFeedback,
+      //   usageMetadata: response?.usageMetadata
+      // });
+
       if (response && response.candidates && response.candidates.length > 0) {
         const candidate = response.candidates[0];
         
-        console.log('Gemini candidate details:', {
-          finishReason: candidate.finishReason,
-          safetyRatings: candidate.safetyRatings,
-          hasContent: !!candidate.content,
-          partsCount: candidate.content?.parts?.length || 0
-        });
-        
+        // console.log({ // Example: if it was intended for logging
+        //   finishReason: candidate.finishReason,
+        //   safetyRatings: candidate.safetyRatings,
+        //   hasContent: !!candidate.content,
+        //   partsCount: candidate.content?.parts?.length || 0
+        // });
+
         if (candidate.finishReason && candidate.finishReason !== 'STOP' && candidate.finishReason !== 'MAX_TOKENS') {
-          console.warn(`Gemini non-stream: Candidate finished with reason: ${candidate.finishReason}`);
           if (candidate.safetyRatings) {
-            console.warn(`Gemini non-stream: Safety Ratings: ${JSON.stringify(candidate.safetyRatings)}`);
           }
           if (response.promptFeedback) {
-            console.warn(`Gemini non-stream: Prompt Feedback: ${JSON.stringify(response.promptFeedback)}`);
           }
           return ''; 
         }
         // Consolidate parts for non-streaming response as well
         if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
           const text = candidate.content.parts.map(part => part.text).join('').trim();
-          console.log('Gemini extracted text:', text);
           return text;
         }
-        console.warn('Gemini non-stream: No content parts found in candidate');
         return ''; // Return empty if no parts even with normal finish
       } else {
-        console.warn("Gemini non-stream: No candidates or response text found", {
-          hasResponse: !!response,
-          candidatesLength: response?.candidates?.length || 0,
-          promptFeedback: response?.promptFeedback
-        });
+        // console.log({ // Example: if it was intended for logging
+        //   hasResponse: !!response,
+        //   candidatesLength: response?.candidates?.length || 0,
+        //   promptFeedback: response?.promptFeedback
+        // });
         if (response?.promptFeedback) {
-            console.warn(`Gemini non-stream: Prompt Feedback: ${JSON.stringify(response.promptFeedback)}`);
         }
         return '';
       }
     }
   } catch (error: unknown) {
-    console.error('Gemini API Error:', error);
     type PgError = { message?: string };
     const pgError = error as PgError;
     throw new Error(`Gemini API request failed: ${pgError.message}`);
@@ -382,7 +362,6 @@ export async function generateChatCompletion(
   messages: LLMMessage[],
   config: LLMConfig = {}
 ): Promise<AsyncGenerator<string, void, unknown> | string> {
-  console.log(`[LLMService] generateChatCompletion called with provider: ${provider}`);
   switch (provider) {
     case 'openai':
       return generateOpenAICompletion(messages, config);
@@ -391,7 +370,6 @@ export async function generateChatCompletion(
     case 'deepseek':
       return generateDeepSeekCompletion(messages, config);
     default:
-      console.error(`[LLMService] Unknown LLM provider: ${provider}. Defaulting to DeepSeek.`);
       return generateDeepSeekCompletion(messages, config); // Default to DeepSeek if provider is unknown or not set
   }
 }

@@ -39,9 +39,7 @@ export const getAuthHeaders = (): AuthHeaders => {
     const token = localStorage.getItem('access_token');
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
-      console.log('[API] Using Bearer token for authentication');
     } else {
-      console.warn('[API] No access token found in localStorage');
     }
   }
   return headers;
@@ -62,13 +60,10 @@ export const makeAuthenticatedRequest = async (url: string, options: RequestInit
   };
 
   try {
-    console.log(`[API] Making request to ${url}`, { method: options.method || 'GET', hasAuth: !!authHeaders['Authorization'] });
     const response = await fetch(url, requestOptions);
     
-    console.log(`[API] Response from ${url}:`, { status: response.status, ok: response.ok });
     
     if (response.status === 401) {
-      console.error('[API] Authentication failed - clearing auth data and redirecting');
       if (typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
         localStorage.removeItem('userData');
@@ -85,7 +80,6 @@ export const makeAuthenticatedRequest = async (url: string, options: RequestInit
     
     return response;
   } catch (error) {
-    console.error('API request failed:', error);
     // If it's the specific auth error, rethrow it for AuthContext to handle logout redirection.
     if (error instanceof Error && error.message.includes('Authentication required')) {
       throw error; 
@@ -100,7 +94,6 @@ export const makeAuthenticatedRequest = async (url: string, options: RequestInit
  */
 export const fetchUserChats = async (): Promise<ChatData[]> => {
   try {
-    console.log('Fetching user chats from: /api/chats');
     const response = await makeAuthenticatedRequest('/api/chats', {
       method: 'GET',
     });
@@ -118,11 +111,9 @@ export const fetchUserChats = async (): Promise<ChatData[]> => {
     } else {
       // This case should ideally not happen if the API is consistent.
       // Log an error and return an empty array or throw a more specific error.
-      console.error('Error fetching chats: API response did not contain a "chats" array.', responseBody);
       return []; // Or throw new Error('Invalid chat data format from API');
     }
   } catch (error) {
-    console.error('Error fetching chats:', error);
     throw error;
   }
 };
@@ -130,7 +121,6 @@ export const fetchUserChats = async (): Promise<ChatData[]> => {
 /* Create a new chat */
 export const createChat = async (chatData: ChatData): Promise<any> => { // Return type can be more specific
   try {
-    console.log('Creating chat at: /api/chats', chatData);
     const response = await makeAuthenticatedRequest('/api/chats', {
       method: 'POST',
       body: JSON.stringify(chatData),
@@ -144,7 +134,6 @@ export const createChat = async (chatData: ChatData): Promise<any> => { // Retur
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error creating chat:', error);
     throw error;
   }
 };
@@ -154,7 +143,6 @@ export const createChat = async (chatData: ChatData): Promise<any> => { // Retur
  */
 export const updateChat = async (chatId: string, updateData: UpdateData): Promise<any> => { // Return type can be more specific
   try {
-    console.log(`Updating chat at: /api/chats/${chatId}`, updateData);
     const response = await makeAuthenticatedRequest(`/api/chats/${chatId}`, {
       method: 'PUT',
       body: JSON.stringify(updateData),
@@ -168,7 +156,6 @@ export const updateChat = async (chatId: string, updateData: UpdateData): Promis
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error updating chat:', error);
     throw error;
   }
 };
@@ -178,7 +165,6 @@ export const updateChat = async (chatId: string, updateData: UpdateData): Promis
  */
 export const deleteChat = async (chatId: string): Promise<boolean> => {
   try {
-    console.log(`Deleting chat at: /api/chats/${chatId}`);
     const response = await makeAuthenticatedRequest(`/api/chats/${chatId}`, {
       method: 'DELETE',
     });
@@ -192,7 +178,6 @@ export const deleteChat = async (chatId: string): Promise<boolean> => {
     // We can assume true if response.ok, or parse a specific success from response if available.
     return true; 
   } catch (error) {
-    console.error('Error deleting chat:', error);
     throw error;
   }
 };
@@ -202,7 +187,6 @@ export const deleteChat = async (chatId: string): Promise<boolean> => {
  */
 export const summarizeChatTitle = async (chatId: string): Promise<{ title: string }> => {
   try {
-    console.log(`Summarizing chat at: /api/chats/${chatId}`);
     const response = await makeAuthenticatedRequest(`/api/chats/${chatId}`, {
       method: 'POST',
     });
@@ -215,7 +199,6 @@ export const summarizeChatTitle = async (chatId: string): Promise<{ title: strin
     const data = await response.json();
     return data as { title: string }; // Type assertion
   } catch (error) {
-    console.error('Error summarizing chat title:', error);
     throw error;
   }
 };
@@ -225,7 +208,6 @@ export const summarizeChatTitle = async (chatId: string): Promise<{ title: strin
  */
 export const fetchCurrentUser = async (): Promise<any> => { // Replace 'any' with a more specific User type if available
   try {
-    console.log('Fetching current user data from: /api/users/me');
     const response = await makeAuthenticatedRequest('/api/users/me', {
       method: 'GET',
     });
@@ -238,7 +220,6 @@ export const fetchCurrentUser = async (): Promise<any> => { // Replace 'any' wit
     const userData = await response.json();
     return userData;
   } catch (error) {
-    console.error('Error fetching current user data:', error);
     throw error; // Rethrow to be handled by the caller
   }
 };
@@ -253,7 +234,6 @@ interface GeneratePayload {
 }
 
 export const generateChatResponse = async (payload: GeneratePayload): Promise<Response> => {
-    console.log('Sending generate request to: /api/generate', payload);
     // Use makeAuthenticatedRequest to ensure the call to /api/generate is authenticated.
     try {
         const response = await makeAuthenticatedRequest('/api/generate', {
@@ -272,12 +252,10 @@ export const generateChatResponse = async (payload: GeneratePayload): Promise<Re
         // We might want to ensure any non-2xx status is still an error here if not a 401 handled by logout.
         if (!response.ok) { // This check might be redundant if makeAuthenticatedRequest handles all non-2xx as errors.
             const errorBody = await response.text(); // Get raw error body
-            console.error('Error generating chat response (after makeAuthenticatedRequest):', response.status, errorBody);
             throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
         }
         return response; // Return the raw response for the caller to handle streaming
     } catch (error) {
-        console.error('Error in generateChatResponse:', error);
         // If makeAuthenticatedRequest threw an 'Authentication required' error, it should be re-thrown
         // for AuthContext to handle logout. Other errors are also re-thrown.
         throw error;

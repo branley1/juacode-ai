@@ -41,7 +41,6 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
 
   // Helper function for the fetch call
   const performRegistrationAttempt = async (attemptNumber, signal) => {
-    console.log('Sending request to:', '/api/users/register');
     const res = await fetch('/api/users/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -150,7 +149,6 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
 
           if (res.status >= 500 || errorData.isNetworkError) {
             // Server error, try again
-            console.log(`Attempt ${retries + 1} failed with server error. Retrying...`);
             retries++;
             // Exponential backoff: wait longer between each retry
             const delay = Math.min(baseDelay * Math.pow(2, retries), 10000); // Cap at 10 seconds
@@ -169,7 +167,6 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
         // Registration successful - handle success case
         try {
           const userData = await res.json();
-          console.log('Registration successful:', userData);
           
           // Set the email for confirmation screen
           setRegisteredEmail(email);
@@ -181,7 +178,6 @@ function RegisterUser({ onNavigateToLogin, isDarkMode, toggleTheme, setCurrentVi
           success = true;
           break;
         } catch (parseError) {
-          console.error('Error parsing successful response:', parseError);
           // Still consider it a success if we got a 2xx response
           setRegisteredEmail(email);
           setIsRegistered(true);

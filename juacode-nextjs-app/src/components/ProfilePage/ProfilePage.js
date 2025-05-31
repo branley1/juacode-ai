@@ -34,7 +34,6 @@ function ProfilePage({ setCurrentView, onLogout }) {
 
   // Log the created_at value
   if (userData) {
-    console.log('Raw userData.created_at:', userData.created_at);
   }
 
   const formatDate = (dateString) => {
@@ -46,7 +45,6 @@ function ProfilePage({ setCurrentView, onLogout }) {
       const year = date.getFullYear();
       return `${month} ${day}, ${year}`;
     } catch (e) {
-      console.error("Error formatting date:", e);
       return 'Invalid Date';
     }
   };

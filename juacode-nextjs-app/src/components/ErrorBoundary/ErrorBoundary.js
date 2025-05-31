@@ -12,7 +12,6 @@ export default class ErrorBoundary extends Component {
   }
   
   componentDidCatch(error, errorInfo) {
-    console.error('Chat Error:', error, errorInfo);
   }
   
   // Update render output

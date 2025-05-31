@@ -145,7 +145,6 @@ export default function ResetPasswordPage() {
         setMessage('Request timed out. Please try again later.');
         setMessageType('error');
       } else {
-        console.error('Reset password fetch error:', fetchError);
         setMessage('Failed to reset password due to a network error. Please try again later.');
         setMessageType('error');
       }

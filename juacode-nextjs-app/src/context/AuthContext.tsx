@@ -42,13 +42,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUserData(parsedUserData);
           setAccessToken(storedToken);
           setIsUserAuthenticated(true);
-          console.log('[AuthContext] User authenticated from localStorage:', parsedUserData);
         } catch (e) {
-          console.error('[AuthContext] Error parsing stored user data, logging out:', e);
           clearAuthData(); // Clear inconsistent data
         }
       } else {
-        console.log('[AuthContext] No complete stored auth data found.');
         clearAuthData(); // Ensure a clean state if data is partial/missing
       }
     }
@@ -78,25 +75,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('access_token', token);
     }
-    console.log('[AuthContext] User logged in:', user);
     // router.push('/chat'); // Or wherever you want to redirect after login
   };
 
   const logout = () => {
     clearAuthData();
-    console.log('[AuthContext] User logged out');
     router.push('/login'); // Redirect to login page after logout
   };
 
   // fetchUserData
   const fetchUserDataImpl = useCallback(async () => {
     if (!accessToken) {
-      console.log("[AuthContext] fetchUserData called, but no access token found. Clearing auth data.");
       clearAuthData(); // Ensure logged out state if no token
       return;
     }
 
-    console.log("[AuthContext] fetchUserData called. Attempting to fetch user data from /api/users/me");
     try {
       const response = await fetch('/api/users/me', {
         method: 'GET',
@@ -113,18 +106,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Update localStorage as well
         localStorage.setItem('userData', JSON.stringify(fetchedUser));
         localStorage.setItem('isAuthenticated', 'true');
-        console.log("[AuthContext] User data fetched and updated:", fetchedUser);
       } else if (response.status === 401) {
-        console.warn("[AuthContext] Unauthorized (401) fetching user data. Token might be invalid or expired. Clearing auth data.");
         clearAuthData();
         router.push('/login'); // Redirect to login
       } else {
-        console.error(`[AuthContext] Failed to fetch user data. Status: ${response.status}. Clearing auth data.`);
         clearAuthData();
         // Optionally, redirect to login or show an error, depending on desired UX
       }
     } catch (error) {
-      console.error("[AuthContext] Error during fetchUserData:", error);
       clearAuthData();
       // Optionally, redirect or show error
     }

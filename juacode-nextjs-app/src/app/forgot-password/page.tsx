@@ -76,7 +76,6 @@ export default function ForgotPasswordPage() {
         setMessage('Request timed out. Please try again later.');
         setMessageType('error');
       } else {
-        console.error('Forgot password fetch error:', fetchError);
         setMessage('Failed to send reset email due to a network error. Please try again later.');
         setMessageType('error');
       }

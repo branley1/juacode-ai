@@ -25,18 +25,15 @@ export async function OPTIONS() {
 
 // GET endpoint to fetch user-specific chats
 export async function GET(req: NextRequest) {
-  console.log('[API Chats GET /] Received request.');
   try {
     // Authenticate the user
     const authResult = await authenticateRequest(req);
     if (!authResult.success || !authResult.user) {
-      console.error('[API Chats GET /] Authentication failed:', authResult.error);
       const response = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
       return setCorsHeaders(response);
     }
 
     const userId = authResult.user.id;
-    console.log(`[API Chats GET /] Fetching chats for user: ${userId}`);
 
     // Fetch chats for the authenticated user
     const query = `
@@ -53,7 +50,6 @@ export async function GET(req: NextRequest) {
       messages: typeof row.messages === 'string' ? JSON.parse(row.messages) : row.messages
     }));
 
-    console.log(`[API Chats GET /] Found ${userChats.length} chats for user ${userId}`);
     
     const response = NextResponse.json({
       message: 'Chats retrieved successfully',
@@ -63,7 +59,6 @@ export async function GET(req: NextRequest) {
     return setCorsHeaders(response);
 
   } catch (error: unknown) {
-    console.error('[API Chats GET /] Error in GET handler:', error);
     let errorMessage = 'Error fetching chats.';
     if (error instanceof Error) {
       errorMessage = error.message;
@@ -74,19 +69,16 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  console.log('[API Chats POST /] Received request.');
   try {
     const body = await req.json();
     const { chat_id, title, messages, last_model_used } = body as ChatCreate;
 
     if (!chat_id || !title || !messages) {
-      console.error('[API Chats POST /] Validation Error: chat_id, title, and messages are required.');
       const response = NextResponse.json({ error: 'chat_id, title, and messages are required' }, { status: 400 });
       return setCorsHeaders(response);
     }
 
     if (!Array.isArray(messages) || messages.some(msg => typeof msg.role !== 'string' || typeof msg.content !== 'string')) {
-        console.error('[API Chats POST /] Validation Error: Invalid messages format.');
         const response = NextResponse.json({ error: 'Messages must be an array of {role: string, content: string} objects' }, { status: 400 });
         return setCorsHeaders(response);
     }
@@ -94,13 +86,11 @@ export async function POST(req: NextRequest) {
     // Authenticate the user
     const authResult = await authenticateRequest(req);
     if (!authResult.success || !authResult.user) {
-      console.error('[API Chats POST /] Authentication failed:', authResult.error);
       const response = NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
       return setCorsHeaders(response);
     }
 
     const userId = authResult.user.id;
-    console.log(`[API Chats POST /] Preparing to insert chat_id: ${chat_id} for user_id: ${userId}`);
 
     const newChatData: ChatCreate = {
       chat_id,
@@ -124,12 +114,9 @@ export async function POST(req: NextRequest) {
       newChatData.last_model_used
     ];
     
-    console.log('[API Chats POST /] Executing database insert query...');
     const { rows } = await db.query(query, values);
-    console.log('[API Chats POST /] Database insert query completed.');
     const createdChat: Chat = rows[0];
 
-    console.log(`[API Chats POST /] Chat ${createdChat.chat_id} saved successfully for user ${userId}.`);
     const postResponse = NextResponse.json(
       {
         message: 'Chat saved successfully',
@@ -140,7 +127,6 @@ export async function POST(req: NextRequest) {
     return setCorsHeaders(postResponse);
 
   } catch (error: unknown) {
-    console.error('[API Chats POST /] Error in POST handler:', error);
     let errorMessage = 'Error saving chat.';
     let errorStatus = 500;
     let detail = '';

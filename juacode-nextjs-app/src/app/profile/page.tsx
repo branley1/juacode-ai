@@ -52,10 +52,8 @@ export default function ProfilePage() {
       if (res.ok && fetchUserData) {
         await fetchUserData();
       } else {
-        console.error('Failed to update name:', await res.text());
       }
     } catch (error) {
-      console.error('Error updating name:', error);
     }
     setEditing(false);
   };

@@ -12,6 +12,7 @@ import { faPen, faBars, faPlus, faShare, faUser, faCog, faUserCircle, faSun, faM
 import { fetchUserChats, createChat, updateChat, deleteChat, summarizeChatTitle, generateChatResponse, fetchCurrentUser } from '@/utils/api';
 import { useTheme } from '@/context/ThemeContext';
 import AvatarPlaceholder from '@/components/AvatarPlaceholder/AvatarPlaceholder';
+import SettingsModal from '@/components/Settings/SettingsModal';
 
 // Generate a unique string for the chat id.
 const generateUniqueChatId = () => {
@@ -79,45 +80,39 @@ function ChatInterface({
 
   const [chatHistory, setChatHistory] = useState([]);
 
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   // Effect to load user data from API or localStorage
   useEffect(() => {
     const loadUserData = async () => {
       if (isUserAuthenticated) {
         try {
-          console.log('[ChatInterface] User authenticated, fetching user data from API...');
           const apiUserData = await fetchCurrentUser();
           if (apiUserData) {
-            console.log('[ChatInterface] User data fetched from API:', apiUserData);
             setLocalUserData(apiUserData);
             localStorage.setItem('userData', JSON.stringify(apiUserData)); // Update localStorage
           } else {
-            console.warn('[ChatInterface] API returned no user data, attempting to load from localStorage.');
             // Fallback to localStorage if API returns nothing or fails silently (though fetchCurrentUser should throw)
             const storedUserData = localStorage.getItem('userData');
             if (storedUserData) {
               setLocalUserData(JSON.parse(storedUserData));
             } else {
-              console.warn('[ChatInterface] No user data in localStorage, setting to guest.');
               setLocalUserData({ name: 'Guest User', email: 'guest@example.com' });
             }
           }
         } catch (error) {
-          console.error('[ChatInterface] Error fetching user data from API:', error);
           // If auth error (e.g., token expired), onLogout should be called by makeAuthenticatedRequest
           // For other errors, try localStorage
           const storedUserData = localStorage.getItem('userData');
           if (storedUserData) {
-            console.log('[ChatInterface] API fetch failed, loading user data from localStorage:', storedUserData);
             setLocalUserData(JSON.parse(storedUserData));
           } else {
-            console.warn('[ChatInterface] API fetch failed and no user data in localStorage, setting to guest.');
             // Potentially call onLogout() here if API fetch fails due to auth,
             // but makeAuthenticatedRequest should handle it.
              setLocalUserData({ name: 'Guest User', email: 'guest@example.com' });
           }
         }
       } else {
-        console.log('[ChatInterface] User not authenticated, setting guest user data.');
         setLocalUserData({ name: 'Guest User', email: 'guest@example.com' });
         // Optionally clear local storage for user data if not authenticated
         localStorage.removeItem('userData');
@@ -145,7 +140,6 @@ function ChatInterface({
         localStorage.removeItem('juaCodeChatHistory');
       }
     } catch (error) {
-      console.error('[ChatInterface] Error loading user chats:', error);
       
       // If authentication failed, handle logout
       if (error.message.includes('Authentication required')) {
@@ -168,7 +162,6 @@ function ChatInterface({
           });
           setChatHistory(parsedHistory);
         } catch (err) {
-          console.error("[ChatInterface] Error parsing chat history from localStorage:", err);
           setChatHistory([]);
         }
       }
@@ -188,7 +181,6 @@ function ChatInterface({
     const shareLink = `${window.location.origin}/chat/${currentChatId}`;
     navigator.clipboard.writeText(shareLink)
       .then(() => alert('Chat link copied!'))
-      .catch(err => console.error('Error copying link:', err));
   };
 
   const handleTitleChange = (event) => {
@@ -213,7 +205,6 @@ function ChatInterface({
           )
         );
       } catch (error) {
-        console.error('Error saving chat title to backend:', error);
         // If authentication failed, handle logout
         if (error.message.includes('Authentication required')) {
           onLogout();
@@ -236,7 +227,6 @@ function ChatInterface({
             )
           );
         } catch (error) {
-          console.error('Error auto-saving chat title to backend:', error);
           // If authentication failed, handle logout
           if (error.message.includes('Authentication required')) {
             onLogout();
@@ -264,7 +254,6 @@ function ChatInterface({
         await createChat(newChatToPersist);
         setChatHistory(prevHistory => [...prevHistory, newChatToPersist]);
       } catch (error) {
-        console.error(`Error persisting new chat ${outgoingChatId} before creating another new chat:`, error);
         // If authentication failed, handle logout
         if (error.message.includes('Authentication required')) {
           onLogout();
@@ -304,7 +293,6 @@ function ChatInterface({
   const handleChatSelect = (selectedChat) => {
     const chatId = getChatId(selectedChat);
     if (!chatId) {
-        console.error("Selected chat has no ID!", selectedChat);
         handleNewChat(); 
         return;
     }
@@ -402,7 +390,6 @@ function ChatInterface({
         );
       }
     } catch (error) {
-      console.error(`Exception during title summarization for chat ${chatIdToSummarize}:`, error);
       // If authentication failed, handle logout
       if (error.message.includes('Authentication required')) {
         onLogout();
@@ -475,7 +462,6 @@ function ChatInterface({
             try {
               const parsedEvent = JSON.parse(jsonStr);
               if (parsedEvent.model_used) {
-                console.log("[ChatInterface] Received model_used:", parsedEvent.model_used);
                 setCurrentLlmModel(parsedEvent.model_used);
               } else if (parsedEvent.text !== undefined) {
                 if (!assistantMessagePlaceholderAdded && !done) {
@@ -496,7 +482,6 @@ function ChatInterface({
                 }
               }
             } catch (parseError) {
-              console.warn("[ChatInterface] Error parsing SSE JSON or non-JSON data chunk:", jsonStr, parseError);
               // If it's not JSON, it might be an older format or an error. 
               // For backward compatibility or simple text streams, you might append directly:
               // assistantContentAccumulator += jsonStr; 
@@ -569,13 +554,11 @@ function ChatInterface({
             chatSuccessfullyPersistedOrUpdated = true;
           } else {
             // Backend did not return a valid chat object
-            console.error("[ChatInterface] Error persisting new chat: Backend response was not successful or chat data is missing.", postedChatResponse);
             // Display an error message to the user or retry? For now, we don't set it as persisted.
             chatSuccessfullyPersistedOrUpdated = false;
             // Potentially add user-facing error message here
           }
         } catch (error) {
-          console.error(`[ChatInterface] Error persisting new chat ${finalChatIdForSummary}:`, error);
           if (error.message.includes('Authentication required')) {
             onLogout();
             return; // Stop further execution in this function
@@ -617,7 +600,6 @@ function ChatInterface({
           );
           chatSuccessfullyPersistedOrUpdated = true;
         } catch (error) {
-          console.error(`[ChatInterface] Error updating chat ${finalChatIdForSummary}:`, error);
           // If authentication failed, handle logout
           if (error.message.includes('Authentication required')) {
             onLogout();
@@ -680,7 +662,6 @@ function ChatInterface({
         }
       }
 
-      console.error(detailedLogMessage, error);
 
       if (currentChatId === localChatId) {
         setMessages([...messagesForAPI, { role: 'assistant', content: userFacingErrorMessage }]);
@@ -740,6 +721,11 @@ function ChatInterface({
     };
   }, [profileMenuRef]);
 
+  const openSettings = () => {
+    setIsProfileMenuOpen(false);
+    setIsSettingsOpen(true);
+  };
+
   return (
     <div className="chat-container">
       <Sidebar
@@ -768,7 +754,6 @@ function ChatInterface({
               handleNewChat(); // This will set up a new, non-persisted chat
             }
           } catch (error) {
-            console.error(`Error deleting chat ${chatIdToDelete} from backend:`, error);
             // If authentication failed, handle logout
             if (error.message.includes('Authentication required')) {
               onLogout();
@@ -786,7 +771,6 @@ function ChatInterface({
               setChatTitle(newTitle); // Update current view if it's the renamed chat
             }
           } catch (error) {
-            console.error(`Error renaming chat ${chatIdToRename} on backend:`, error);
             // If authentication failed, handle logout
             if (error.message.includes('Authentication required')) {
               onLogout();
@@ -830,7 +814,7 @@ function ChatInterface({
                                 <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} /> {isDarkMode ? 'Light Mode' : 'Dark Mode'}
                             </button>
 
-                            <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false);}} className="profile-dropdown-item">
+                            <button onClick={() => { openSettings(); }} className="profile-dropdown-item">
                                <FontAwesomeIcon icon={faCog} /> Settings
                             </button>
                             
@@ -931,7 +915,7 @@ function ChatInterface({
                             <FontAwesomeIcon icon={isDarkMode ? faSun : faMoon} /> {isDarkMode ? 'Light Mode' : 'Dark Mode'}
                         </button>
 
-                        <button onClick={() => { alert('Settings clicked!'); setIsProfileMenuOpen(false);}} className="profile-dropdown-item">
+                        <button onClick={() => { openSettings(); }} className="profile-dropdown-item">
                            <FontAwesomeIcon icon={faCog} /> Settings
                         </button>
                         
@@ -991,6 +975,7 @@ function ChatInterface({
           )}
         </div>
       </div>
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 }

@@ -64,7 +64,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (sessionError) {
-      console.error('Session error:', sessionError);
       return NextResponse.json({ 
         error: 'Invalid or expired reset link' 
       }, { 
@@ -79,7 +78,6 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      console.error('Password update error:', error);
       return NextResponse.json({ 
         error: 'Failed to update password. Please try again.' 
       }, { 
@@ -97,7 +95,6 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: unknown) {
-    console.error('Reset password error:', error);
     const message = 'Failed to reset password.';
     let detail = '';
     if (error instanceof Error) detail = error.message;

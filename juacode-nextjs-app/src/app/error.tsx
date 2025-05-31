@@ -7,7 +7,6 @@ import { faSyncAlt } from '@fortawesome/free-solid-svg-icons';
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void; }) {
   useEffect(() => {
-    console.error("Global Next.js Error Boundary Caught:", error);
   }, [error]);
 
   return (

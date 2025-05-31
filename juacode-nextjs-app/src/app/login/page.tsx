@@ -44,7 +44,6 @@ export default function LoginPage() {
     const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
 
     try {
-      console.log('Sending login request to: /api/users/login');
       const response = await fetch('/api/users/login', {
         method: 'POST',
         headers: {
@@ -96,7 +95,6 @@ export default function LoginPage() {
         setMessage('Login request timed out. Please try again later.');
         setMessageType('timeout');
       } else {
-        console.error('Login fetch error:', fetchError);
         setMessage('Login failed due to a network or server issue. Please try again later.');
         setMessageType('error');
       }
