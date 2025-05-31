@@ -7,7 +7,7 @@ import SendIconBlack from '../../assets/send-black.svg';
 import { useTheme } from '@/context/ThemeContext';
 import './InputArea.css';
 
-function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping, currentModel, setCurrentModel, availableModels, onStop }) {
+function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, modelVariant, setModelVariant, isTyping, isStreaming, currentModel, setCurrentModel, availableModels, onStop }) {
   const { isDarkMode } = useTheme();
   const [input, setInput] = useState('');
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
@@ -135,7 +135,7 @@ function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, mode
               </div>
             )}
           </div>
-          {isTyping ? (
+          {(isTyping || isStreaming) ? (
             <button type="button" onClick={onStop} className="stop-button" aria-label="Stop">
               <FontAwesomeIcon icon={faStop} size="lg" style={{ color: isDarkMode ? '#fff' : '#000' }} />
             </button>
@@ -143,7 +143,7 @@ function InputArea({ onFirstMessageSent, chatMessagesRef, simulateResponse, mode
             <button
               type="button"
               onClick={handleSend}
-              disabled={isTyping}
+              disabled={isTyping || isStreaming}
               className="send-button"
               aria-label="Send"
             >

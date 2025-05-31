@@ -659,6 +659,14 @@ function ChatInterface({
       if (error.name === 'AbortError') {
         setIsTyping(false);
         setStreamingIndex(null);
+        // Remove any empty assistant placeholder
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === 'assistant' && last.content === '') {
+            return prev.slice(0, -1);
+          }
+          return prev;
+        });
         return;
       }
       let userFacingErrorMessage;
@@ -877,6 +885,7 @@ function ChatInterface({
                 setCurrentModel={setCurrentModel}
                 availableModels={AVAILABLE_MODELS}
                 isDarkMode={isDarkMode}
+                isStreaming={streamingIndex !== null}
                 onStop={handleStop}
               />
             </div>
@@ -989,6 +998,7 @@ function ChatInterface({
                 setCurrentModel={setCurrentModel}
                 availableModels={AVAILABLE_MODELS}
                 isDarkMode={isDarkMode}
+                isStreaming={streamingIndex !== null}
                 onStop={handleStop}
               />
             </div>
