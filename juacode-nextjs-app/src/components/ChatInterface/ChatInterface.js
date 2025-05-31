@@ -141,12 +141,11 @@ function ChatInterface({
       
       // Also update localStorage for offline access
       if (Array.isArray(userChats)) {
-      localStorage.setItem('juaCodeChatHistory', JSON.stringify(userChats));
+        localStorage.setItem('juaCodeChatHistory', JSON.stringify(userChats));
       } else {
         localStorage.removeItem('juaCodeChatHistory');
       }
     } catch (error) {
-      
       // If authentication failed, handle logout
       if (error.message.includes('Authentication required')) {
         onLogout();
@@ -216,7 +215,6 @@ function ChatInterface({
           onLogout();
         }
       }
-    } else {
     }
   };
   
@@ -227,7 +225,7 @@ function ChatInterface({
         try {
           await updateChat(currentChatId, { title: chatTitle });
           // Update chatHistory with the new title
-           setChatHistory(prevHistory =>
+          setChatHistory(prevHistory =>
             prevHistory.map(chat =>
               getChatId(chat) === currentChatId ? { ...chat, title: chatTitle } : chat
             )
@@ -249,10 +247,11 @@ function ChatInterface({
     const outgoingTitle = chatTitle;
     const outgoingIsPersisted = isChatPersisted;
 
-    if (outgoingMessages.length > 0 && outgoingChatId && !outgoingIsPersisted) {
-      const newChatToPersist = { 
-        chat_id: outgoingChatId, 
-        title: outgoingTitle, 
+    // Before creating a new chat, persist the current one if it's new and has messages
+    if (outgoingMessages.length > 0 && outgoingChatId && !outgoingIsPersisted && isUserAuthenticated) {
+      const newChatToPersist = {
+        chat_id: outgoingChatId,
+        title: outgoingTitle,
         messages: outgoingMessages,
         last_model_used: currentLlmModel
       };
@@ -263,7 +262,7 @@ function ChatInterface({
         // If authentication failed, handle logout
         if (error.message.includes('Authentication required')) {
           onLogout();
-          return;
+          return; // Stop further execution in this function if not authenticated
         }
       }
     }
@@ -299,8 +298,8 @@ function ChatInterface({
   const handleChatSelect = (selectedChat) => {
     const chatId = getChatId(selectedChat);
     if (!chatId) {
-        handleNewChat(); 
-        return;
+      handleNewChat();
+      return;
     }
 
     setChatTitle(selectedChat.title || "Chat");
@@ -309,7 +308,7 @@ function ChatInterface({
     setChatStarted(true);
     setIsSidebarOpen(false);
     setIsTyping(false);
-    setIsChatPersisted(true);
+    setIsChatPersisted(true); // Setting to true because it's from history
     setStreamingIndex(null);
     setIsProfileMenuOpen(false);
   };
@@ -491,19 +490,15 @@ function ChatInterface({
                 }
               }
             } catch (parseError) {
-              // If it's not JSON, it might be an older format or an error. 
-              // For backward compatibility or simple text streams, you might append directly:
-              // assistantContentAccumulator += jsonStr; 
+              // If it's not JSON, it might be an older format or an error
             }
           }
         }
-        // If loop finishes, and there's remaining buffer content, it's an incomplete SSE.
-        // Decide if/how to handle it. For now, we assume SSEs are complete.
       }
       
       if (!assistantMessagePlaceholderAdded) {
-          setIsTyping(false);
-          setStreamingIndex(null);
+        setIsTyping(false);
+        setStreamingIndex(null);
       }
 
       try {
@@ -563,9 +558,7 @@ function ChatInterface({
             chatSuccessfullyPersistedOrUpdated = true;
           } else {
             // Backend did not return a valid chat object
-            // Display an error message to the user or retry? For now, we don't set it as persisted.
             chatSuccessfullyPersistedOrUpdated = false;
-            // Potentially add user-facing error message here
           }
         } catch (error) {
           if (error.message.includes('Authentication required')) {
@@ -573,7 +566,6 @@ function ChatInterface({
             return; // Stop further execution in this function
           }
           chatSuccessfullyPersistedOrUpdated = false;
-          // Potentially add user-facing error message here
         }
       } else if (localIsChatPersisted && finalChatIdForSummary) { 
         // This is an existing chat that needs to be updated
@@ -670,21 +662,12 @@ function ChatInterface({
         return;
       }
       let userFacingErrorMessage;
-      let detailedLogMessage;
 
       if (error.message && error.message.startsWith('Backend POST error')) {
-        detailedLogMessage = `Error saving new chat ${localChatId}:`;
         userFacingErrorMessage = "Sorry, I couldn't save the chat.";
       } else {
         userFacingErrorMessage = "Sorry, I couldn't generate a response.";
-        detailedLogMessage = `Error fetching AI response for chat ${localChatId}:`;
-        if (localIsChatPersisted) {
-          detailedLogMessage = `Error fetching AI response or updating existing chat ${localChatId}:`;
-        } else {
-          detailedLogMessage = `Error fetching AI response for new chat ${localChatId}:`;
-        }
       }
-
 
       if (currentChatId === localChatId) {
         setMessages([...messagesForAPI, { role: 'assistant', content: userFacingErrorMessage }]);

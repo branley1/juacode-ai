@@ -186,7 +186,7 @@ async function generateOpenAICompletion(
   const { 
     stream = true, 
     temperature = process.env.OPENAI_TEMPERATURE ? parseFloat(process.env.OPENAI_TEMPERATURE) : 0.7, 
-    model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo' // Fallback model (o4-mini-2025-04-16)
+    model = process.env.OPENAI_MODEL || 'o4-mini-2025-04-16'
   } = config;
   const maxTokens = config.max_tokens || (process.env.OPENAI_MAX_TOKENS ? parseInt(process.env.OPENAI_MAX_TOKENS) : 2000);
 
@@ -203,7 +203,7 @@ async function generateOpenAICompletion(
         model: model,
         messages: openAIMessages,
         temperature: temperature,
-        max_tokens: maxTokens,
+        ...(model.startsWith('o4-') ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
         stream: true,
       });
 
@@ -220,7 +220,7 @@ async function generateOpenAICompletion(
         model: model,
         messages: openAIMessages,
         temperature: temperature,
-        max_tokens: maxTokens,
+        ...(model.startsWith('o4-') ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
         stream: false,
       });
       return response.choices[0]?.message?.content?.trim() || '';
@@ -306,10 +306,6 @@ async function generateGeminiCompletion(
       return contentStream();
     } else {
       const result = await generativeModel.generateContent({ contents: geminiMessages, generationConfig, safetySettings });
-      // Debug logs for Gemini title generation
-      console.log('Gemini title gen - systemInstructionContent:', systemInstructionContent);
-      console.log('Gemini title gen - messages:', geminiMessages);
-      console.log('Gemini title gen - raw result:', result);
       // Handle non-streaming response: prefer text() if available
       const response = result.response;
       let content = '';
@@ -317,7 +313,6 @@ async function generateGeminiCompletion(
         try {
           content = await (response as any).text();
         } catch (e) {
-          console.error('Error calling response.text():', e);
           content = '';
         }
       } else if (response && (response as any).candidates && Array.isArray((response as any).candidates) && (response as any).candidates.length > 0) {

@@ -6,7 +6,10 @@ import { authenticateRequest } from '@/lib/auth';
 
 // Helper to set CORS headers
 function setCorsHeaders<T>(response: NextResponse<T>): NextResponse<T> {
-  response.headers.set('Access-Control-Allow-Origin', 'https://juacode.netlify.app/');
+  const origin = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3000'
+    : 'https://juacode.netlify.app/';
+  response.headers.set('Access-Control-Allow-Origin', origin);
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   return response;
@@ -100,8 +103,34 @@ export async function POST(req: NextRequest) {
       last_model_used: last_model_used || null,
     };
 
-    // Use UPSERT to insert or update existing chat
-    const query = `
+    // Try updating an existing chat
+    const values = [
+      newChatData.chat_id,
+      newChatData.title,
+      JSON.stringify(newChatData.messages),
+      newChatData.user_id,
+      newChatData.last_model_used
+    ];
+    const updateQuery = `
+      UPDATE public.chats
+      SET title = $2,
+          messages = $3,
+          last_model_used = $5,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE chat_id = $1 AND user_id = $4
+      RETURNING chat_id, title, messages, user_id, last_model_used, created_at, updated_at;
+    `;
+    const updateResult = await db.query(updateQuery, values);
+    if (updateResult.rows.length > 0) {
+      const updatedChat = updateResult.rows[0] as Chat;
+      const response = NextResponse.json(
+        { message: 'Chat updated successfully', chat: updatedChat },
+        { status: 200 }
+      );
+      return setCorsHeaders(response);
+    }
+    // No existing chat - insert new
+    const insertQuery = `
       INSERT INTO public.chats (
         chat_id,
         title,
@@ -111,34 +140,15 @@ export async function POST(req: NextRequest) {
         created_at,
         updated_at
       ) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      ON CONFLICT (chat_id, user_id)
-      DO UPDATE SET
-        title = EXCLUDED.title,
-        messages = EXCLUDED.messages,
-        last_model_used = EXCLUDED.last_model_used,
-        updated_at = CURRENT_TIMESTAMP
       RETURNING chat_id, title, messages, user_id, last_model_used, created_at, updated_at;
     `;
-
-    const values = [
-      newChatData.chat_id, 
-      newChatData.title, 
-      JSON.stringify(newChatData.messages), 
-      newChatData.user_id,
-      newChatData.last_model_used
-    ];
-    
-    const { rows } = await db.query(query, values);
-    const createdChat: Chat = rows[0];
-
-    const postResponse = NextResponse.json(
-      {
-        message: 'Chat saved successfully',
-        chat: createdChat,
-      },
+    const insertResult = await db.query(insertQuery, values);
+    const createdChat = insertResult.rows[0] as Chat;
+    const response = NextResponse.json(
+      { message: 'Chat created successfully', chat: createdChat },
       { status: 201 }
     );
-    return setCorsHeaders(postResponse);
+    return setCorsHeaders(response);
 
   } catch (error: unknown) {
     let errorMessage = 'Error saving chat.';

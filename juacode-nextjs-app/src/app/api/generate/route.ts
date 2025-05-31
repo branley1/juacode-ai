@@ -16,14 +16,17 @@ function mapToLLMProvider(selectedModel?: string): LLMProvider {
 }
 
 export async function POST(req: NextRequest) {
+  console.log('POST /api/generate: request received');
   // Authenticate request
   const authResult = await authenticateRequest(req);
+  console.log('Authentication result for /api/generate:', authResult.success, authResult.user?.id);
   if (!authResult.success || !authResult.user) {
     return NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
   }
 
   try {
     const body = await req.json();
+    console.log('POST /api/generate: request body:', body);
     const messages: LLMMessage[] = body.messages || [];
     const model_variant: string = body.model_variant || 'normal';
     const selected_model_str: string | undefined = body.selected_model;
@@ -33,6 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     const llmProvider = mapToLLMProvider(selected_model_str);
+    console.log('Mapped llmProvider for /api/generate:', llmProvider);
     
     let specificModelName: string | undefined;
     if (llmProvider === 'openai') {
@@ -42,6 +46,7 @@ export async function POST(req: NextRequest) {
     } else if (llmProvider === 'gemini') {
       specificModelName = process.env.GEMINI_MODEL || 'gemini-2.5-pro-preview-05-06';
     }
+    console.log('Using specificModelName:', specificModelName);
 
     let llmMessages = [...messages];
     if (model_variant === 'reasoner' && llmProvider !== 'deepseek') {
@@ -50,20 +55,23 @@ export async function POST(req: NextRequest) {
         ...messages,
       ];
     }
+    console.log('LLM messages count:', llmMessages.length);
 
     const llmConfig: LLMConfig = {
       stream: true,
       model: specificModelName,
     };
-
+    console.log('LLM configuration for /api/generate:', llmConfig);
 
     const llmStream = await generateChatCompletion(
       llmProvider,
       llmMessages,
       llmConfig
     );
+    console.log('generateChatCompletion returned llmStream of type:', typeof llmStream);
 
     if (typeof llmStream === 'string') {
+      console.log('LLM returned non-stream string response:', llmStream);
       return NextResponse.json({ response: llmStream });
     }
 
@@ -77,6 +85,7 @@ export async function POST(req: NextRequest) {
           }
 
           for await (const chunk of llmStream) {
+            console.log('Streaming chunk:', chunk);
             if (chunk) { // Ensure chunk is not empty or undefined
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`));
             }
@@ -84,6 +93,7 @@ export async function POST(req: NextRequest) {
           // Signal the end of the stream
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         } catch (error) {
+          console.error('Error streaming LLM response:', error);
           controller.error(error);
         } finally {
           controller.close();
@@ -100,6 +110,7 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: unknown) {
+    console.error('Error in POST /api/generate handler:', error);
     let errorMessage = 'Internal server error';
     if (error instanceof Error) {
         errorMessage = error.message;

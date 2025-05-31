@@ -10,7 +10,10 @@ interface RouteParams {
 
 // Helper to set CORS headers
 function setCorsHeaders<T>(response: NextResponse<T>): NextResponse<T> {
-  response.headers.set('Access-Control-Allow-Origin', 'https://juacode.netlify.app/');
+  const origin = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3000'
+    : 'https://juacode.netlify.app/';
+  response.headers.set('Access-Control-Allow-Origin', origin);
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   return response;
@@ -135,12 +138,11 @@ export async function PUT(req: NextRequest, context: { params: Promise<RoutePara
 export async function POST(req: NextRequest, { params }: { params: Promise<RouteParams> }) {
   try {
     const { chat_id } = await params;
-
     if (!chat_id) {
       const R = NextResponse.json({ error: 'chat_id is required in the URL' }, { status: 400 });
       return setCorsHeaders(R);
     }
-
+    
     // Authenticate the user
     const authResult = await authenticateRequest(req);
     if (!authResult.success || !authResult.user) {
@@ -170,22 +172,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
     const messagesForSummary = chatMessagesFromDB.slice(0, 4);
     
     const llmMessages: LLMMessage[] = messagesForSummary.map((msg: ChatMessage) => {
-        const contentForSummary = msg.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-        
-        let role: LLMMessage['role'] = 'user'; 
-        if (msg.role === 'assistant') role = 'model'; 
-        else if (msg.role === 'system') role = 'system';
-        else if (msg.role === 'user') role = 'user';
-        
-        return {
-            role: role,
-            content: contentForSummary || msg.content, 
-        };
+      const contentForSummary = msg.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+      
+      let role: LLMMessage['role'] = 'user'; 
+      if (msg.role === 'assistant') role = 'model'; 
+      else if (msg.role === 'system') role = 'system';
+      else if (msg.role === 'user') role = 'user';
+      
+      return {
+        role: role,
+        content: contentForSummary || msg.content, 
+      };
     }).filter(msg => msg.content) as LLMMessage[];
 
     if (llmMessages.length === 0) {
-        const R = NextResponse.json({ error: 'Not enough content after processing messages to summarize title.' }, { status: 400 });
-        return setCorsHeaders(R);
+      const R = NextResponse.json({ error: 'Not enough content after processing messages to summarize title.' }, { status: 400 });
+      return setCorsHeaders(R);
     }
     
     const systemPromptText = "Create a short, concise chat title of 3-4 words that summarizes the core topic or purpose of this conversation. Focus on the specific subject matter. Do not include any other phrases. Only output the title with no quotes or other formatting.";
@@ -196,24 +198,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
 
     const titleGenerationPayload: LLMMessage[] = [systemPrompt, ...llmMessages];
 
-    const llmProvider: LLMProvider = 'gemini';
+    const llmProvider: LLMProvider = 'deepseek';
     const llmConfig: LLMConfig = {
       stream: false, 
       max_tokens: 20, 
-      temperature: 0.5,
+      temperature: 1,
+      model: 'deepseek-chat'
     };
     
-
     let newTitleRaw: string | AsyncGenerator<string, void, unknown>;
     try {
-        newTitleRaw = await generateChatCompletion(llmProvider, titleGenerationPayload, llmConfig);
+      newTitleRaw = await generateChatCompletion(llmProvider, titleGenerationPayload, llmConfig);
     } catch (llmError: unknown) {
-        // Log title generation errors for debugging
-        console.error('Title generation error with Gemini provider:', llmError);
-        let message = 'LLM service error during title generation.';
-        if (llmError instanceof Error) message = llmError.message;
-        const R = NextResponse.json({ error: message }, { status: 502 });
-        return setCorsHeaders(R);
+      let message = 'LLM service error during title generation.';
+      if (llmError instanceof Error) message = llmError.message;
+      const R = NextResponse.json({ error: message }, { status: 502 });
+      return setCorsHeaders(R);
     }
 
     if (typeof newTitleRaw !== 'string' || !newTitleRaw.trim()) {
@@ -221,8 +221,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
     }
 
     let newTitle = newTitleRaw.replace(/[\"\'\*`~#\"\']/g, '').trim();
-    // Log the generated title for debugging
-    console.log(`Generated title for chat ${chat_id}:`, newTitle);
     const words = newTitle.split(/\s+/);
     if (words.length > 4) {
       newTitle = words.slice(0, 4).join(' ');
@@ -255,7 +253,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
     return setCorsHeaders(Rfinal);
 
   } catch (error: unknown) {
-    const resolvedParams = await params;
     let message = 'Error summarizing chat title.';
     if (error instanceof Error) message = error.message;
     type PgError = { code?: string; message?: string };

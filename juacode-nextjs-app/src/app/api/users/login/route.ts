@@ -27,10 +27,14 @@ export async function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('POST /api/users/login: request received');
     const body = await req.json();
+    console.log('POST /api/users/login: request body:', body);
     const { email, password, bypass_confirmation } = body;
+    console.log('Login credentials:', { email, hasPassword: !!password, bypass_confirmation });
 
     if (!email || !password) {
+      console.error('Login validation failed: missing email or password');
       return NextResponse.json({ error: 'Email and password are required' }, { 
         status: 400,
         headers: corsHeaders()
@@ -42,10 +46,12 @@ export async function POST(req: NextRequest) {
     if (bypass_confirmation && process.env.NODE_ENV === 'development') {
       
       // First try to sign in - this might fail if email is not confirmed
+      console.log('Attempting supabase signInWithPassword with bypass_confirmation');
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
       });
+      console.log('supabase.auth.signInWithPassword returned:', { data, error });
 
       // If it succeeded, great - just return the response
       if (!error && data) {
@@ -60,9 +66,10 @@ export async function POST(req: NextRequest) {
                 updated_at = CURRENT_TIMESTAMP;
           `;
           const upsertValues = [data.user.id, data.user.user_metadata?.name || null, data.user.email];
+          console.log('Upserting user profile with values:', upsertValues);
           await db.query(upsertQuery, upsertValues);
         } catch (profileError) {
-          // Log but do not fail the login if profile insert fails; chats may still fail separately and expose the error.
+          console.error('Error upserting user profile on login:', profileError);
         }
 
         return NextResponse.json(
@@ -86,11 +93,13 @@ export async function POST(req: NextRequest) {
       
       // If it failed with an email confirmation error, try to get the user data from our database
       if (error && error.message.includes('Email not confirmed')) {
+        console.warn('supabase signInWithPassword error - email not confirmed:', error.message);
         // Get the user data from our database
         try {
           const { rows } = await db.query('SELECT id, name, email FROM users WHERE email = $1', [email]);
           if (rows.length > 0) {
             const userData = rows[0];
+            console.log('Returning test login user data for unconfirmed email:', userData);
             
             // Log it but don't auto-confirm in production
             
@@ -107,17 +116,21 @@ export async function POST(req: NextRequest) {
             );
           }
         } catch (dbError) {
+          console.error('Error fetching user profile for test login:', dbError);
         }
       }
     }
 
+    console.log('Proceeding with normal login flow');
     // Normal login flow
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
     });
+    console.log('Normal login supabase.auth.signInWithPassword result:', { data, error });
 
     if (error) {
+      console.error('Supabase login error:', error);
       
       if (error.message.includes('Email not confirmed')) {
         return NextResponse.json({ 
@@ -141,8 +154,10 @@ export async function POST(req: NextRequest) {
         headers: corsHeaders()
       });
     }
-
+    console.log('Supabase login succeeded, verifying data and session');
+    
     if (!data || !data.session || !data.user) {
+        console.error('Login succeeded but missing session or user data', data);
         return NextResponse.json({ error: 'Sign in succeeded but no session or user data returned' }, { 
           status: 500,
           headers: corsHeaders()
@@ -151,6 +166,7 @@ export async function POST(req: NextRequest) {
 
     // After successful login, ensure a corresponding user profile row exists in the local "users" table.
     try {
+      console.log('Upserting user profile after normal login');
       // Attempt to insert (or do nothing on conflict) so that repeated logins are idempotent.
       const upsertQuery = `
         INSERT INTO users (id, name, email, created_at, updated_at)
