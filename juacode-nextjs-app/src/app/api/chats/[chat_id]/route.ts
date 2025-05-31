@@ -196,7 +196,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
 
     const titleGenerationPayload: LLMMessage[] = [systemPrompt, ...llmMessages];
 
-    const llmProvider: LLMProvider = 'deepseek';  // Always use DeepSeek for title generation
+    const llmProvider: LLMProvider = 'deepseek';
     const llmConfig: LLMConfig = {
       stream: false, 
       max_tokens: 20, 

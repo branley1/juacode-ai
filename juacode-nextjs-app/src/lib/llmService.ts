@@ -96,7 +96,7 @@ async function generateDeepSeekCompletion(
   const { 
     stream = true, 
     // max_tokens = 2000, 
-    temperature = 0.7, 
+    temperature = 1, 
     model = 'deepseek-chat'
   } = config;
 
@@ -183,11 +183,12 @@ async function generateOpenAICompletion(
     throw new Error('OpenAI API key not found or client not initialized. OpenAI provider will be unavailable.');
   }
 
-  const { 
-    stream = true, 
-    temperature = process.env.OPENAI_TEMPERATURE ? parseFloat(process.env.OPENAI_TEMPERATURE) : 0.7, 
-    model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo' // Fallback model (o4-mini-2025-04-16)
+  const {
+    stream = true,
+    model = process.env.OPENAI_MODEL || 'o4-mini-2025-04-16' // Fallback model (gpt-4o-mini)
   } = config;
+  // Determine temperature: use explicit config value or environment; leave undefined for API default
+  const temperature = config.temperature ?? (process.env.OPENAI_TEMPERATURE ? parseFloat(process.env.OPENAI_TEMPERATURE) : undefined);
   const maxTokens = config.max_tokens || (process.env.OPENAI_MAX_TOKENS ? parseInt(process.env.OPENAI_MAX_TOKENS) : 2000);
 
   // Filter out system messages if the model doesn't support them directly in the main list, or handle as per API docs
@@ -199,13 +200,11 @@ async function generateOpenAICompletion(
 
   try {
     if (stream) {
-      const responseStream = await openaiClient.chat.completions.create({
-        model: model,
-        messages: openAIMessages,
-        temperature: temperature,
-        max_tokens: maxTokens,
-        stream: true,
-      });
+      const streamingParams: any = { model, messages: openAIMessages, max_completion_tokens: maxTokens, stream: true };
+      if (temperature !== undefined && !model.startsWith('o4-mini')) {
+        streamingParams.temperature = temperature;
+      }
+      const responseStream = await openaiClient.chat.completions.create(streamingParams) as unknown as AsyncIterable<any>;
 
       async function* contentStream(): AsyncGenerator<string, void, unknown> {
         for await (const chunk of responseStream) {
@@ -216,13 +215,11 @@ async function generateOpenAICompletion(
       }
       return contentStream();
     } else {
-      const response = await openaiClient.chat.completions.create({
-        model: model,
-        messages: openAIMessages,
-        temperature: temperature,
-        max_tokens: maxTokens,
-        stream: false,
-      });
+      const nonStreamingParams: any = { model, messages: openAIMessages, max_completion_tokens: maxTokens, stream: false };
+      if (temperature !== undefined && !model.startsWith('o4-mini')) {
+        nonStreamingParams.temperature = temperature;
+      }
+      const response = await openaiClient.chat.completions.create(nonStreamingParams);
       return response.choices[0]?.message?.content?.trim() || '';
     }
   } catch (error: unknown) {
@@ -308,23 +305,9 @@ async function generateGeminiCompletion(
       const result = await generativeModel.generateContent({ contents: geminiMessages, generationConfig, safetySettings });
       const response = result.response;
       
-      // Ensure logging or debugging objects are correctly formed or removed if not used
-      // console.log({ // Example: if it was intended for logging
-      //   candidates: response?.candidates?.length || 0,
-      //   promptFeedback: response?.promptFeedback,
-      //   usageMetadata: response?.usageMetadata
-      // });
-
       if (response && response.candidates && response.candidates.length > 0) {
         const candidate = response.candidates[0];
         
-        // console.log({ // Example: if it was intended for logging
-        //   finishReason: candidate.finishReason,
-        //   safetyRatings: candidate.safetyRatings,
-        //   hasContent: !!candidate.content,
-        //   partsCount: candidate.content?.parts?.length || 0
-        // });
-
         if (candidate.finishReason && candidate.finishReason !== 'STOP' && candidate.finishReason !== 'MAX_TOKENS') {
           if (candidate.safetyRatings) {
           }
@@ -339,11 +322,6 @@ async function generateGeminiCompletion(
         }
         return ''; // Return empty if no parts even with normal finish
       } else {
-        // console.log({ // Example: if it was intended for logging
-        //   hasResponse: !!response,
-        //   candidatesLength: response?.candidates?.length || 0,
-        //   promptFeedback: response?.promptFeedback
-        // });
         if (response?.promptFeedback) {
         }
         return '';

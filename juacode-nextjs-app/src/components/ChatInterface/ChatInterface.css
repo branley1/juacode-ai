@@ -71,24 +71,24 @@
   overflow-y: auto;
 
   &::-webkit-scrollbar {
-    width: 8px;
+    width: 4px;
   }
   &::-webkit-scrollbar-track {
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.05);
     border-radius: 4px;
   }
   &:hover::-webkit-scrollbar-thumb {
-    background: var(--color-text-secondary);
+    background: rgba(0, 0, 0, 0.1);
   }
 
   scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.05) transparent;
 
   &:hover {
-    scrollbar-color: var(--color-text-secondary) transparent;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
   }
 
   -ms-overflow-style: none;
