@@ -188,7 +188,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
         return setCorsHeaders(R);
     }
     
-    const systemPromptText = "Create a short, concise chat title of 3-4 words that summarizes the core topic or purpose of this conversation. Focus on the specific subject matter. Do not include any other phrases. Only output the title with no quotes or other formatting.";
+    const systemPromptText = "You are a witty headline writer. Craft a quirky, context-dependent title of 3-5 words that playfully captures this conversation's essence—use puns or playful language tied to key topics. Output only the title.";
     const systemPrompt: LLMMessage = {
       role: 'system',
       content: systemPromptText
