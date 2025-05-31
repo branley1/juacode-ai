@@ -200,7 +200,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<Route
     const llmConfig: LLMConfig = {
       stream: false, 
       max_tokens: 20, 
-      temperature: 0.5,
+      temperature: 1,
     };
     
 

@@ -100,9 +100,23 @@ export async function POST(req: NextRequest) {
       last_model_used: last_model_used || null,
     };
 
+    // Use UPSERT to insert or update existing chat
     const query = `
-      INSERT INTO public.chats (chat_id, title, messages, user_id, last_model_used, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO public.chats (
+        chat_id,
+        title,
+        messages,
+        user_id,
+        last_model_used,
+        created_at,
+        updated_at
+      ) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT (chat_id, user_id)
+      DO UPDATE SET
+        title = EXCLUDED.title,
+        messages = EXCLUDED.messages,
+        last_model_used = EXCLUDED.last_model_used,
+        updated_at = CURRENT_TIMESTAMP
       RETURNING chat_id, title, messages, user_id, last_model_used, created_at, updated_at;
     `;
 
@@ -133,10 +147,7 @@ export async function POST(req: NextRequest) {
     type PgError = { code?: string; message?: string };
     const pgError = error as PgError;
     if (typeof error === 'object' && error && 'code' in error) {
-      if (pgError.code === '23505') {
-        errorMessage = 'A chat with this ID already exists.';
-        errorStatus = 409;
-      } else if (pgError.code === '23503') {
+      if (pgError.code === '23503') {
         errorMessage = 'Invalid user_id provided.';
         errorStatus = 400;
       }
