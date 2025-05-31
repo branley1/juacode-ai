@@ -9,6 +9,7 @@ import { vscDarkPlus, oneLight } from 'react-syntax-highlighter/dist/esm/styles/
 import { useTheme } from '@/context/ThemeContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
+import remarkGfm from 'remark-gfm';
 
 function extractThoughtAndMain(content) {
   const startIndex = content.indexOf('<think>');
@@ -269,7 +270,7 @@ function ChatMessage({ role, content, index, streamingIndex }) {
         )}
         <div className="message-content" id={`message-${index}-label`}>
           {role === 'assistant' ? (
-            <ReactMarkdown components={MarkdownComponents}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={MarkdownComponents}>
               {index === streamingIndex ? displayText : parsedContent.mainContent}
             </ReactMarkdown>
           ) : (
