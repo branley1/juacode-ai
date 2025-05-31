@@ -11,6 +11,7 @@ export interface LLMConfig {
   max_tokens?: number;
   temperature?: number;
   model?: string;
+  reasoning?: { effort?: string; summary?: string };
 }
 
 export type LLMProvider = 'openai' | 'deepseek' | 'gemini';
@@ -185,16 +186,15 @@ async function generateOpenAICompletion(
 
   const {
     stream = true,
-    model = process.env.OPENAI_MODEL || 'o4-mini-2025-04-16' // Fallback model (gpt-4o-mini)
+    model = process.env.OPENAI_MODEL || 'o4-mini-2025-04-16',
+    reasoning
   } = config;
   // Determine temperature: use explicit config value or environment; leave undefined for API default
   const temperature = config.temperature ?? (process.env.OPENAI_TEMPERATURE ? parseFloat(process.env.OPENAI_TEMPERATURE) : undefined);
   const maxTokens = config.max_tokens || (process.env.OPENAI_MAX_TOKENS ? parseInt(process.env.OPENAI_MAX_TOKENS) : 2000);
 
-  // Filter out system messages if the model doesn't support them directly in the main list, or handle as per API docs
-  // OpenAI generally supports system messages as the first message.
   const openAIMessages = messages.map(m => ({
-    role: m.role === 'model' ? 'assistant' : m.role, // Ensure role is compatible
+    role: m.role === 'model' ? 'assistant' : m.role,
     content: m.content
   })) as OpenAI.Chat.Completions.ChatCompletionMessageParam[];
 
@@ -204,13 +204,37 @@ async function generateOpenAICompletion(
       if (temperature !== undefined && !model.startsWith('o4-mini')) {
         streamingParams.temperature = temperature;
       }
+      if (reasoning) {
+        streamingParams.reasoning = reasoning;
+      }
       const responseStream = await openaiClient.chat.completions.create(streamingParams) as unknown as AsyncIterable<any>;
 
       async function* contentStream(): AsyncGenerator<string, void, unknown> {
+        let thinkTagOpen = false;
         for await (const chunk of responseStream) {
-          if (chunk.choices && chunk.choices[0]?.delta?.content) {
-            yield chunk.choices[0].delta.content;
+          let yieldBuffer = '';
+          const delta = chunk.choices[0]?.delta as any;
+
+          if (delta.reasoning_content) {
+            if (!thinkTagOpen) {
+              yieldBuffer += '<think>';
+              thinkTagOpen = true;
+            }
+            yieldBuffer += delta.reasoning_content;
           }
+          if (delta.content) {
+            if (thinkTagOpen) {
+              yieldBuffer += '</think>';
+              thinkTagOpen = false;
+            }
+            yieldBuffer += delta.content;
+          }
+          if (yieldBuffer) {
+            yield yieldBuffer;
+          }
+        }
+        if (thinkTagOpen) {
+          yield '</think>';
         }
       }
       return contentStream();
@@ -219,8 +243,21 @@ async function generateOpenAICompletion(
       if (temperature !== undefined && !model.startsWith('o4-mini')) {
         nonStreamingParams.temperature = temperature;
       }
+      if (reasoning) {
+        nonStreamingParams.reasoning = reasoning;
+      }
       const response = await openaiClient.chat.completions.create(nonStreamingParams);
-      return response.choices[0]?.message?.content?.trim() || '';
+      const message = response.choices[0]?.message;
+      let fullContent = '';
+      if (message) {
+        if ('reasoning_content' in message && typeof message.reasoning_content === 'string') {
+          fullContent += `<think>${message.reasoning_content}</think>`;
+        }
+        if ('content' in message && typeof message.content === 'string') {
+          fullContent += (fullContent ? '\n\n' : '') + message.content.trim();
+        }
+      }
+      return fullContent;
     }
   } catch (error: unknown) {
     type PgError = { message?: string };
