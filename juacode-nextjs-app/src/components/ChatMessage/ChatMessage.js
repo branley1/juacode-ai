@@ -4,6 +4,10 @@ import JuaCodeIcon from '../../assets/jua-code-logo.png';
 import ThoughtBlock from '../ThoughtBlock/ThoughtBlock';
 import './ChatMessage.css';
 import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
 
 function extractThoughtAndMain(content) {
   const startIndex = content.indexOf('<think>');
@@ -24,6 +28,44 @@ function extractThoughtAndMain(content) {
     return { mainContent, thoughtContent };
   }
 }
+
+const CodeBlock = ({node, inline, className, children, ...props}) => {
+  const match = /language-(\w+)/.exec(className || '');
+  const codeString = String(children).replace(/\n$/, '');
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(codeString);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  if (!inline && match) {
+    const language = match[1];
+    return (
+      <div className="code-block-wrapper">
+        <div className="code-header">
+          <span className="code-language">{language.toLowerCase()}</span>
+          <button className="copy-button" onClick={handleCopy} aria-label="Copy code">
+            <FontAwesomeIcon icon={copied ? faCheck : faCopy} size="medium" />
+          </button>
+        </div>
+        <SyntaxHighlighter
+          style={tomorrow}
+          language={language}
+          PreTag="div"
+          customStyle={{ margin: 0, padding: '1em', background: 'none', fontSize: '0.9em' }}
+          {...props}
+        >
+          {codeString}
+        </SyntaxHighlighter>
+      </div>
+    );
+  }
+  return (
+    <code className={className} {...props}>
+      {children}
+    </code>
+  );
+};
 
 function ChatMessage({ role, content, index, streamingIndex }) {
   const [displayText, setDisplayText] = useState('');
@@ -86,9 +128,15 @@ function ChatMessage({ role, content, index, streamingIndex }) {
           <ThoughtBlock thought={parsedContent.thoughtContent} />
         )}
         <div className="message-content" id={`message-${index}-label`}>
-          <ReactMarkdown>
-            {role === 'assistant' && index === streamingIndex ? displayText : parsedContent.mainContent}
-          </ReactMarkdown>
+          {role === 'assistant' ? (
+            <ReactMarkdown components={{ code: CodeBlock }}>
+              {index === streamingIndex ? displayText : parsedContent.mainContent}
+            </ReactMarkdown>
+          ) : (
+            <div style={{ whiteSpace: 'pre-wrap' }}>
+              {parsedContent.mainContent}
+            </div>
+          )}
           {role === 'assistant' && index === streamingIndex && charIndex < parsedContent.mainContent.length && (
             <span className="blinking-caret">▍</span>
           )}
