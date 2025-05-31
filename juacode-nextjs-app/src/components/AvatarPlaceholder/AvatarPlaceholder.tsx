@@ -38,7 +38,7 @@ const AvatarPlaceholder: React.FC<AvatarPlaceholderProps> = ({ username, size })
     backgroundColor: color,
     width: `${computedSize}px`,
     height: `${computedSize}px`,
-    fontSize: `${computedSize * 0.6}px`,
+    fontSize: `${computedSize * 0.4}px`,
   };
   if (size !== undefined) {
     style.marginBottom = '0';

@@ -49,11 +49,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Determine redirect link from environment variable
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-    if (!siteUrl) {
-      throw new Error('Missing env.NEXT_PUBLIC_SITE_URL');
-    }
+    // Determine redirect link from env var or request Host header
+    const proto = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+    const host = req.headers.get('host') || 'localhost:3000';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || `${proto}://${host}`;
     const resetUrl = `${siteUrl}/reset-password?email=${encodeURIComponent(email)}`;
     // Send password reset email using Supabase
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
