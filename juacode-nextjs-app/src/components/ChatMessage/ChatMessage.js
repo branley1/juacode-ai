@@ -5,7 +5,7 @@ import ThoughtBlock from '../ThoughtBlock/ThoughtBlock';
 import './ChatMessage.css';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { dracula } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
 
@@ -44,12 +44,13 @@ const CodeBlock = ({node, inline, className, children, ...props}) => {
       <div className="code-block-wrapper">
         <div className="code-header">
           <span className="code-language">{language.toLowerCase()}</span>
-          <button className="copy-button" onClick={handleCopy} aria-label="Copy code">
-            <FontAwesomeIcon icon={copied ? faCheck : faCopy} size="medium" />
+          <button className="copy-button" onClick={handleCopy} aria-label={copied ? 'Copied' : 'Copy code'}>
+            <FontAwesomeIcon icon={copied ? faCheck : faCopy} size="sm" />
+            <span className="copy-text">{copied ? 'Copied' : 'Copy code'}</span>
           </button>
         </div>
         <SyntaxHighlighter
-          style={tomorrow}
+          style={dracula}
           language={language}
           PreTag="div"
           customStyle={{ margin: 0, padding: '1em', background: 'none', fontSize: '0.9em' }}
