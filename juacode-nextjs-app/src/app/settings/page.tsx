@@ -31,17 +31,22 @@ export default function SettingsPage() {
   const [newEmail, setNewEmail] = useState('');
   const [confirmEmail, setConfirmEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
+  const [currentEmail, setCurrentEmail] = useState('');
 
   // Password change (reset) form
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setEmailMessage('');
-    if (!newEmail || !confirmEmail) {
+    if (!currentEmail || !newEmail || !confirmEmail) {
       setEmailMessage('Please fill in all the fields.');
       return;
     }
     if (newEmail !== confirmEmail) {
       setEmailMessage('E-mail addresses do not match.');
+      return;
+    }
+    if (currentEmail.trim().toLowerCase() !== userData?.email?.toLowerCase()) {
+      setEmailMessage('Current e-mail does not match your account.');
       return;
     }
     setLoading(true);
@@ -52,7 +57,7 @@ export default function SettingsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('access_token')}`,
         },
-        body: JSON.stringify({ new_email: newEmail, current_password: currentPassword }),
+        body: JSON.stringify({ current_email: currentEmail, new_email: newEmail, current_password: currentPassword }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -127,11 +132,13 @@ export default function SettingsPage() {
         {showEmailForm && (
           <form onSubmit={handleEmailSubmit} className={styles.profileFormSection}>
             <label className={styles.profileFieldLabel}>New E-mail</label>
-            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} required className={styles.profileNameInput} />
+            <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} required className={styles.profileNameInput} autoComplete="email" />
             <label className={styles.profileFieldLabel}>Confirm New E-mail</label>
-            <input type="email" value={confirmEmail} onChange={e => setConfirmEmail(e.target.value)} required className={styles.profileNameInput} />
-            <label className={styles.profileFieldLabel}>Current Password (optional)</label>
-            <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className={styles.profileNameInput} />
+            <input type="email" value={confirmEmail} onChange={e => setConfirmEmail(e.target.value)} required className={styles.profileNameInput} autoComplete="email" />
+            <label className={styles.profileFieldLabel}>Current E-mail</label>
+            <input type="email" value={currentEmail} onChange={e => setCurrentEmail(e.target.value)} required className={styles.profileNameInput} autoComplete="email" />
+            <label className={styles.profileFieldLabel}>Current Password</label>
+            <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required className={styles.profileNameInput} autoComplete="current-password" />
             {emailMessage && <div style={{ color: '#e0b400', marginTop: 8 }}>{emailMessage}</div>}
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <button type="submit" className={styles.profileEditButton} disabled={loading}>{loading ? 'Submitting…' : 'Submit'}</button>

@@ -10,7 +10,7 @@ interface SettingsModalProps {
 type ViewState = 'menu' | 'email' | 'password' | 'success';
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-  const { accessToken } = useAuth();
+  const { accessToken, userData } = useAuth();
   const [view, setView] = useState<ViewState>('menu');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -19,6 +19,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [newEmail, setNewEmail] = useState('');
   const [confirmEmail, setConfirmEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
+  const [currentEmail, setCurrentEmail] = useState('');
 
   const resetForm = () => {
     setNewEmail('');
@@ -32,12 +33,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     e.preventDefault();
     setMessage('');
 
-    if (!newEmail || !confirmEmail) {
+    if (!currentEmail || !newEmail || !confirmEmail) {
       setMessage('Please fill in all the fields.');
       return;
     }
     if (newEmail !== confirmEmail) {
       setMessage('E-mail addresses do not match.');
+      return;
+    }
+    if (currentEmail.trim().toLowerCase() !== (userData?.email ?? '').toLowerCase()) {
+      setMessage('Current e-mail does not match your account.');
       return;
     }
 
@@ -49,7 +54,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ new_email: newEmail, current_password: currentPassword }),
+        body: JSON.stringify({ current_email: currentEmail, new_email: newEmail, current_password: currentPassword }),
       });
 
       const data = await res.json();
@@ -117,11 +122,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           <form onSubmit={handleEmailSubmit} className={styles.formWrapper}>
             <h3>Change E-mail</h3>
             <label>New E-mail</label>
-            <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required />
+            <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required autoComplete="email" />
             <label>Confirm New E-mail</label>
-            <input type="email" value={confirmEmail} onChange={(e) => setConfirmEmail(e.target.value)} required />
-            <label>Current Password (optional)</label>
-            <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+            <input type="email" value={confirmEmail} onChange={(e) => setConfirmEmail(e.target.value)} required autoComplete="email" />
+            <label>Current E-mail</label>
+            <input type="email" value={currentEmail} onChange={(e) => setCurrentEmail(e.target.value)} required autoComplete="email" />
+            <label>Current Password</label>
+            <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" />
             {message && <p className={styles.message}>{message}</p>}
             <div className={styles.formActions}>
               <button type="submit" className={styles.submitButton} disabled={loading}>{loading ? 'Submitting…' : 'Submit'}</button>

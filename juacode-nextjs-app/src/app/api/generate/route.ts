@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LLMMessage, LLMProvider, generateChatCompletion, LLMConfig } from '@/lib/llmService';
+import { authenticateRequest } from '@/lib/auth';
 
 // Helper to map selected_model string to LLMProvider type
 function mapToLLMProvider(selectedModel?: string): LLMProvider {
@@ -15,6 +16,12 @@ function mapToLLMProvider(selectedModel?: string): LLMProvider {
 }
 
 export async function POST(req: NextRequest) {
+  // Authenticate request
+  const authResult = await authenticateRequest(req);
+  if (!authResult.success || !authResult.user) {
+    return NextResponse.json({ error: authResult.error || 'Authentication required' }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const messages: LLMMessage[] = body.messages || [];
