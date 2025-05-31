@@ -70,6 +70,143 @@ const CodeBlock = ({node, inline, className, children, ...props}) => {
   );
 };
 
+// Custom components for better markdown rendering
+const MarkdownComponents = {
+  code: CodeBlock,
+  
+  // Enhanced list rendering
+  ul: ({node, children, ...props}) => (
+    <ul {...props}>
+      {children}
+    </ul>
+  ),
+  
+  ol: ({node, children, ...props}) => (
+    <ol {...props}>
+      {children}
+    </ol>
+  ),
+  
+  li: ({node, children, ...props}) => (
+    <li {...props}>
+      {children}
+    </li>
+  ),
+  
+  // Enhanced paragraph rendering
+  p: ({node, children, ...props}) => (
+    <p {...props}>
+      {children}
+    </p>
+  ),
+  
+  // Enhanced heading rendering
+  h1: ({node, children, ...props}) => (
+    <h1 {...props}>
+      {children}
+    </h1>
+  ),
+  
+  h2: ({node, children, ...props}) => (
+    <h2 {...props}>
+      {children}
+    </h2>
+  ),
+  
+  h3: ({node, children, ...props}) => (
+    <h3 {...props}>
+      {children}
+    </h3>
+  ),
+  
+  h4: ({node, children, ...props}) => (
+    <h4 {...props}>
+      {children}
+    </h4>
+  ),
+  
+  h5: ({node, children, ...props}) => (
+    <h5 {...props}>
+      {children}
+    </h5>
+  ),
+  
+  h6: ({node, children, ...props}) => (
+    <h6 {...props}>
+      {children}
+    </h6>
+  ),
+  
+  // Enhanced blockquote rendering
+  blockquote: ({node, children, ...props}) => (
+    <blockquote {...props}>
+      {children}
+    </blockquote>
+  ),
+  
+  // Enhanced table rendering
+  table: ({node, children, ...props}) => (
+    <table {...props}>
+      {children}
+    </table>
+  ),
+  
+  thead: ({node, children, ...props}) => (
+    <thead {...props}>
+      {children}
+    </thead>
+  ),
+  
+  tbody: ({node, children, ...props}) => (
+    <tbody {...props}>
+      {children}
+    </tbody>
+  ),
+  
+  tr: ({node, children, ...props}) => (
+    <tr {...props}>
+      {children}
+    </tr>
+  ),
+  
+  th: ({node, children, ...props}) => (
+    <th {...props}>
+      {children}
+    </th>
+  ),
+  
+  td: ({node, children, ...props}) => (
+    <td {...props}>
+      {children}
+    </td>
+  ),
+  
+  // Enhanced link rendering
+  a: ({node, children, href, ...props}) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+      {children}
+    </a>
+  ),
+  
+  // Enhanced horizontal rule
+  hr: ({node, ...props}) => (
+    <hr {...props} />
+  ),
+  
+  // Enhanced emphasis and strong
+  em: ({node, children, ...props}) => (
+    <em {...props}>
+      {children}
+    </em>
+  ),
+  
+  strong: ({node, children, ...props}) => (
+    <strong {...props}>
+      {children}
+    </strong>
+  )
+};
+
 function ChatMessage({ role, content, index, streamingIndex }) {
   const [displayText, setDisplayText] = useState('');
   const [charIndex, setCharIndex] = useState(0);
@@ -132,7 +269,7 @@ function ChatMessage({ role, content, index, streamingIndex }) {
         )}
         <div className="message-content" id={`message-${index}-label`}>
           {role === 'assistant' ? (
-            <ReactMarkdown components={{ code: CodeBlock }}>
+            <ReactMarkdown components={MarkdownComponents}>
               {index === streamingIndex ? displayText : parsedContent.mainContent}
             </ReactMarkdown>
           ) : (

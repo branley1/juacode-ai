@@ -63,7 +63,226 @@
 }
 
 .message-content p {
-  margin: 0;
+  margin: 0.75em 0;
+  line-height: 1.6;
+}
+
+.message-content p:first-child {
+  margin-top: 0;
+}
+
+.message-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* Headings */
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4,
+.message-content h5,
+.message-content h6 {
+  margin: 1.5em 0 0.75em 0;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.message-content h1:first-child,
+.message-content h2:first-child,
+.message-content h3:first-child,
+.message-content h4:first-child,
+.message-content h5:first-child,
+.message-content h6:first-child {
+  margin-top: 0;
+}
+
+.message-content h1 { font-size: 1.8em; }
+.message-content h2 { font-size: 1.5em; }
+.message-content h3 { font-size: 1.3em; }
+.message-content h4 { font-size: 1.1em; }
+.message-content h5 { font-size: 1em; font-weight: 700; }
+.message-content h6 { font-size: 0.9em; font-weight: 700; }
+
+/* Lists */
+.message-content ul,
+.message-content ol {
+  margin: 0.75em 0;
+  padding-left: 1.5em;
+  line-height: 1.6;
+}
+
+.message-content ul:first-child,
+.message-content ol:first-child {
+  margin-top: 0;
+}
+
+.message-content ul:last-child,
+.message-content ol:last-child {
+  margin-bottom: 0;
+}
+
+.message-content li {
+  margin: 0.25em 0;
+  padding-left: 0.25em;
+}
+
+.message-content li > p {
+  margin: 0.5em 0;
+}
+
+.message-content li:first-child {
+  margin-top: 0;
+}
+
+.message-content li:last-child {
+  margin-bottom: 0;
+}
+
+/* Nested lists */
+.message-content ul ul,
+.message-content ol ol,
+.message-content ul ol,
+.message-content ol ul {
+  margin: 0.5em 0;
+  padding-left: 1.25em;
+}
+
+/* Custom bullet styles */
+.message-content ul {
+  list-style-type: disc;
+}
+
+.message-content ul ul {
+  list-style-type: circle;
+}
+
+.message-content ul ul ul {
+  list-style-type: square;
+}
+
+.message-content ol {
+  list-style-type: decimal;
+}
+
+.message-content ol ol {
+  list-style-type: lower-alpha;
+}
+
+.message-content ol ol ol {
+  list-style-type: lower-roman;
+}
+
+/* Blockquotes */
+.message-content blockquote {
+  margin: 1em 0;
+  padding: 0.75em 1em;
+  border-left: 4px solid var(--color-border-chat-container);
+  background: var(--color-background-code-block);
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.message-content blockquote:first-child {
+  margin-top: 0;
+}
+
+.message-content blockquote:last-child {
+  margin-bottom: 0;
+}
+
+.message-content blockquote p {
+  margin: 0.5em 0;
+}
+
+.message-content blockquote p:first-child {
+  margin-top: 0;
+}
+
+.message-content blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Horizontal rules */
+.message-content hr {
+  margin: 1.5em 0;
+  border: none;
+  height: 1px;
+  background: var(--color-border-chat-container);
+  opacity: 0.5;
+}
+
+/* Inline code */
+.message-content code:not(pre code) {
+  background: var(--color-background-code-block);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: var(--font-family-code, 'Monaco', 'Consolas', 'Courier New', monospace);
+}
+
+/* Links */
+.message-content a {
+  color: var(--color-primary, #007acc);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.message-content a:hover {
+  border-bottom-color: currentColor;
+  opacity: 0.8;
+}
+
+/* Tables */
+.message-content table {
+  margin: 1em 0;
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9em;
+}
+
+.message-content table:first-child {
+  margin-top: 0;
+}
+
+.message-content table:last-child {
+  margin-bottom: 0;
+}
+
+.message-content th,
+.message-content td {
+  padding: 0.5em 0.75em;
+  border: 1px solid var(--color-border-chat-container);
+  text-align: left;
+}
+
+.message-content th {
+  background: var(--color-background-code-block);
+  font-weight: 600;
+}
+
+.message-content tr:nth-child(even) {
+  background: var(--color-background-code-block);
+  opacity: 0.5;
+}
+
+/* Strong and emphasis */
+.message-content strong {
+  font-weight: 600;
+}
+
+.message-content em {
+  font-style: italic;
+}
+
+/* Spacing adjustments for better flow */
+.message-content > *:first-child {
+  margin-top: 0 !important;
+}
+
+.message-content > *:last-child {
+  margin-bottom: 0 !important;
 }
 
 .blinking-caret {
@@ -98,6 +317,7 @@
     max-width: 90%;
     margin-left: 10px;
     margin-right: 10px;
+    font-size: 1em;
   }
   
   .profile-icon {
@@ -110,6 +330,73 @@
     bottom: 10px;
     padding: 0 10px;
   }
+  
+  /* Mobile typography adjustments */
+  .message-content h1 { font-size: 1.6em; }
+  .message-content h2 { font-size: 1.4em; }
+  .message-content h3 { font-size: 1.2em; }
+  .message-content h4 { font-size: 1.05em; }
+  
+  .message-content ul,
+  .message-content ol {
+    padding-left: 1.25em;
+  }
+  
+  .message-content li {
+    margin: 0.2em 0;
+  }
+  
+  .message-content blockquote {
+    padding: 0.5em 0.75em;
+    margin: 0.75em 0;
+  }
+  
+  .message-content table {
+    font-size: 0.8em;
+  }
+  
+  .message-content th,
+  .message-content td {
+    padding: 0.4em 0.5em;
+  }
+  
+  /* Code blocks on mobile */
+  .code-block-wrapper {
+    margin: 0.75em 0;
+  }
+  
+  .code-header {
+    padding: 0.4em 0.75em;
+    font-size: 0.7em;
+  }
+  
+  .copy-text {
+    display: none; /* Hide copy text on mobile, show only icon */
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .chat-message.assistant {
+    font-size: 0.95em;
+  }
+  
+  .message-content h1 { font-size: 1.5em; }
+  .message-content h2 { font-size: 1.3em; }
+  .message-content h3 { font-size: 1.15em; }
+  
+  .message-content p {
+    margin: 0.6em 0;
+  }
+  
+  .message-content ul,
+  .message-content ol {
+    padding-left: 1em;
+  }
+  
+  .message-content table {
+    font-size: 0.75em;
+  }
 }
 
 /* Code block styles */
@@ -118,9 +405,17 @@
   position: relative;
   background: var(--color-background-code-block);
   border-radius: 6px;
-  margin: 1em 0;
+  margin: 1.25em 0;
   overflow: hidden;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.code-block-wrapper:first-child {
+  margin-top: 0;
+}
+
+.code-block-wrapper:last-child {
+  margin-bottom: 0;
 }
 
 .code-header {
